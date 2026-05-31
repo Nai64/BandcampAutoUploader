@@ -169,6 +169,7 @@ class Config:
     open_logs_on_upload: bool = False  # Switch to Logs tab when an upload starts
     open_album_page_after_upload: bool = True  # Open the uploaded Bandcamp album page
     copy_album_url_after_upload: bool = False  # Copy uploaded album URL to clipboard
+    attach_cover_to_individual_tracks: bool = False  # Attach album cover art to each individual track
     detailed_progress_track_info: bool = False  # Show detailed track info in upload progress
     show_progress_timing_details: bool = False  # Show elapsed/ETA suffixes in per-track progress
     # Notification triggers

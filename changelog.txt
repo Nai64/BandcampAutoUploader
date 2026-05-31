@@ -4,3 +4,4 @@
 - Removed some of legacy codes and features
 - Clarified README: only lossy formats (MP3) are converted to FLAC; lossless files upload as-is
 - Added support for tracker module formats (.mod, .xm)
+- Added setting to attach cover art to individual tracks on Bandcamp page

@@ -2168,6 +2168,7 @@ Licensed under CC BY 3.0"""
             ("Open logs on album upload", "open_logs_on_upload", "bool"),
             ("Open album page after upload", "open_album_page_after_upload", "bool"),
             ("Copy album URL to clipboard after upload", "copy_album_url_after_upload", "bool"),
+            ("Attach cover art to individual tracks", "attach_cover_to_individual_tracks", "bool"),
             ("Detailed track information in progress", "detailed_progress_track_info", "bool"),
             ("Show progress timing details", "show_progress_timing_details", "bool"),
             ("Max concurrent uploads", "max_concurrent_uploads", "int", 1, 5),
@@ -2274,6 +2275,7 @@ Licensed under CC BY 3.0"""
         self.config.open_logs_on_upload = self.upload_vars['open_logs_on_upload'].get()
         self.config.open_album_page_after_upload = self.upload_vars['open_album_page_after_upload'].get()
         self.config.copy_album_url_after_upload = self.upload_vars['copy_album_url_after_upload'].get()
+        self.config.attach_cover_to_individual_tracks = self.upload_vars['attach_cover_to_individual_tracks'].get()
         self.config.detailed_progress_track_info = self.upload_vars['detailed_progress_track_info'].get()
         self.config.show_progress_timing_details = self.upload_vars['show_progress_timing_details'].get()
         self.config.max_concurrent_uploads = self.upload_vars['max_concurrent_uploads'].get()

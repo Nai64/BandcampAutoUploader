@@ -934,6 +934,7 @@ class Album:
         retry_attempts: int = 3,
         progress_callback=None,
         cancel_event=None,
+        config=None,
     ):
         logger.info("Starting album upload")
 
@@ -999,6 +1000,9 @@ class Album:
 
         for i, track in enumerate(self.tracks):
             check_cancelled()
+            if getattr(config, 'attach_cover_to_individual_tracks', False) and self.cover_art is not None:
+                if track.cover_art is None:
+                    track.cover_art = self.cover_art
             logger.info(f"Uploading track {i + 1}/{len(self.tracks)}: {track.track_data.title}")
             emit_progress(
                 "track_start",
