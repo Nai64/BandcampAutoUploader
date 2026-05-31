@@ -7680,26 +7680,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         main_frame = ttk.Frame(dialog)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Marquee title
-        marquee_text = "Cover Art Library - Select an image to use as your album cover "
-        marquee_label = ttk.Label(main_frame, text=marquee_text, font=("Segoe UI", 10, "bold"), foreground="#0078d4")
-        marquee_label.pack(fill=tk.X, pady=(5, 0))
-
-        # Marquee animation
-        def scroll_marquee():
-            try:
-                if not dialog.winfo_exists() or not marquee_label.winfo_exists():
-                    return
-                current_text = marquee_label.cget("text")
-                if current_text:
-                    scrolled = current_text[1:] + current_text[0]
-                    marquee_label.config(text=scrolled)
-                    dialog.after(150, scroll_marquee)
-            except tk.TclError:
-                return
-
-        dialog.after(100, scroll_marquee)
-
         # Library content
         lib_frame = ttk.Frame(main_frame, padding=10)
         lib_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
@@ -7783,7 +7763,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Display thumbnails
         if not cover_library:
-            empty_label = ttk.Label(thumb_frame, text="No cover arts in library yet.\nUsed cover arts will appear here.", font=("Segoe UI", 10))
+            empty_label = ttk.Label(thumb_frame, text="")
             empty_label.grid(row=0, column=0, pady=50)
             bind_cover_scroll(empty_label)
         else:
