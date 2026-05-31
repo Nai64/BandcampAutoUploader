@@ -699,15 +699,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.add_track_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ToolTip(self.add_track_btn, "Add individual tracks to build the current album\n(Tracks shown in Preview area - right-click to manage)")
 
-        self.auto_fit_columns_btn = ttk.Button(
-            checkbox_frame,
-            text="Auto Fit",
-            command=self.auto_fit_track_columns,
-            style="Subtle.TButton"
-        )
-        self.auto_fit_columns_btn.pack(side=tk.RIGHT, padx=(0, 6))
-        ToolTip(self.auto_fit_columns_btn, "Resize visible preview columns to fit the table")
-
         # Track table (Treeview)
         table_frame = ttk.Frame(preview_container, width=1120)
         table_frame.pack(fill=tk.BOTH, expand=True)
@@ -6814,7 +6805,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "guess_case_btn": state,
             "extract_filename_btn": state,
             "add_track_btn": state,
-            "auto_fit_columns_btn": state,
             "cover_entry": state,
             "browse_cover_btn": state,
             "view_cover_btn": state,
