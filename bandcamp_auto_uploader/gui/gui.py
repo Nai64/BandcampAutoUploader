@@ -7886,32 +7886,56 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             logger.error(f"Drag & drop image failed: {e}")
 
     def on_drop_track_files(self, event):
-        """Handle drag & drop of audio files onto the track table"""
+        """Handle drag & drop of audio files or album folder onto the track table"""
         if self.is_upload_in_progress():
             self.show_toast("Upload in progress", 1600, "warning")
             return
 
         try:
-            files = self.root.tk.splitlist(event.data)
+            items = self.root.tk.splitlist(event.data)
+            folder = None
             audio_extensions = {'.wav', '.flac', '.aiff', '.aif', '.mp3', '.ogg', '.opus', '.m4a', '.aac', '.mod', '.xm'}
-            added = 0
-            for file_path in files:
-                path = Path(file_path.strip())
-                if path.suffix.lower() in audio_extensions and path not in self.manual_tracks:
-                    self.manual_tracks.append(path)
-                    logger.info(f"Added track: {path.name}")
-                    added += 1
+            audio_files = []
 
-            if added > 0:
-                self.sort_manual_tracks_by_metadata_numbers()
-                self.album_path_var.set("")
-                self.current_album = None
-                self.update_manual_tracks_preview()
-                if self.manual_tracks:
-                    self.upload_btn['state'] = tk.NORMAL
-                self.show_toast(f"Added {added} track(s)", 2000, "success", trigger="track_add")
+            for item in items:
+                path = Path(item.strip())
+                if path.is_dir():
+                    folder = path
+                    break
+                elif path.suffix.lower() in audio_extensions:
+                    audio_files.append(path)
+
+            if folder is not None:
+                self.album_path_var.set(str(folder))
+                self.upload_btn['state'] = tk.NORMAL if self.selected_artist_url else tk.DISABLED
+                self.on_album_selection_changed()
+                self.clear_album_load_fields()
+                self.preview_album()
+                self.auto_detect_cover_art(str(folder))
+                self.auto_extract_cover_art_if_missing(str(folder))
+                self.apply_album_load_preferences(str(folder))
+                self.load_or_create_album_session_file(str(folder))
+                self.add_to_recent_albums(str(folder))
+                self.show_toast("Album folder loaded", 2000, "success", trigger="file_add")
+                if self.config.auto_start_upload and self.selected_artist_url:
+                    self.root.after(500, self.start_upload)
+            elif audio_files:
+                added = 0
+                for path in audio_files:
+                    if path not in self.manual_tracks:
+                        self.manual_tracks.append(path)
+                        logger.info(f"Added track: {path.name}")
+                        added += 1
+                if added > 0:
+                    self.sort_manual_tracks_by_metadata_numbers()
+                    self.album_path_var.set("")
+                    self.current_album = None
+                    self.update_manual_tracks_preview()
+                    if self.manual_tracks:
+                        self.upload_btn['state'] = tk.NORMAL
+                    self.show_toast(f"Added {added} track(s)", 2000, "success", trigger="track_add")
             else:
-                self.show_toast("No supported audio files found", 2000, "warning")
+                self.show_toast("No supported audio files or folders found", 2000, "warning")
         except Exception as e:
             logger.error(f"Drag & drop tracks failed: {e}")
 

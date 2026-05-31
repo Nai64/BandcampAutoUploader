@@ -10,4 +10,5 @@
 - Added Extract from Filename button to parse track number/title from filenames
 - Removed Auto Fit button from toolbar
 - Added support for OGG Vorbis, Opus, and M4A/AAC audio formats
-- Added drag-and-drop support for adding audio files to the track table
+- Added drag-and-drop support for adding audio files and album folders to the track table
+- Fixed crash when album folder contains subdirectories (skip non-files in Album.from_directory)

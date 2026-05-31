@@ -890,6 +890,8 @@ class Album:
 
         # Process all files in directory in file system order, then prioritize embedded track numbers.
         for file_index, file in enumerate(path.iterdir()):
+            if not file.is_file():
+                continue
             # Skip if we already have a file with this stem (name without extension)
             file_stem = file.stem
             if file_stem in seen_stems:
@@ -925,6 +927,8 @@ class Album:
 
         cover_art = None
         for file in path.iterdir():
+            if not file.is_file():
+                continue
             s = str(file).lower()
             if s[-4:] in (".jpg", ".png", ".gif") or s[-5:] == ".jpeg":
                 cover_art = CoverArt(path=file)
