@@ -4034,10 +4034,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.show_toast("Track titles already look good", 2000, "info")
 
     FILENAME_PATTERNS = [
-        (r"^(\d+)\s*[.\-)_\s]+\s*(.+)", 1, 2),
-        (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+)", 1, 2),
-        (r"^(\d+)\s*(.+)", 1, 2),
-        (r"^(.+?)\s*-\s*(.+)", None, 2),
+        (r"^(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
+        (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
+        (r"^(\d+)\s*[.\-)_\s]+\s*(.+)", 1, None, 2),
+        (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+)", 1, None, 2),
+        (r"^(\d+)\s*(.+)", 1, None, 2),
+        (r"^(.+?)\s*-\s*(.+)", None, 1, 2),
     ]
 
     def get_filename_patterns(self):
@@ -4045,9 +4047,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         custom = getattr(self.config, 'filename_track_patterns', [])
         for entry in custom:
             if isinstance(entry, str):
-                patterns.append((entry, 1, 2))
-            elif isinstance(entry, (list, tuple)) and len(entry) >= 3:
-                patterns.append(tuple(entry[:3]))
+                patterns.append((entry, None, None, 1))
+            elif isinstance(entry, (list, tuple)) and len(entry) >= 4:
+                patterns.append(tuple(entry[:4]))
+            elif isinstance(entry, (list, tuple)) and len(entry) == 3:
+                patterns.append(tuple(entry) + (None,))
         patterns.extend(self.FILENAME_PATTERNS)
         return patterns
 
@@ -4085,29 +4089,34 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         preview_values = self.extract_filename_preview_values
         changed = 0
         track_no_idx = self.get_track_table_column_index("track_no")
+        artist_idx = self.get_track_table_column_index("artist")
         track_name_idx = self.get_track_table_column_index("track_name")
         file_path_idx = self.get_track_table_column_index("file_path")
 
         for item in items:
             values = list(self.track_table.item(item)['values'])
-            if len(values) <= max(track_no_idx, track_name_idx, file_path_idx):
+            if len(values) <= max(track_no_idx, track_name_idx, artist_idx, file_path_idx):
                 continue
 
             if not str(values[file_path_idx]).strip():
                 continue
 
             old_no = str(values[track_no_idx])
+            old_artist = str(values[artist_idx])
             old_title = str(values[track_name_idx])
             stem = Path(str(values[file_path_idx])).stem
 
-            parsed_no, parsed_title = self.parse_track_from_filename(stem)
+            parsed_no, parsed_artist, parsed_title = self.parse_track_from_filename(stem)
             if parsed_no is not None:
                 values[track_no_idx] = str(parsed_no)
+            if parsed_artist:
+                values[artist_idx] = parsed_artist
             if parsed_title:
                 values[track_name_idx] = parsed_title
             was_no = old_no != str(values[track_no_idx])
+            was_artist = old_artist != str(values[artist_idx])
             was_title = old_title != str(values[track_name_idx])
-            if was_no or was_title:
+            if was_no or was_artist or was_title:
                 changed += 1
 
             self.track_table.item(item, values=tuple(values))
@@ -4122,7 +4131,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def parse_track_from_filename(self, stem):
         import re
-        for pattern, track_group, title_group in self.get_filename_patterns():
+        for entry in self.get_filename_patterns():
+            pattern, track_group, artist_group, title_group = entry[0], entry[1], entry[2], entry[3]
             m = re.match(pattern, stem, re.IGNORECASE)
             if not m:
                 continue
@@ -4132,11 +4142,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     track_no = int(m.group(track_group))
                 except (ValueError, IndexError):
                     pass
-            title = m.group(title_group) if title_group is not None else None
-            if title:
-                title = re.sub(r"[_\s]+", " ", title).strip()
-            return track_no, title
-        return None, None
+            artist = None
+            if artist_group is not None:
+                try:
+                    artist = m.group(artist_group)
+                    if artist:
+                        artist = re.sub(r"[_\s]+", " ", artist).strip()
+                except (ValueError, IndexError):
+                    pass
+            title = None
+            if title_group is not None:
+                try:
+                    title = m.group(title_group)
+                    if title:
+                        title = re.sub(r"[_\s]+", " ", title).strip()
+                except (ValueError, IndexError):
+                    pass
+            return track_no, artist, title
+        return None, None, None
 
     def sync_track_table_to_current_album(self):
         """Push visible track-table order and editable metadata into current_album."""
