@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <sub>Works with FLAC, WAV, AIFF, MP3 · Auto-converts to FLAC · Pulls tags from metadata</sub>
+  <sub>Works with FLAC, WAV, AIFF, MP3 · Only lossy formats (MP3) are converted to FLAC · Pulls tags from metadata</sub>
 </p>
 
 ---
@@ -37,7 +37,7 @@
 | Feature | What it means for you |
 |---|---|
 | **Bulk upload** | Upload whole albums at once instead of one track at a time in a browser |
-| **Any audio format** | FLAC, WAV, AIFF, MP3 — non-FLAC files are converted automatically (requires FFmpeg) |
+| **Any audio format** | FLAC, WAV, AIFF, MP3 — lossy formats (MP3) are converted to FLAC; lossless files (FLAC, WAV, AIFF) are uploaded as-is (FFmpeg required for conversion) |
 | **Cover art auto-detect** | Finds cover images in your album folder, or extracts them from audio tags |
 | **Browser login** | Reads your Bandcamp session from Chrome, Firefox, Edge, Brave, Opera, Vivaldi, and more |
 | **Track management** | Reorder tracks, edit metadata, lock/unlock, randomize, undo/redo — right-click any track |
@@ -57,7 +57,7 @@
 
 1. The app grabs your Bandcamp login from your browser's cookies — **your credentials never leave your computer**.
 2. It authenticates with Bandcamp's standard artist edit interface (the same one you use in a browser).
-3. Audio files are converted to FLAC 16-bit 44.1 kHz (Bandcamp's preferred format) via FFmpeg.
+3. Lossy formats (MP3) are converted to FLAC 16-bit 44.1 kHz (Bandcamp's preferred format) via FFmpeg. Lossless files (FLAC, WAV, AIFF) go through as-is.
 4. Cover art is uploaded, then tracks are uploaded with their metadata.
 5. Everything lands on your Bandcamp artist page — done.
 
@@ -76,6 +76,9 @@ It reads your Bandcamp login session from your browser to authenticate. Cookies 
 
 ### Upload got a 403 error?
 Click the **Artists** button to re-authenticate. The app will re-scan your browsers for a fresh session.
+
+### What audio formats are supported and which get converted?
+FLAC, WAV, AIFF, and MP3. Only lossy formats (MP3) are converted to FLAC 16-bit 44.1 kHz before upload. Lossless files (FLAC, WAV, AIFF) are uploaded without re-encoding. FFmpeg is required for MP3 conversion.
 
 ### What if I don't use a supported browser?
 You can upload a `cookies.txt` file instead. The CLI (`bc-upload`) guides you through this.

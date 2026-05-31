@@ -1,0 +1,5 @@
+2 - DATE UNKNOWN
+- Added new checkbox to use album artist instead of artist name for the album details
+- Fixed the issue when app doesn't have context menu icons
+- Removed some of legacy codes and features
+- Clarified README: only lossy formats (MP3) are converted to FLAC; lossless files upload as-is
