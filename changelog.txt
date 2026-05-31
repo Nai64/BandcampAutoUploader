@@ -1,4 +1,4 @@
-2 - DATE UNKNOWN
+2
 - Added new checkbox to use album artist instead of artist name for the album details
 - Fixed the issue when app doesn't have context menu icons
 - Removed some of legacy codes and features
@@ -10,3 +10,4 @@
 - Added Extract from Filename button to parse track number/title from filenames
 - Removed Auto Fit button from toolbar
 - Added support for OGG Vorbis, Opus, and M4A/AAC audio formats
+- Added drag-and-drop support for adding audio files to the track table

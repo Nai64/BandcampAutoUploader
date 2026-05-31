@@ -814,7 +814,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.bind('<B1-Motion>', self.on_drag_motion)
         self.track_table.bind('<ButtonRelease-1>', self.on_drag_release)
 
-
+        # Enable drag & drop for adding audio files (if available)
+        try:
+            table_frame.drop_target_register(DND_FILES)
+            table_frame.dnd_bind('<<Drop>>', self.on_drop_track_files)
+            self.track_table.drop_target_register(DND_FILES)
+            self.track_table.dnd_bind('<<Drop>>', self.on_drop_track_files)
+        except:
+            pass  # Silently fail if drag & drop setup fails
 
         # Right column - Cover Art
         right_column = ttk.Frame(middle_section)
@@ -7877,7 +7884,37 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.show_toast("Please drop an image file (JPG, PNG, GIF)", 2000, "warning")
         except Exception as e:
             logger.error(f"Drag & drop image failed: {e}")
-    
+
+    def on_drop_track_files(self, event):
+        """Handle drag & drop of audio files onto the track table"""
+        if self.is_upload_in_progress():
+            self.show_toast("Upload in progress", 1600, "warning")
+            return
+
+        try:
+            files = self.root.tk.splitlist(event.data)
+            audio_extensions = {'.wav', '.flac', '.aiff', '.aif', '.mp3', '.ogg', '.opus', '.m4a', '.aac', '.mod', '.xm'}
+            added = 0
+            for file_path in files:
+                path = Path(file_path.strip())
+                if path.suffix.lower() in audio_extensions and path not in self.manual_tracks:
+                    self.manual_tracks.append(path)
+                    logger.info(f"Added track: {path.name}")
+                    added += 1
+
+            if added > 0:
+                self.sort_manual_tracks_by_metadata_numbers()
+                self.album_path_var.set("")
+                self.current_album = None
+                self.update_manual_tracks_preview()
+                if self.manual_tracks:
+                    self.upload_btn['state'] = tk.NORMAL
+                self.show_toast(f"Added {added} track(s)", 2000, "success", trigger="track_add")
+            else:
+                self.show_toast("No supported audio files found", 2000, "warning")
+        except Exception as e:
+            logger.error(f"Drag & drop tracks failed: {e}")
+
     def add_upload_to_history(self, album_name, artist_name):
         """Add successful upload to history"""
         import datetime
