@@ -2,20 +2,20 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+Only the latest release of this project receives security updates.
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| v2 (latest) | :white_check_mark: |
+| < v2    | :x:                |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability, please **do not** open a public
+issue. Instead, report it privately by emailing the repository owner or
+opening a [private advisory](https://github.com/Nai64/BandcampAutoUploader/security/advisories/new).
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+You can expect an acknowledgment within 48 hours and regular updates
+until the issue is resolved. If the vulnerability is accepted, a fix
+and advisory will be published. If declined, an explanation will be
+provided.
