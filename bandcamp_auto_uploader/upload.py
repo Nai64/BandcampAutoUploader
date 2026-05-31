@@ -653,6 +653,23 @@ class Track:
                     track_data.about = comments[0].text[0]
                 # NEVER extract embedded artwork - use only manually added cover art
                 cover_art = None
+        # Extract embedded cover art from track if enabled
+        if cover_art is None and getattr(config, 'extract_embedded_cover_art', False):
+            cover_data = None
+            cover_ext = '.jpg'
+            if hasattr(file_data, 'pictures') and file_data.pictures:
+                picture = file_data.pictures[0]
+                cover_data = picture.data
+                cover_ext = '.png' if 'png' in (picture.mime or '') else '.jpg'
+            elif file_data.tags is not None:
+                pictures = file_data.tags.getall("APIC")
+                if pictures:
+                    cover_data = pictures[0].data
+                    cover_ext = '.png' if 'png' in (pictures[0].mime or '') else '.jpg'
+            if cover_data:
+                cover_name = f"{path.stem}_cover{cover_ext}"
+                cover_art = CoverArt(data=cover_data, file_name=cover_name)
+
         # convert track number to int
         if not isinstance(track_data.track_number, int):
             try:
@@ -934,7 +951,6 @@ class Album:
         retry_attempts: int = 3,
         progress_callback=None,
         cancel_event=None,
-        config=None,
     ):
         logger.info("Starting album upload")
 
@@ -1000,9 +1016,6 @@ class Album:
 
         for i, track in enumerate(self.tracks):
             check_cancelled()
-            if getattr(config, 'attach_cover_to_individual_tracks', False) and self.cover_art is not None:
-                if track.cover_art is None:
-                    track.cover_art = self.cover_art
             logger.info(f"Uploading track {i + 1}/{len(self.tracks)}: {track.track_data.title}")
             emit_progress(
                 "track_start",

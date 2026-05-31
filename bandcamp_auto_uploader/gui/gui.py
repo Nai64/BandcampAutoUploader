@@ -6566,8 +6566,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     retry_failed=self.config.retry_failed_uploads,
                     retry_attempts=self.config.retry_attempts,
                     progress_callback=progress_callback,
-                    cancel_event=self.upload_cancel_event,
-                    config=self.config
+                    cancel_event=self.upload_cancel_event
                 )
                 album_url = upload_result.get("album_url") if isinstance(upload_result, dict) else None
                 
