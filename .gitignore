@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.ruff_cache/
+.venv/
+.opencode/
+.vscode/
+.DS_Store
+Thumbs.db
+AGENTS.md
+PRIVACY_POLICY.txt
+assets/
+bandcamp_auto_uploader.spec
