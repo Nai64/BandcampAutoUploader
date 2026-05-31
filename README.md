@@ -14,7 +14,7 @@
 </p>
 
 <p align="center">
-  <sub>Works with FLAC, WAV, AIFF, MP3 · Only lossy formats (MP3) are converted to FLAC · Pulls tags from metadata</sub>
+  <sub>Works with FLAC, WAV, AIFF, MP3, MOD, XM · Only lossy formats (MP3) are converted to FLAC · Pulls tags from metadata</sub>
 </p>
 
 ---
@@ -37,7 +37,7 @@
 | Feature | What it means for you |
 |---|---|
 | **Bulk upload** | Upload whole albums at once instead of one track at a time in a browser |
-| **Any audio format** | FLAC, WAV, AIFF, MP3 — lossy formats (MP3) are converted to FLAC; lossless files (FLAC, WAV, AIFF) are uploaded as-is (FFmpeg required for conversion) |
+| **Any audio format** | FLAC, WAV, AIFF, MP3, MOD, XM — lossy formats (MP3) are converted to FLAC; lossless files (FLAC, WAV, AIFF) and tracker modules (MOD, XM) are uploaded as-is (FFmpeg required for conversion) |
 | **Cover art auto-detect** | Finds cover images in your album folder, or extracts them from audio tags |
 | **Browser login** | Reads your Bandcamp session from Chrome, Firefox, Edge, Brave, Opera, Vivaldi, and more |
 | **Track management** | Reorder tracks, edit metadata, lock/unlock, randomize, undo/redo — right-click any track |

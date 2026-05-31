@@ -3,3 +3,4 @@
 - Fixed the issue when app doesn't have context menu icons
 - Removed some of legacy codes and features
 - Clarified README: only lossy formats (MP3) are converted to FLAC; lossless files upload as-is
+- Added support for tracker module formats (.mod, .xm)

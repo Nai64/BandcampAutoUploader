@@ -530,6 +530,16 @@ class Track:
         
         file_data = mutagen.File(path)
         if file_data is None:
+            ext = path.suffix.lower()
+            if ext in ('.mod', '.xm'):
+                track_data = BandcampTrackData(
+                    price=str(config.track_price),
+                    nyp=int(config.name_your_price),
+                    enable_download=int(config.track_downloading),
+                    streaming=int(config.track_streaming),
+                )
+                track_data.title = path.stem
+                return cls(path=path, track_data=track_data, cover_art=None)
             return None
         
         track_data = BandcampTrackData(
@@ -560,7 +570,7 @@ class Track:
                 # Extract string from list
                 title = str(file_data["title"][0]) if isinstance(file_data["title"], list) else str(file_data["title"])
                 # Strip audio extensions if present
-                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg']:
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.mod', '.xm']:
                     if title.lower().endswith(ext):
                         title = title[:-len(ext)]
                         break
@@ -588,7 +598,7 @@ class Track:
                 # Extract title string
                 title = str(file_data["TIT2"].text[0])
                 # Strip audio extensions if present
-                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg']:
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.mod', '.xm']:
                     if title.lower().endswith(ext):
                         title = title[:-len(ext)]
                         break
@@ -620,7 +630,7 @@ class Track:
                 # Extract title string
                 title = str(file_data["TIT2"].text[0])
                 # Strip audio extensions if present
-                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg']:
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.mod', '.xm']:
                     if title.lower().endswith(ext):
                         title = title[:-len(ext)]
                         break

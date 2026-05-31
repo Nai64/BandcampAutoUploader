@@ -2110,7 +2110,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         if album_path and Path(album_path).is_dir():
             folder = Path(album_path)
-            for ext in ('*.wav', '*.flac', '*.aiff', '*.mp3'):
+            for ext in ('*.wav', '*.flac', '*.aiff', '*.mp3', '*.mod', '*.xm'):
                 paths.extend(folder.glob(ext))
                 paths.extend(folder.glob(ext.upper()))
 
@@ -3255,7 +3255,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 messagebox.showwarning("Invalid Path", "The selected folder does not exist")
                 return
 
-            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif']
+            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.mod', '.xm']
             for ext in audio_extensions:
                 audio_files.extend(album_path.glob(f'*{ext}'))
                 audio_files.extend(album_path.glob(f'*{ext.upper()}'))
@@ -4224,7 +4224,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if album_path and Path(album_path).exists():
             # Get tracks from album folder
             path = Path(album_path)
-            for ext in ['*.wav', '*.flac', '*.aiff', '*.mp3']:
+            for ext in ['*.wav', '*.flac', '*.aiff', '*.mp3', '*.mod', '*.xm']:
                 tracks.extend(path.glob(ext))
                 tracks.extend(path.glob(ext.upper()))
         elif self.manual_tracks:
@@ -4593,9 +4593,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = WAVE(file_path)
             elif ext in ['.aiff', '.aif']:
                 audio = AIFF(file_path)
+            elif ext in ('.mod', '.xm'):
+                return ""
             else:
                 return ""
-            
+
             # Get length in seconds
             length_seconds = audio.info.length
             if length_seconds:
@@ -4631,6 +4633,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = WAVE(file_path)
             elif ext in ['.aiff', '.aif']:
                 audio = AIFF(file_path)
+            elif ext in ('.mod', '.xm'):
+                return "", "", ""
             else:
                 return "", "", ""
             
@@ -4686,6 +4690,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = WAVE(path)
             elif ext in ('.aiff', '.aif'):
                 audio = AIFF(path)
+            elif ext in ('.mod', '.xm'):
+                return ""
             else:
                 return ""
 
@@ -4719,6 +4725,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = WAVE(path)
             elif ext in ('.aiff', '.aif'):
                 audio = AIFF(path)
+            elif ext in ('.mod', '.xm'):
+                return ""
             else:
                 return ""
 
@@ -4749,6 +4757,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = WAVE(path)
             elif ext in ('.aiff', '.aif'):
                 audio = AIFF(path)
+            elif ext in ('.mod', '.xm'):
+                return empty_values
             else:
                 return empty_values
 
@@ -4856,7 +4866,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 return
             
             # Find audio files in the directory
-            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif']
+            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.mod', '.xm']
             audio_files = []
             for ext in audio_extensions:
                 audio_files.extend(album_path.glob(f'*{ext}'))
@@ -4911,7 +4921,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = WAVE(first_file)
             elif ext in ['.aiff', '.aif']:
                 audio = AIFF(first_file)
+            elif ext in ('.mod', '.xm'):
+                audio = None
             else:
+                return
+
+            if audio is None:
                 return
             
             # Extract metadata
@@ -5818,7 +5833,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         file_path = filedialog.askopenfilename(
             title="Select Audio File",
             filetypes=[
-                ("Audio Files", "*.mp3 *.flac *.wav *.ogg *.m4a *.aac"),
+                ("Audio Files", "*.mp3 *.flac *.wav *.ogg *.m4a *.aac *.mod *.xm"),
                 ("All Files", "*.*")
             ]
         )
@@ -6883,11 +6898,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         track_files = filedialog.askopenfilenames(
             title="Select Track Files",
             filetypes=[
-                ("Audio files", "*.wav *.flac *.aiff *.mp3"),
+                ("Audio files", "*.wav *.flac *.aiff *.mp3 *.mod *.xm"),
                 ("WAV", "*.wav"),
                 ("FLAC", "*.flac"),
                 ("AIFF", "*.aiff"),
                 ("MP3", "*.mp3"),
+                ("Tracker Modules", "*.mod *.xm"),
                 ("All files", "*.*")
             ]
         )
