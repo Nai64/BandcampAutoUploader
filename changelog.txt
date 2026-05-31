@@ -2,6 +2,9 @@
 - Added new checkbox to use album artist instead of artist name for the album details
 - Fixed the issue when app doesn't have context menu icons
 - Removed some of legacy codes and features
-- Clarified README: only lossy formats (MP3) are converted to FLAC; lossless files upload as-is
+- Clarified README: only lossy formats (MP3) converted to FLAC; lossless files upload as-is
 - Added support for tracker module formats (.mod, .xm)
 - Added setting to extract and use embedded cover art from individual tracks on Bandcamp
+- Removed the text in Library window for simplicity sakes
+- Redesigned Detect window to look like same as Library window
+- Added Extract from Filename button to parse track number/title from filenames
