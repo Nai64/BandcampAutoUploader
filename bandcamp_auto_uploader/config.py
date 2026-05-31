@@ -111,7 +111,6 @@ class Config:
     show_album_artist_metadata: bool = False
     show_composer: bool = False
     show_isrc: bool = False
-    auto_fit_columns: bool = True  # Automatically fit preview table columns after updates
     locked_track_highlight_color: str = "#fff4ce"  # Track table row highlight for locked tracks
     # Context menu settings
     context_menu_remove_dividers: bool = False  # Hide separator dividers in track context menu
