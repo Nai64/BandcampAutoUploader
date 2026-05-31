@@ -16,6 +16,9 @@ import requests
 from mutagen.aiff import AIFF
 from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.oggvorbis import OggVorbis
+from mutagen.oggopus import OggOpus
 from mutagen.wave import WAVE
 from rich.logging import RichHandler
 
@@ -549,9 +552,9 @@ class Track:
             streaming=int(config.track_streaming),
         )
         
-        # Accept WAV, FLAC, AIFF, and MP3 (MP3 will be converted during upload)
-        if file_data.__class__ not in (WAVE, FLAC, AIFF, MP3):
-            raise ValueError("Only WAV, FLAC, AIFF, and MP3 files are supported")
+        # Accept WAV, FLAC, AIFF, MP3, OGG, Opus, and M4A/AAC (non-FLAC will be converted during upload)
+        if file_data.__class__ not in (WAVE, FLAC, AIFF, MP3, OggVorbis, OggOpus, MP4):
+            raise ValueError("Only WAV, FLAC, AIFF, MP3, OGG, Opus, and M4A/AAC files are supported")
         cover_art = None
         
         # If ignore_all_metadata is enabled, only use filename and skip all metadata reading
@@ -570,7 +573,7 @@ class Track:
                 # Extract string from list
                 title = str(file_data["title"][0]) if isinstance(file_data["title"], list) else str(file_data["title"])
                 # Strip audio extensions if present
-                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.mod', '.xm']:
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.aac', '.ogg', '.opus', '.mod', '.xm']:
                     if title.lower().endswith(ext):
                         title = title[:-len(ext)]
                         break
@@ -598,7 +601,7 @@ class Track:
                 # Extract title string
                 title = str(file_data["TIT2"].text[0])
                 # Strip audio extensions if present
-                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.mod', '.xm']:
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.aac', '.ogg', '.opus', '.mod', '.xm']:
                     if title.lower().endswith(ext):
                         title = title[:-len(ext)]
                         break
@@ -621,16 +624,59 @@ class Track:
                     track_data.about = comments[0].text[0]
                 # NEVER extract embedded artwork - use only manually added cover art
                 cover_art = None
+        elif file_data.__class__ == OggVorbis or file_data.__class__ == OggOpus:
+            # OGG Vorbis / Opus Vorbis comment tags (same as FLAC)
+            if getattr(config, 'use_filename_as_title', False):
+                track_data.title = path.stem
+            elif "title" in file_data and file_data["title"]:
+                title = str(file_data["title"][0]) if isinstance(file_data["title"], list) else str(file_data["title"])
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.opus', '.mod', '.xm']:
+                    if title.lower().endswith(ext):
+                        title = title[:-len(ext)]
+                        break
+                track_data.title = title
+            else:
+                track_data.title = path.stem
+            if "artist" in file_data and not getattr(config, 'ignore_artist_name', False):
+                track_data.artist = file_data["artist"][0]
+            if "tracknumber" in file_data:
+                track_data.track_number = file_data["tracknumber"][0]
+            if "comment" in file_data:
+                track_data.about = file_data["comment"][0]
+            if "genre" in file_data:
+                track_data.tags = ",".join(file_data["genre"])
+            if "isrc" in file_data:
+                track_data.isrc = file_data["isrc"][0]
+            cover_art = None
+        elif file_data.__class__ == MP4:
+            # MP4/M4A tags
+            if getattr(config, 'use_filename_as_title', False):
+                track_data.title = path.stem
+            elif "\xa9nam" in file_data and file_data["\xa9nam"]:
+                title = str(file_data["\xa9nam"][0])
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.aac', '.ogg', '.opus', '.mod', '.xm']:
+                    if title.lower().endswith(ext):
+                        title = title[:-len(ext)]
+                        break
+                track_data.title = title
+            else:
+                track_data.title = path.stem
+            if "\xa9ART" in file_data and not getattr(config, 'ignore_artist_name', False):
+                track_data.artist = str(file_data["\xa9ART"][0])
+            if "trkn" in file_data and file_data["trkn"]:
+                track_data.track_number = str(file_data["trkn"][0][0])
+            if "\xa9cmt" in file_data:
+                track_data.about = str(file_data["\xa9cmt"][0])
+            if "\xa9gen" in file_data:
+                track_data.tags = ",".join(str(g) for g in file_data["\xa9gen"])
+            cover_art = None
         else:
             # WAV/AIFF id3 tags
             if getattr(config, 'use_filename_as_title', False):
-                # Force use filename
                 track_data.title = path.stem
             elif "TIT2" in file_data and file_data["TIT2"].text:
-                # Extract title string
                 title = str(file_data["TIT2"].text[0])
-                # Strip audio extensions if present
-                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.ogg', '.mod', '.xm']:
+                for ext in ['.flac', '.wav', '.aiff', '.mp3', '.m4a', '.aac', '.ogg', '.opus', '.mod', '.xm']:
                     if title.lower().endswith(ext):
                         title = title[:-len(ext)]
                         break
@@ -666,6 +712,10 @@ class Track:
                 if pictures:
                     cover_data = pictures[0].data
                     cover_ext = '.png' if 'png' in (pictures[0].mime or '') else '.jpg'
+            elif 'covr' in file_data:
+                cover = file_data['covr'][0]
+                cover_data = bytes(cover)
+                cover_ext = '.png' if cover_data[:8] == b'\x89PNG\r\n\x1a\n' else '.jpg'
             if cover_data:
                 cover_name = f"{path.stem}_cover{cover_ext}"
                 cover_art = CoverArt(data=cover_data, file_name=cover_name)

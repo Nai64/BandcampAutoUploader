@@ -9,3 +9,4 @@
 - Redesigned Detect window to look like same as Library window
 - Added Extract from Filename button to parse track number/title from filenames
 - Removed Auto Fit button from toolbar
+- Added support for OGG Vorbis, Opus, and M4A/AAC audio formats

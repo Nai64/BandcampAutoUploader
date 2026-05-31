@@ -22,6 +22,9 @@ from typing import Optional
 from urllib.parse import urljoin
 from mutagen.flac import FLAC
 from mutagen.mp3 import MP3
+from mutagen.mp4 import MP4
+from mutagen.oggvorbis import OggVorbis
+from mutagen.oggopus import OggOpus
 from mutagen.wave import WAVE
 from mutagen.aiff import AIFF
 
@@ -2113,7 +2116,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         if album_path and Path(album_path).is_dir():
             folder = Path(album_path)
-            for ext in ('*.wav', '*.flac', '*.aiff', '*.mp3', '*.mod', '*.xm'):
+            for ext in ('*.wav', '*.flac', '*.aiff', '*.mp3', '*.ogg', '*.opus', '*.m4a', '*.aac', '*.mod', '*.xm'):
                 paths.extend(folder.glob(ext))
                 paths.extend(folder.glob(ext.upper()))
 
@@ -2124,7 +2127,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         import tempfile
         import mutagen
         from mutagen.flac import FLAC
-        from mutagen.mp4 import MP4Cover
+        from mutagen.mp4 import MP4, MP4Cover
+        from mutagen.oggvorbis import OggVorbis
+        from mutagen.oggopus import OggOpus
         from PIL import Image
 
         for track_path in tracks:
@@ -2136,7 +2141,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 cover_data = None
                 mime_type = None
 
-                if isinstance(file_data, FLAC) and file_data.pictures:
+                if isinstance(file_data, (FLAC, OggVorbis, OggOpus)) and file_data.pictures:
                     cover_data = file_data.pictures[0].data
                     mime_type = file_data.pictures[0].mime
                 elif getattr(file_data, 'tags', None) is not None:
@@ -3258,7 +3263,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 messagebox.showwarning("Invalid Path", "The selected folder does not exist")
                 return
 
-            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.mod', '.xm']
+            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.ogg', '.opus', '.m4a', '.aac', '.mod', '.xm']
             for ext in audio_extensions:
                 audio_files.extend(album_path.glob(f'*{ext}'))
                 audio_files.extend(album_path.glob(f'*{ext.upper()}'))
@@ -3284,6 +3289,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         artist = audio_file['TPE2'][0]
                     elif 'ALBUMARTIST' in audio_file:
                         artist = audio_file['ALBUMARTIST'][0]
+                    elif 'aART' in audio_file:
+                        artist = audio_file['aART'][0]
                 if not artist:
                     if hasattr(audio_file, 'artist'):
                         artist = audio_file.artist
@@ -3291,6 +3298,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         artist = audio_file['TPE1'][0]
                     elif 'ARTIST' in audio_file:
                         artist = audio_file['ARTIST'][0]
+                    elif '\xa9ART' in audio_file:
+                        artist = audio_file['\xa9ART'][0]
 
                 if artist:
                     self.album_artist_var.set(artist)
@@ -4343,6 +4352,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         import mutagen
         from mutagen.flac import FLAC
         from mutagen.mp3 import MP3
+        from mutagen.mp4 import MP4Cover
+        from mutagen.oggvorbis import OggVorbis
+        from mutagen.oggopus import OggOpus
         from mutagen.wave import WAVE
         from mutagen.aiff import AIFF
         from PIL import Image, ImageTk
@@ -4355,7 +4367,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if album_path and Path(album_path).exists():
             # Get tracks from album folder
             path = Path(album_path)
-            for ext in ['*.wav', '*.flac', '*.aiff', '*.mp3', '*.mod', '*.xm']:
+            for ext in ['*.wav', '*.flac', '*.aiff', '*.mp3', '*.ogg', '*.opus', '*.m4a', '*.aac', '*.mod', '*.xm']:
                 tracks.extend(path.glob(ext))
                 tracks.extend(path.glob(ext.upper()))
         elif self.manual_tracks:
@@ -4377,16 +4389,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 cover_data = None
                 mime_type = None
 
-                # Extract from FLAC
-                if file_data.__class__ == FLAC and len(file_data.pictures) > 0:
+                # Extract from FLAC/OGG/Opus (pictures)
+                if isinstance(file_data, (FLAC, OggVorbis, OggOpus)) and len(file_data.pictures) > 0:
                     cover_data = file_data.pictures[0].data
                     mime_type = file_data.pictures[0].mime
-                # Extract from MP3/WAV/AIFF
+                # Extract from MP3/WAV/AIFF (ID3 APIC)
                 elif hasattr(file_data, 'tags') and file_data.tags is not None:
                     pictures = file_data.tags.getall("APIC")
                     if len(pictures) > 0:
                         cover_data = pictures[0].data
                         mime_type = pictures[0].mime
+                    # Extract from MP4/M4A (covr)
+                    if cover_data is None and 'covr' in file_data.tags:
+                        cover = file_data.tags['covr'][0]
+                        cover_data = bytes(cover)
+                        mime_type = 'image/png' if getattr(cover, 'imageformat', None) == MP4Cover.FORMAT_PNG else 'image/jpeg'
 
                 if cover_data:
                     # Save to temp file
@@ -4680,6 +4697,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             import mutagen
             from mutagen.flac import FLAC
             from mutagen.mp3 import MP3
+            from mutagen.mp4 import MP4
+            from mutagen.oggvorbis import OggVorbis
+            from mutagen.oggopus import OggOpus
             from mutagen.wave import WAVE
             from mutagen.aiff import AIFF
             
@@ -4694,6 +4714,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = FLAC(file_path)
             elif ext == '.mp3':
                 audio = MP3(file_path)
+            elif ext == '.ogg':
+                audio = OggVorbis(file_path)
+            elif ext == '.opus':
+                audio = OggOpus(file_path)
+            elif ext in ('.m4a', '.aac'):
+                audio = MP4(file_path)
             elif ext == '.wav':
                 audio = WAVE(file_path)
             elif ext in ['.aiff', '.aif']:
@@ -4721,6 +4747,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             import mutagen
             from mutagen.flac import FLAC
             from mutagen.mp3 import MP3
+            from mutagen.mp4 import MP4
+            from mutagen.oggvorbis import OggVorbis
+            from mutagen.oggopus import OggOpus
             from mutagen.wave import WAVE
             from mutagen.aiff import AIFF
             
@@ -4734,6 +4763,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = FLAC(file_path)
             elif ext == '.mp3':
                 audio = MP3(file_path)
+            elif ext == '.ogg':
+                audio = OggVorbis(file_path)
+            elif ext == '.opus':
+                audio = OggOpus(file_path)
+            elif ext in ('.m4a', '.aac'):
+                audio = MP4(file_path)
             elif ext == '.wav':
                 audio = WAVE(file_path)
             elif ext in ['.aiff', '.aif']:
@@ -4751,6 +4786,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 year = str(audio['TDRC'])
             elif 'TYER' in audio:
                 year = audio['TYER'][0]
+            elif '\xa9day' in audio:
+                year = audio['\xa9day'][0]
             
             # Extract genre
             genre = ""
@@ -4758,6 +4795,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 genre = audio['genre'][0]
             elif 'TCON' in audio:
                 genre = audio['TCON'][0]
+            elif '\xa9gen' in audio:
+                genre = str(audio['\xa9gen'][0])
             
             # Extract bitrate
             bitrate = ""
@@ -4778,6 +4817,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             from mutagen.flac import FLAC
             from mutagen.mp3 import MP3
+            from mutagen.mp4 import MP4
+            from mutagen.oggvorbis import OggVorbis
+            from mutagen.oggopus import OggOpus
             from mutagen.wave import WAVE
             from mutagen.aiff import AIFF
 
@@ -4788,9 +4830,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             ext = path.suffix.lower()
             if ext == '.flac':
                 audio = FLAC(path)
-                return self.get_audio_metadata_value(audio, ('comment', 'description'))
+                return self.get_audio_metadata_value(audio, ('comment', 'description', '\xa9cmt'))
             if ext == '.mp3':
                 audio = MP3(path)
+            elif ext in ('.ogg', '.opus'):
+                audio = (OggVorbis if ext == '.ogg' else OggOpus)(path)
+                return self.get_audio_metadata_value(audio, ('comment', 'description'))
+            elif ext in ('.m4a', '.aac'):
+                audio = MP4(path)
+                return self.get_audio_metadata_value(audio, ('\xa9cmt', 'comment', 'description'))
             elif ext in ('.wav', '.wave'):
                 audio = WAVE(path)
             elif ext in ('.aiff', '.aif'):
@@ -4804,7 +4852,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 comments = audio.tags.getall("COMM")
                 if comments and getattr(comments[0], 'text', None):
                     return str(comments[0].text[0]).strip()
-            return self.get_audio_metadata_value(audio, ('COMM', 'comment', 'description'))
+            return self.get_audio_metadata_value(audio, ('COMM', 'comment', 'description', '\xa9cmt'))
         except Exception as e:
             logger.debug(f"Failed to get track comment metadata for {file_path}: {e}")
             return ""
@@ -4814,6 +4862,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             from mutagen.flac import FLAC
             from mutagen.mp3 import MP3
+            from mutagen.mp4 import MP4
+            from mutagen.oggvorbis import OggVorbis
+            from mutagen.oggopus import OggOpus
             from mutagen.wave import WAVE
             from mutagen.aiff import AIFF
 
@@ -4826,6 +4877,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = FLAC(path)
             elif ext == '.mp3':
                 audio = MP3(path)
+            elif ext == '.ogg':
+                audio = OggVorbis(path)
+            elif ext == '.opus':
+                audio = OggOpus(path)
+            elif ext in ('.m4a', '.aac'):
+                audio = MP4(path)
             elif ext in ('.wav', '.wave'):
                 audio = WAVE(path)
             elif ext in ('.aiff', '.aif'):
@@ -4835,7 +4892,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             else:
                 return ""
 
-            return self.get_audio_metadata_value(audio, ('artist', 'TPE1'))
+            return self.get_audio_metadata_value(audio, ('artist', 'TPE1', '\xa9ART'))
         except Exception as e:
             logger.debug(f"Failed to get track artist metadata for {file_path}: {e}")
             return ""
@@ -4846,6 +4903,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             from mutagen.flac import FLAC
             from mutagen.mp3 import MP3
+            from mutagen.mp4 import MP4
+            from mutagen.oggvorbis import OggVorbis
+            from mutagen.oggopus import OggOpus
             from mutagen.wave import WAVE
             from mutagen.aiff import AIFF
 
@@ -4858,6 +4918,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = FLAC(path)
             elif ext == '.mp3':
                 audio = MP3(path)
+            elif ext == '.ogg':
+                audio = OggVorbis(path)
+            elif ext == '.opus':
+                audio = OggOpus(path)
+            elif ext in ('.m4a', '.aac'):
+                audio = MP4(path)
             elif ext in ('.wav', '.wave'):
                 audio = WAVE(path)
             elif ext in ('.aiff', '.aif'):
@@ -4876,9 +4942,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             )
             bit_depth = f"{bit_depth_value}-bit" if bit_depth_value else ""
 
-            album = self.get_audio_metadata_value(audio, ('album', 'TALB'))
-            album_artist = self.get_audio_metadata_value(audio, ('albumartist', 'album artist', 'TPE2'))
-            composer = self.get_audio_metadata_value(audio, ('composer', 'TCOM'))
+            album = self.get_audio_metadata_value(audio, ('album', 'TALB', '\xa9alb'))
+            album_artist = self.get_audio_metadata_value(audio, ('albumartist', 'album artist', 'TPE2', 'aART'))
+            composer = self.get_audio_metadata_value(audio, ('composer', 'TCOM', '\xa9wrt'))
             isrc = self.get_audio_metadata_value(audio, ('isrc', 'TSRC'))
 
             return sample_rate, channels, bit_depth, album, album_artist, composer, isrc
@@ -4962,6 +5028,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             import mutagen
             from mutagen.flac import FLAC
             from mutagen.mp3 import MP3
+            from mutagen.mp4 import MP4
+            from mutagen.oggvorbis import OggVorbis
+            from mutagen.oggopus import OggOpus
             from mutagen.wave import WAVE
             from mutagen.aiff import AIFF
             from pathlib import Path
@@ -4971,7 +5040,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 return
             
             # Find audio files in the directory
-            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.mod', '.xm']
+            audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.ogg', '.opus', '.m4a', '.aac', '.mod', '.xm']
             audio_files = []
             for ext in audio_extensions:
                 audio_files.extend(album_path.glob(f'*{ext}'))
@@ -4989,6 +5058,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         track_audio = FLAC(audio_file)
                     elif track_ext == '.mp3':
                         track_audio = MP3(audio_file)
+                    elif track_ext == '.ogg':
+                        track_audio = OggVorbis(audio_file)
+                    elif track_ext == '.opus':
+                        track_audio = OggOpus(audio_file)
+                    elif track_ext in ('.m4a', '.aac'):
+                        track_audio = MP4(audio_file)
                     elif track_ext == '.wav':
                         track_audio = WAVE(audio_file)
                     elif track_ext in ['.aiff', '.aif']:
@@ -4996,13 +5071,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     else:
                         continue
 
-                    album_value = self.get_audio_metadata_value(track_audio, ('album', 'TALB'))
+                    album_value = self.get_audio_metadata_value(track_audio, ('album', 'TALB', '\xa9alb'))
                     if album_value:
                         album_values.append(album_value)
 
                     release_date_value = self.get_audio_metadata_value(
                         track_audio,
-                        ('date', 'originaldate', 'releasedate', 'TDRC', 'TDOR', 'TYER')
+                        ('date', 'originaldate', 'releasedate', 'TDRC', 'TDOR', 'TYER', '\xa9day')
                     )
                     normalized_release_date = self.normalize_metadata_release_date(release_date_value)
                     if normalized_release_date:
@@ -5022,6 +5097,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 audio = FLAC(first_file)
             elif ext == '.mp3':
                 audio = MP3(first_file)
+            elif ext == '.ogg':
+                audio = OggVorbis(first_file)
+            elif ext == '.opus':
+                audio = OggOpus(first_file)
+            elif ext in ('.m4a', '.aac'):
+                audio = MP4(first_file)
             elif ext == '.wav':
                 audio = WAVE(first_file)
             elif ext in ['.aiff', '.aif']:
@@ -5038,7 +5119,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             metadata = {}
             
             # Album name
-            album_metadata = self.get_audio_metadata_value(audio, ('album', 'TALB'))
+            album_metadata = self.get_audio_metadata_value(audio, ('album', 'TALB', '\xa9alb'))
             if album_metadata:
                 metadata['album'] = album_metadata
             elif guessed_album:
@@ -5049,6 +5130,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 metadata['artist'] = audio['artist'][0]
             elif 'TPE1' in audio:  # MP3 tag
                 metadata['artist'] = audio['TPE1'][0]
+            elif '\xa9ART' in audio:  # MP4 tag
+                metadata['artist'] = audio['\xa9ART'][0]
             
             # Year
             if 'date' in audio:
@@ -5063,36 +5146,48 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 metadata['genre'] = audio['genre'][0]
             elif 'TCON' in audio:  # MP3 tag
                 metadata['genre'] = audio['TCON'][0]
+            elif '\xa9gen' in audio:  # MP4 tag
+                metadata['genre'] = str(audio['\xa9gen'][0])
             
             # Comment
             if 'comment' in audio:
                 metadata['comment'] = audio['comment'][0]
-            elif 'COMM' in audio:  # MP3 tag
+            elif 'COMM' in audio:  # MP3/ID3 tag
                 metadata['comment'] = audio['COMM'][0]
+            elif '\xa9cmt' in audio:  # MP4 tag
+                metadata['comment'] = audio['\xa9cmt'][0]
             
             # Track Title
             if 'title' in audio:
                 metadata['title'] = audio['title'][0]
             elif 'TIT2' in audio:  # MP3 tag
                 metadata['title'] = audio['TIT2'][0]
+            elif '\xa9nam' in audio:  # MP4 tag
+                metadata['title'] = audio['\xa9nam'][0]
             
             # Album Artist
             if 'albumartist' in audio:
                 metadata['albumartist'] = audio['albumartist'][0]
             elif 'TPE2' in audio:  # MP3 tag
                 metadata['albumartist'] = audio['TPE2'][0]
+            elif 'aART' in audio:  # MP4 tag
+                metadata['albumartist'] = audio['aART'][0]
             
             # Composer
             if 'composer' in audio:
                 metadata['composer'] = audio['composer'][0]
             elif 'TCOM' in audio:  # MP3 tag
                 metadata['composer'] = audio['TCOM'][0]
+            elif '\xa9wrt' in audio:  # MP4 tag
+                metadata['composer'] = audio['\xa9wrt'][0]
             
             # Track Number
             if 'tracknumber' in audio:
                 metadata['tracknumber'] = str(audio['tracknumber'][0])
             elif 'TRCK' in audio:  # MP3 tag
                 metadata['tracknumber'] = audio['TRCK'][0]
+            elif 'trkn' in audio and audio['trkn']:  # MP4 tag
+                metadata['tracknumber'] = str(audio['trkn'][0][0])
             
             # Duration
             if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
@@ -5938,7 +6033,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         file_path = filedialog.askopenfilename(
             title="Select Audio File",
             filetypes=[
-                ("Audio Files", "*.mp3 *.flac *.wav *.ogg *.m4a *.aac *.mod *.xm"),
+                ("Audio Files", "*.mp3 *.flac *.wav *.ogg *.opus *.m4a *.aac *.mod *.xm"),
                 ("All Files", "*.*")
             ]
         )
@@ -7003,11 +7098,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         track_files = filedialog.askopenfilenames(
             title="Select Track Files",
             filetypes=[
-                ("Audio files", "*.wav *.flac *.aiff *.mp3 *.mod *.xm"),
+                ("Audio files", "*.wav *.flac *.aiff *.mp3 *.ogg *.opus *.m4a *.aac *.mod *.xm"),
                 ("WAV", "*.wav"),
                 ("FLAC", "*.flac"),
                 ("AIFF", "*.aiff"),
                 ("MP3", "*.mp3"),
+                ("OGG", "*.ogg"),
+                ("Opus", "*.opus"),
+                ("M4A/AAC", "*.m4a *.aac"),
                 ("Tracker Modules", "*.mod *.xm"),
                 ("All files", "*.*")
             ]
@@ -7094,13 +7192,20 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if self.manual_tracks:
             first_track = self.manual_tracks[0]
             try:
-                if first_track.suffix.lower() == '.mp3':
+                ext = first_track.suffix.lower()
+                if ext == '.mp3':
                     audio = MP3(first_track)
-                elif first_track.suffix.lower() == '.flac':
+                elif ext == '.flac':
                     audio = FLAC(first_track)
-                elif first_track.suffix.lower() in ('.wav', '.wave'):
+                elif ext == '.ogg':
+                    audio = OggVorbis(first_track)
+                elif ext == '.opus':
+                    audio = OggOpus(first_track)
+                elif ext in ('.m4a', '.aac'):
+                    audio = MP4(first_track)
+                elif ext in ('.wav', '.wave'):
                     audio = WAVE(first_track)
-                elif first_track.suffix.lower() in ('.aiff', '.aif'):
+                elif ext in ('.aiff', '.aif'):
                     audio = AIFF(first_track)
                 else:
                     audio = None
@@ -7111,11 +7216,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         metadata['album'] = audio['album'][0]
                     elif 'TALB' in audio:
                         metadata['album'] = audio['TALB'][0]
+                    elif '\xa9alb' in audio:
+                        metadata['album'] = audio['\xa9alb'][0]
                     
                     if 'artist' in audio:
                         metadata['artist'] = audio['artist'][0]
                     elif 'TPE1' in audio:
                         metadata['artist'] = audio['TPE1'][0]
+                    elif '\xa9ART' in audio:
+                        metadata['artist'] = audio['\xa9ART'][0]
                     
                     if 'date' in audio:
                         metadata['year'] = audio['date'][0]
@@ -7123,36 +7232,50 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         metadata['year'] = str(audio['TDRC'])
                     elif 'TYER' in audio:
                         metadata['year'] = audio['TYER'][0]
+                    elif '\xa9day' in audio:
+                        metadata['year'] = audio['\xa9day'][0]
                     
                     if 'genre' in audio:
                         metadata['genre'] = audio['genre'][0]
                     elif 'TCON' in audio:
                         metadata['genre'] = audio['TCON'][0]
+                    elif '\xa9gen' in audio:
+                        metadata['genre'] = str(audio['\xa9gen'][0])
                     
                     if 'comment' in audio:
                         metadata['comment'] = audio['comment'][0]
                     elif 'COMM' in audio:
                         metadata['comment'] = audio['COMM'][0]
+                    elif '\xa9cmt' in audio:
+                        metadata['comment'] = audio['\xa9cmt'][0]
                     
                     if 'title' in audio:
                         metadata['title'] = audio['title'][0]
                     elif 'TIT2' in audio:
                         metadata['title'] = audio['TIT2'][0]
+                    elif '\xa9nam' in audio:
+                        metadata['title'] = audio['\xa9nam'][0]
                     
                     if 'albumartist' in audio:
                         metadata['albumartist'] = audio['albumartist'][0]
                     elif 'TPE2' in audio:
                         metadata['albumartist'] = audio['TPE2'][0]
+                    elif 'aART' in audio:
+                        metadata['albumartist'] = audio['aART'][0]
                     
                     if 'composer' in audio:
                         metadata['composer'] = audio['composer'][0]
                     elif 'TCOM' in audio:
                         metadata['composer'] = audio['TCOM'][0]
+                    elif '\xa9wrt' in audio:
+                        metadata['composer'] = audio['\xa9wrt'][0]
                     
                     if 'tracknumber' in audio:
                         metadata['tracknumber'] = str(audio['tracknumber'][0])
                     elif 'TRCK' in audio:
                         metadata['tracknumber'] = audio['TRCK'][0]
+                    elif 'trkn' in audio and audio['trkn']:
+                        metadata['tracknumber'] = str(audio['trkn'][0][0])
                     
                     if hasattr(audio, 'info') and hasattr(audio.info, 'length'):
                         duration_seconds = int(audio.info.length)
@@ -7175,6 +7298,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     track_audio = MP3(track_path)
                 elif track_ext == '.flac':
                     track_audio = FLAC(track_path)
+                elif track_ext == '.ogg':
+                    track_audio = OggVorbis(track_path)
+                elif track_ext == '.opus':
+                    track_audio = OggOpus(track_path)
+                elif track_ext in ('.m4a', '.aac'):
+                    track_audio = MP4(track_path)
                 elif track_ext in ('.wav', '.wave'):
                     track_audio = WAVE(track_path)
                 elif track_ext in ('.aiff', '.aif'):
@@ -7182,13 +7311,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 else:
                     continue
 
-                album_value = self.get_audio_metadata_value(track_audio, ('album', 'TALB'))
+                album_value = self.get_audio_metadata_value(track_audio, ('album', 'TALB', '\xa9alb'))
                 if album_value:
                     album_values.append(album_value)
 
                 release_date_value = self.get_audio_metadata_value(
                     track_audio,
-                    ('date', 'originaldate', 'releasedate', 'TDRC', 'TDOR', 'TYER')
+                    ('date', 'originaldate', 'releasedate', 'TDRC', 'TDOR', 'TYER', '\xa9day')
                 )
                 normalized_release_date = self.normalize_metadata_release_date(release_date_value)
                 if normalized_release_date:
@@ -7223,6 +7352,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         track_audio = FLAC(first_track)
                     elif ext == '.mp3':
                         track_audio = MP3(first_track)
+                    elif ext == '.ogg':
+                        track_audio = OggVorbis(first_track)
+                    elif ext == '.opus':
+                        track_audio = OggOpus(first_track)
+                    elif ext in ('.m4a', '.aac'):
+                        track_audio = MP4(first_track)
                     elif ext in ('.wav', '.wave'):
                         track_audio = WAVE(first_track)
                     elif ext in ('.aiff', '.aif'):
@@ -7232,9 +7367,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
                     if track_audio:
                         if getattr(self.config, 'use_album_artist_in_album_details', False):
-                            artist_value = self.get_audio_metadata_value(track_audio, ('albumartist', 'TPE2'))
+                            artist_value = self.get_audio_metadata_value(track_audio, ('albumartist', 'TPE2', 'aART'))
                         else:
-                            artist_value = self.get_audio_metadata_value(track_audio, ('artist', 'TPE1'))
+                            artist_value = self.get_audio_metadata_value(track_audio, ('artist', 'TPE1', '\xa9ART'))
                         if artist_value:
                             self.album_artist_var.set(artist_value)
                 except Exception as e:
