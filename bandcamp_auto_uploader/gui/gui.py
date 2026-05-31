@@ -161,6 +161,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self._album_session_save_job = None
         self._album_session_autosave_ready = False
 
+        self._auto_fit_columns_job = None
+
         # Setup logging
         self.setup_logging()
 
@@ -697,6 +699,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.add_track_btn.pack(side=tk.RIGHT, padx=(0, 6))
         ToolTip(self.add_track_btn, "Add individual tracks to build the current album\n(Tracks shown in Preview area - right-click to manage)")
 
+        self.auto_fit_columns_btn = ttk.Button(
+            checkbox_frame,
+            text="Auto Fit",
+            command=self.auto_fit_track_columns,
+            style="Subtle.TButton"
+        )
+        self.auto_fit_columns_btn.pack(side=tk.RIGHT, padx=(0, 6))
+        ToolTip(self.auto_fit_columns_btn, "Resize visible preview columns to fit the table")
+
         # Track table (Treeview)
         table_frame = ttk.Frame(preview_container, width=1120)
         table_frame.pack(fill=tk.BOTH, expand=True)
@@ -715,7 +726,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             selectmode="browse"
         )
         self.track_table.pack(fill=tk.BOTH, expand=True)
-
+        self.track_table.bind('<Configure>', self.on_track_table_configure)
         
         # Bind right-click for context menu
         self.track_table.bind('<Button-3>', self.show_track_context_menu)
@@ -2513,7 +2524,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.insert_track_row(values)
 
         self.renumber_tracks()
-
+        self.maybe_auto_fit_track_columns()
 
     def load_or_create_album_session_file(self, album_path):
         """Load an album session sidecar if it exists, otherwise create one."""
@@ -2627,7 +2638,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     self.insert_track_row(row)
 
             self.sync_track_table_to_current_album()
-    
+            self.maybe_auto_fit_track_columns()
         finally:
             self._album_session_loading = False
         self.queue_album_session_save()
@@ -2679,6 +2690,155 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             columns = list(display_columns)
 
         return [col for col in columns if col in all_columns and col != "file_path"]
+
+    def auto_fit_track_columns(self):
+        """Resize visible preview columns to fit their content inside the table."""
+        self._auto_fit_columns_job = None
+        if self.is_upload_in_progress():
+            return
+        if not hasattr(self, 'track_table'):
+            return
+
+        import tkinter.font as tkfont
+
+        self.root.update_idletasks()
+
+        columns = self.get_visible_track_columns()
+        if not columns:
+            return
+
+        all_columns = list(self.track_table["columns"])
+        default_min_widths = {
+            "track_no": 48,
+            "artist": 56,
+            "track_name": 84,
+            "comment": 64,
+            "length": 52,
+            "extension": 42,
+            "price": 42,
+            "nyp": 36,
+            "year": 44,
+            "genre": 54,
+            "bitrate": 58,
+            "file_size": 62,
+            "sample_rate": 66,
+            "channels": 52,
+            "bit_depth": 56,
+            "album_metadata": 68,
+            "album_artist_metadata": 78,
+            "composer": 66,
+            "isrc": 62,
+        }
+        max_widths = {
+            "artist": 180,
+            "track_name": 260,
+            "comment": 240,
+            "genre": 140,
+            "album_metadata": 180,
+            "album_artist_metadata": 180,
+            "composer": 160,
+            "isrc": 150,
+        }
+
+        style = ttk.Style()
+        tree_font_value = style.lookup("Treeview", "font") or "TkDefaultFont"
+        heading_font_value = style.lookup("Treeview.Heading", "font") or tree_font_value
+
+        def resolve_font(font_value):
+            if isinstance(font_value, str):
+                try:
+                    return tkfont.nametofont(font_value)
+                except tk.TclError:
+                    pass
+            return tkfont.Font(font=font_value)
+
+        tree_font = resolve_font(tree_font_value)
+        heading_font = resolve_font(heading_font_value)
+
+        measured_widths = {}
+        for col_id in columns:
+            header = self.track_table.heading(col_id, "text") or col_id
+            min_width = default_min_widths.get(col_id, 50)
+            desired_width = max(min_width, heading_font.measure(str(header)) + 18)
+
+            try:
+                value_index = all_columns.index(col_id)
+            except ValueError:
+                continue
+
+            for item in self.track_table.get_children():
+                values = self.track_table.item(item).get("values", ())
+                if value_index >= len(values):
+                    continue
+                desired_width = max(desired_width, tree_font.measure(str(values[value_index])) + 18)
+
+            measured_widths[col_id] = min(desired_width, max_widths.get(col_id, 120))
+
+        available_width = self.track_table.winfo_width()
+        if available_width <= 1 and self.track_table.master:
+            available_width = self.track_table.master.winfo_width()
+        if available_width <= 1:
+            self.maybe_auto_fit_track_columns(delay=120)
+            return
+        available_width = max(available_width - 6, 1)
+
+        total_width = sum(measured_widths.values())
+        if total_width < available_width:
+            flexible_columns = [
+                col for col in columns
+                if col in {
+                    "artist", "track_name", "comment", "album_metadata",
+                    "album_artist_metadata", "composer"
+                }
+            ]
+            if not flexible_columns:
+                flexible_columns = columns
+            extra = available_width - total_width
+            per_column_extra = extra // len(flexible_columns)
+            remainder = extra % len(flexible_columns)
+            for index, col_id in enumerate(flexible_columns):
+                measured_widths[col_id] += per_column_extra + (1 if index < remainder else 0)
+        elif total_width > available_width:
+            shrinkable_columns = [
+                col for col in columns
+                if measured_widths[col] > default_min_widths.get(col, 50)
+            ]
+            overflow = total_width - available_width
+            while overflow > 0 and shrinkable_columns:
+                shrink_step = max(1, overflow // len(shrinkable_columns))
+                next_shrinkable = []
+                for col_id in shrinkable_columns:
+                    min_width = default_min_widths.get(col_id, 50)
+                    shrink_by = min(shrink_step, measured_widths[col_id] - min_width, overflow)
+                    measured_widths[col_id] -= shrink_by
+                    overflow -= shrink_by
+                    if measured_widths[col_id] > min_width:
+                        next_shrinkable.append(col_id)
+                    if overflow <= 0:
+                        break
+                shrinkable_columns = next_shrinkable
+
+        for col_id, width in measured_widths.items():
+            self.track_table.column(col_id, width=max(1, int(width)), stretch=False)
+
+        self.track_table.column("file_path", width=0, stretch=False)
+
+    def maybe_auto_fit_track_columns(self, delay=60):
+        """Auto-fit preview columns when the preference is enabled."""
+        if not getattr(self.config, 'auto_fit_columns', True):
+            return
+        if not hasattr(self, 'root'):
+            return
+        if self._auto_fit_columns_job is not None:
+            try:
+                self.root.after_cancel(self._auto_fit_columns_job)
+            except tk.TclError:
+                pass
+        self._auto_fit_columns_job = self.root.after(delay, self.auto_fit_track_columns)
+
+    def on_track_table_configure(self, event=None):
+        """Keep preview columns fitted when the table gets its real startup size."""
+        self.maybe_auto_fit_track_columns()
 
     def build_tracklist_description(self, rows):
         """Build a numbered tracklist from the preview table."""
@@ -3600,7 +3760,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.track_table.item(row_id, values=tuple(values))
             changed += 1
 
-
+        self.maybe_auto_fit_track_columns()
         self.sync_track_table_to_current_album()
         self.show_toast(f"Updated {label} for {changed} track(s)", 1800, "success")
 
@@ -3647,7 +3807,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 new_values = list(current_values)
                 new_values[col_index] = new_value
                 self.track_table.item(item, values=tuple(new_values))
-        
+                self.maybe_auto_fit_track_columns()
                 self.sync_track_table_to_current_album()
             entry.destroy()
 
@@ -4517,7 +4677,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     year, genre, bitrate, size_str, track_path, *extra_metadata
                 ), tags=("normal",))
 
-    
+            self.maybe_auto_fit_track_columns()
 
         except Exception as e:
             messagebox.showerror("Preview Error", f"Failed to preview album:\n{e}")
@@ -5367,7 +5527,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.renumber_tracks()
         self.sync_track_table_to_current_album()
-
+        self.maybe_auto_fit_track_columns()
         self.context_sort_directions[criterion] = not ascending
         direction = "ascending" if ascending else "descending"
         self.show_toast(f"Sorted by {label} ({direction})", 1600, "success")
@@ -6654,6 +6814,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "guess_case_btn": state,
             "extract_filename_btn": state,
             "add_track_btn": state,
+            "auto_fit_columns_btn": state,
             "cover_entry": state,
             "browse_cover_btn": state,
             "view_cover_btn": state,
@@ -7178,7 +7339,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 year, genre, bitrate, size_str, track_path, *extra_metadata
             ), tags=("normal",))
 
-
+        self.maybe_auto_fit_track_columns()
     
 
 

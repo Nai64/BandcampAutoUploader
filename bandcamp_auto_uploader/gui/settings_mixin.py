@@ -1540,6 +1540,7 @@ Licensed under CC BY 3.0"""
         """Create Track Table Columns settings section using Treeview"""
         # Column visibility settings
         columns = [
+            ("Always Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Locked Track Highlight", "locked_track_highlight_color", "color"),
             ("Track No.", "show_track_no", "bool"),
             ("Artist", "show_artist", "bool"),
@@ -1792,6 +1793,7 @@ Licensed under CC BY 3.0"""
         # Combined settings from all interface sub-sections
         settings = [
             # Track Table Columns settings
+            ("Columns: Always Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Columns: Locked Track Highlight", "locked_track_highlight_color", "color"),
             ("Columns: Track No.", "show_track_no", "bool"),
             ("Columns: Artist", "show_artist", "bool"),
@@ -1960,12 +1962,13 @@ Licensed under CC BY 3.0"""
         """Apply combined interface settings immediately"""
         # Apply column visibility settings
         column_configs = [
+            "auto_fit_columns",
             "show_track_no", "show_artist", "show_track_name", "show_comment",
             "show_length", "show_extension", "show_price", "show_nyp",
             "show_year", "show_genre", "show_bitrate", "show_file_size",
             "show_sample_rate", "show_channels", "show_bit_depth",
             "show_album_metadata", "show_album_artist_metadata",
-            "show_composer", "show_isrc"
+            "show_composer", "show_isrc", "locked_track_highlight_color"
         ]
         
         for config_key in column_configs:
@@ -2036,6 +2039,7 @@ Licensed under CC BY 3.0"""
     def apply_column_settings(self):
         """Apply column visibility settings immediately"""
         column_configs = [
+            "auto_fit_columns",
             "show_track_no", "show_artist", "show_track_name", "show_comment",
             "show_length", "show_extension", "show_price", "show_nyp",
             "show_year", "show_genre", "show_bitrate", "show_file_size",
@@ -2608,6 +2612,12 @@ Licensed under CC BY 3.0"""
             visible_columns = list(column_mapping.values())
             visible_width = total_width
         
+        # Set column widths to maintain fixed total width
+        if getattr(self.config, 'auto_fit_columns', True):
+            if hasattr(self, 'maybe_auto_fit_track_columns'):
+                self.maybe_auto_fit_track_columns()
+            return
+
         if visible_columns and visible_width > 0:
             # Scale widths proportionally to maintain total width
             scale_factor = total_width / visible_width

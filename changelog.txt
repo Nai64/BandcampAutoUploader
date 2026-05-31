@@ -8,4 +8,3 @@
 - Removed the text in Library window for simplicity sakes
 - Redesigned Detect window to look like same as Library window
 - Added Extract from Filename button to parse track number/title from filenames
-- Removed obsolete Auto Fit feature
