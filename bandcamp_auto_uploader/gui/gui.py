@@ -4309,7 +4309,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         main_frame = ttk.Frame(dialog)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Library content
+        # Content
         lib_frame = ttk.Frame(main_frame, padding=10)
         lib_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -4324,13 +4324,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         lib_canvas.create_window((0, 0), window=thumb_frame, anchor="nw")
         lib_canvas.configure(yscrollcommand=lib_scrollbar.set)
 
-        # Mouse wheel scrolling is scoped to the cover dialog. Using bind_all here
-        # leaves a dead canvas callback behind after the dialog is closed.
         def on_mousewheel(event):
             try:
                 if not lib_canvas.winfo_exists():
                     return "break"
-
                 if getattr(event, "num", None) == 4:
                     delta = -1
                 elif getattr(event, "num", None) == 5:
@@ -4338,7 +4335,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 else:
                     event_delta = getattr(event, "delta", 0)
                     delta = -1 * int(event_delta / 120) if event_delta else 0
-
                 if delta:
                     lib_canvas.yview_scroll(delta, "units")
             except tk.TclError:
@@ -4347,34 +4343,26 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         def bind_cover_scroll(*widgets):
             for widget in widgets:
-                widget.bind("<MouseWheel>", on_mousewheel, add="+")  # Windows
-                widget.bind("<Button-4>", on_mousewheel, add="+")  # Linux scroll up
-                widget.bind("<Button-5>", on_mousewheel, add="+")  # Linux scroll down
+                widget.bind("<MouseWheel>", on_mousewheel, add="+")
+                widget.bind("<Button-4>", on_mousewheel, add="+")
+                widget.bind("<Button-5>", on_mousewheel, add="+")
 
         bind_cover_scroll(lib_canvas, thumb_frame)
 
-        # Function to recalculate grid layout based on canvas width
         def recalculate_grid():
             try:
                 if not dialog.winfo_exists() or not lib_canvas.winfo_exists():
                     return
-
                 canvas_width = lib_canvas.winfo_width()
-                if canvas_width < 150:  # Too small, wait
+                if canvas_width < 150:
                     dialog.after(100, recalculate_grid)
                     return
-
-                # Subtract scrollbar width from available space
                 scrollbar_width = lib_scrollbar.winfo_width()
-                available_width = canvas_width - scrollbar_width - 10  # Extra padding
-
-                thumb_size = 140  # 120 + 20 (for marquee label)
+                available_width = canvas_width - scrollbar_width - 10
+                thumb_size = 140
                 cols = max(1, available_width // thumb_size)
-
-                # Re-grid all buttons
                 for widget in thumb_frame.winfo_children():
                     widget.grid_forget()
-
                 row, col = 0, 0
                 for widget in thumb_frame.winfo_children():
                     widget.grid(row=row, column=col, padx=8, pady=8)
@@ -4382,7 +4370,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     if col >= cols:
                         col = 0
                         row += 1
-
                 thumb_frame.update_idletasks()
                 lib_canvas.configure(scrollregion=lib_canvas.bbox("all"))
             except tk.TclError:
@@ -4398,21 +4385,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 img.thumbnail((120, 120), Image.Resampling.LANCZOS)
                 photo = ImageTk.PhotoImage(img)
 
-                # Frame for each cover
-                cover_frame = ttk.Frame(thumb_frame, relief="ridge", borderwidth=2)
+                thumb_container = ttk.Frame(thumb_frame)
 
-                # Image label
-                img_label = ttk.Label(cover_frame, image=photo)
-                img_label.image = photo  # Keep reference
-                img_label.pack(pady=(0, 5))
+                btn = ttk.Button(
+                    thumb_container,
+                    image=photo,
+                    command=lambda c=cover_info: self.select_detected_cover(c, dialog)
+                )
+                btn.image = photo
+                btn.pack()
 
-                # Marquee track name
                 track_name = cover_info['track']
                 marquee_text = track_name + "   "
-                marquee_label = ttk.Label(cover_frame, text=marquee_text, font=("Segoe UI", 8), width=16)
-                marquee_label.pack()
+                marquee_label = ttk.Label(thumb_container, text=marquee_text, font=("Segoe UI", 7), width=16)
+                marquee_label.pack(pady=(2, 0))
 
-                # Marquee animation for this label
                 def scroll_marquee(label=marquee_label, text=marquee_text):
                     try:
                         if not dialog.winfo_exists() or not label.winfo_exists():
@@ -4426,35 +4413,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         return
 
                 dialog.after(100, lambda: scroll_marquee(marquee_label, marquee_text))
-
-                # Size info
-                size_label = ttk.Label(cover_frame, text=cover_info['size'], font=("Segoe UI", 7))
-                size_label.pack()
-
-                # Select button
-                def select_cover(cover=cover_info):
-                    self.cover_path_var.set(cover['path'])
-                    self.add_to_cover_library(cover['path'])
-                    dialog.destroy()
-                    self.show_toast("Cover art selected from track", 2000, "success", trigger="cover_load")
-
-                select_button = ttk.Button(
-                    cover_frame,
-                    text="Select",
-                    command=select_cover,
-                    width=8
-                )
-                select_button.pack(pady=(5, 0))
-                bind_cover_scroll(cover_frame, img_label, marquee_label, size_label, select_button)
+                bind_cover_scroll(thumb_container, btn, marquee_label)
 
             except Exception as e:
-                logger.error(f"Failed to load thumbnail: {e}")
+                logger.error(f"Failed to display cover from {cover_info['track']}: {e}")
+                continue
 
-        # Initial grid calculation
-        dialog.after(100, recalculate_grid)
-
-        # Recalculate on window resize
+        dialog.update_idletasks()
+        recalculate_grid()
         lib_canvas.bind('<Configure>', lambda e: recalculate_grid())
+
+    def select_detected_cover(self, cover_info, dialog):
+        """Use selected cover from detection dialog"""
+        self.cover_path_var.set(cover_info['path'])
+        self.add_to_cover_library(cover_info['path'])
+        dialog.destroy()
+        self.show_toast("Cover art selected from track", 2000, "success", trigger="cover_load")
 
         # Handle window close - clean up temp files
         def on_close():
