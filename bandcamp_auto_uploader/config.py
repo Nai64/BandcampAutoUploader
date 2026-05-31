@@ -170,6 +170,7 @@ class Config:
     open_album_page_after_upload: bool = True  # Open the uploaded Bandcamp album page
     copy_album_url_after_upload: bool = False  # Copy uploaded album URL to clipboard
     extract_embedded_cover_art: bool = False  # Extract and use embedded cover art from each track
+    filename_track_patterns: list = dataclasses.field(default_factory=list)  # Custom regex patterns for filename parsing
     detailed_progress_track_info: bool = False  # Show detailed track info in upload progress
     show_progress_timing_details: bool = False  # Show elapsed/ETA suffixes in per-track progress
     # Notification triggers

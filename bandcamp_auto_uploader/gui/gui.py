@@ -678,6 +678,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.guess_case_btn.bind("<Enter>", self.preview_guess_case_track_titles)
         self.guess_case_btn.bind("<Leave>", self.restore_guess_case_track_titles)
 
+        self.extract_filename_preview_values = None
+        self.extract_filename_btn = ttk.Button(
+            checkbox_frame,
+            text="Extract from Filename",
+            command=self.apply_extract_from_filename,
+            style="Subtle.TButton"
+        )
+        self.extract_filename_btn.pack(side=tk.RIGHT, padx=(0, 6))
+        self.extract_filename_btn.bind("<Enter>", self.preview_extract_from_filename)
+        self.extract_filename_btn.bind("<Leave>", self.restore_extract_from_filename)
+        ToolTip(self.extract_filename_btn, "Parse track number and title from filename patterns\nHover to preview")
+
         self.add_track_btn = ttk.Button(
             checkbox_frame,
             text="Add Track",
@@ -4021,6 +4033,111 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             elif show_feedback:
                 self.show_toast("Track titles already look good", 2000, "info")
 
+    FILENAME_PATTERNS = [
+        (r"^(\d+)\s*[.\-)_\s]+\s*(.+)", 1, 2),
+        (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+)", 1, 2),
+        (r"^(\d+)\s*(.+)", 1, 2),
+        (r"^(.+?)\s*-\s*(.+)", None, 2),
+    ]
+
+    def get_filename_patterns(self):
+        patterns = []
+        custom = getattr(self.config, 'filename_track_patterns', [])
+        for entry in custom:
+            if isinstance(entry, str):
+                patterns.append((entry, 1, 2))
+            elif isinstance(entry, (list, tuple)) and len(entry) >= 3:
+                patterns.append(tuple(entry[:3]))
+        patterns.extend(self.FILENAME_PATTERNS)
+        return patterns
+
+    def preview_extract_from_filename(self, event=None):
+        if self.is_upload_in_progress():
+            return
+        if self.extract_filename_preview_values is not None:
+            return
+        items = list(self.track_table.get_children())
+        if not items:
+            return
+        self.extract_filename_preview_values = {
+            item: tuple(self.track_table.item(item)['values'])
+            for item in items
+        }
+        self.apply_extract_from_filename(preview=True)
+
+    def restore_extract_from_filename(self, event=None):
+        if self.extract_filename_preview_values is None:
+            return
+        for item, values in self.extract_filename_preview_values.items():
+            if self.track_table.exists(item):
+                self.track_table.item(item, values=values)
+        self.extract_filename_preview_values = None
+
+    def apply_extract_from_filename(self, preview=False, show_feedback=True):
+        if self.is_upload_in_progress():
+            return
+        items = list(self.track_table.get_children())
+        if not items:
+            if show_feedback:
+                self.show_toast("No tracks to update", 2000, "warning")
+            return
+
+        preview_values = self.extract_filename_preview_values
+        changed = 0
+        track_no_idx = self.get_track_table_column_index("track_no")
+        track_name_idx = self.get_track_table_column_index("track_name")
+        file_path_idx = self.get_track_table_column_index("file_path")
+
+        for item in items:
+            values = list(self.track_table.item(item)['values'])
+            if len(values) <= max(track_no_idx, track_name_idx, file_path_idx):
+                continue
+
+            if not str(values[file_path_idx]).strip():
+                continue
+
+            old_no = str(values[track_no_idx])
+            old_title = str(values[track_name_idx])
+            stem = Path(str(values[file_path_idx])).stem
+
+            parsed_no, parsed_title = self.parse_track_from_filename(stem)
+            if parsed_no is not None:
+                values[track_no_idx] = str(parsed_no)
+            if parsed_title:
+                values[track_name_idx] = parsed_title
+            was_no = old_no != str(values[track_no_idx])
+            was_title = old_title != str(values[track_name_idx])
+            if was_no or was_title:
+                changed += 1
+
+            self.track_table.item(item, values=tuple(values))
+
+        if not preview:
+            self.extract_filename_preview_values = None
+            self.sync_track_table_to_current_album()
+            if changed and show_feedback:
+                self.show_toast(f"Extracted from {changed} filename(s)", 2000, "success")
+            elif show_feedback:
+                self.show_toast("No changes needed", 2000, "info")
+
+    def parse_track_from_filename(self, stem):
+        import re
+        for pattern, track_group, title_group in self.get_filename_patterns():
+            m = re.match(pattern, stem, re.IGNORECASE)
+            if not m:
+                continue
+            track_no = None
+            if track_group is not None:
+                try:
+                    track_no = int(m.group(track_group))
+                except (ValueError, IndexError):
+                    pass
+            title = m.group(title_group) if title_group is not None else None
+            if title:
+                title = re.sub(r"[_\s]+", " ", title).strip()
+            return track_no, title
+        return None, None
+
     def sync_track_table_to_current_album(self):
         """Push visible track-table order and editable metadata into current_album."""
         if getattr(self, 'manual_tracks', None):
@@ -6672,6 +6789,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "filename_as_title_check": state,
             "ignore_metadata_check": state,
             "guess_case_btn": state,
+            "extract_filename_btn": state,
             "add_track_btn": state,
             "auto_fit_columns_btn": state,
             "cover_entry": state,
