@@ -2725,6 +2725,15 @@ class SettingsMixin:
                 f"Failed to reset settings:\n{str(e)}"
             )
 
+    DEFAULT_FILENAME_PATTERNS = [
+        (r"^(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
+        (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
+        (r"^(\d+)\s*[.\-)_\s]+\s*(.+)", 1, None, 2),
+        (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+)", 1, None, 2),
+        (r"^(\d+)\s*(.+)", 1, None, 2),
+        (r"^(.+?)\s*-\s*(.+)", None, 1, 2),
+    ]
+
     def open_custom_filename_patterns_dialog(self):
         """Open dialog to manage custom filename regex patterns."""
         dialog = tk.Toplevel(self.root)
@@ -2742,22 +2751,32 @@ class SettingsMixin:
         list_frame = ttk.Frame(frame)
         list_frame.pack(fill=tk.BOTH, expand=True)
 
-        listbox = tk.Listbox(list_frame, font=("Consolas", 10))
-        scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=listbox.yview)
-        listbox.configure(yscrollcommand=scroll.set)
-        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        tree = ttk.Treeview(list_frame, columns=('pattern',), show='tree', selectmode='browse')
+        tree.column('#0', width=0, stretch=False)
+        tree.column('pattern', width=550, anchor=tk.W)
+
+        scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scroll.set)
+
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        tree.pack(fill=tk.BOTH, expand=True)
 
-        def refresh_listbox():
-            listbox.delete(0, tk.END)
+        def fmt(p):
+            if isinstance(p, str):
+                return p
+            parts = [str(x) if x is not None else "" for x in p]
+            return " | ".join(parts)
+
+        def refresh():
+            for item in tree.get_children():
+                tree.delete(item)
+            for p in self.DEFAULT_FILENAME_PATTERNS:
+                tree.insert('', tk.END, values=(fmt(p),), tags=("default",))
             for p in patterns:
-                if isinstance(p, str):
-                    listbox.insert(tk.END, p)
-                elif isinstance(p, (list, tuple)):
-                    parts = [str(x) if x is not None else "" for x in p]
-                    listbox.insert(tk.END, " | ".join(parts))
+                tree.insert('', tk.END, values=(fmt(p),))
 
-        refresh_listbox()
+        tree.tag_configure("default", foreground="gray")
+        refresh()
 
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X, pady=(10, 0))
@@ -2802,7 +2821,7 @@ class SettingsMixin:
                     int(title) if title else None,
                 )
                 patterns.append(entry)
-                refresh_listbox()
+                refresh()
                 add_dialog.destroy()
 
             btn_f = ttk.Frame(f)
@@ -2811,13 +2830,17 @@ class SettingsMixin:
             ttk.Button(btn_f, text="Cancel", command=add_dialog.destroy, width=12).pack(side=tk.LEFT)
 
         def remove_selected():
-            sel = listbox.curselection()
+            sel = tree.selection()
             if not sel:
                 return
-            idx = sel[0]
+            item = sel[0]
+            tags = tree.item(item, "tags")
+            if "default" in tags:
+                return
+            idx = tree.index(item) - len(self.DEFAULT_FILENAME_PATTERNS)
             if 0 <= idx < len(patterns):
                 patterns.pop(idx)
-                refresh_listbox()
+                refresh()
 
         ttk.Button(btn_frame, text="Add", command=add_pattern, width=12).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Remove", command=remove_selected, width=12).pack(side=tk.LEFT, padx=5)
