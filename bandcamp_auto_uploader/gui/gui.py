@@ -64,6 +64,7 @@ from bandcamp_auto_uploader.gui import image_scaling
 from bandcamp_auto_uploader.gui.logs_mixin import LogsMixin
 from bandcamp_auto_uploader.gui.settings_mixin import SettingsMixin
 from bandcamp_auto_uploader.upload import Album, Track, UploadCancelled, get_metadata_track_number
+from bandcamp_auto_uploader import __version__
 
 # Configure logging
 logger = logging.getLogger("bandcamp-auto-uploader")
@@ -1532,108 +1533,43 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def create_about_tab(self, parent):
         """Create about information tab"""
-        # Main container with padding
         container = ttk.Frame(parent)
-        container.pack(fill=tk.BOTH, expand=True, padx=40, pady=40)
-        
-        # Title
-        title_label = ttk.Label(
-            container,
-            text="Bandcamp Auto Uploader",
-            font=("Segoe UI", 24, "bold")
-        )
-        title_label.pack(pady=(0, 10))
-        
-        # Version
-        version_label = ttk.Label(
-            container,
-            text="Version 1.2-beta",
-            font=("Segoe UI", 12)
-        )
-        version_label.pack(pady=(0, 30))
-        
-        # Based on information
-        based_on_label = ttk.Label(
-            container,
-            text="Based on:",
-            font=("Segoe UI", 9),
-            foreground="gray"
-        )
-        based_on_label.pack(pady=(0, 5))
-        
-        based_on_link = ttk.Label(
-            container,
-            text="https://github.com/7x11x13/bandcamp-auto-uploader",
-            font=("Segoe UI", 9),
-            foreground="#4a90e2",
-            cursor="hand2"
-        )
-        based_on_link.pack(pady=(0, 20))
-        based_on_link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"))
-        
-        # Author
-        author_label = ttk.Label(
-            container,
-            text="By Nai64",
-            font=("Segoe UI", 11),
-            foreground="gray"
-        )
-        author_label.pack(pady=(0, 40))
-        
-        # Buttons frame
-        buttons_frame = ttk.Frame(container)
-        buttons_frame.pack(pady=(0, 30))
-        
-        # GitHub button
-        github_btn = ttk.Button(
-            buttons_frame,
-            text="Open GitHub Page",
-            command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"),
-            width=25
-        )
-        github_btn.pack(pady=5)
-        ToolTip(github_btn, "Visit the project repository on GitHub")
-        
-        # Twitter button
-        twitter_btn = ttk.Button(
-            buttons_frame,
-            text="Follow on Twitter",
-            command=lambda: webbrowser.open("https://x.com/naii_dev"),
-            width=25
-        )
-        twitter_btn.pack(pady=5)
-        ToolTip(twitter_btn, "Follow for updates and announcements")
-        
-        # Privacy Policy button
-        privacy_btn = ttk.Button(
-            buttons_frame,
-            text="Privacy Policy",
-            command=self.show_privacy_policy,
-            width=25
-        )
-        privacy_btn.pack(pady=5)
-        ToolTip(privacy_btn, "View the privacy policy")
-        
-        # Footer info
-        separator = ttk.Separator(container, orient='horizontal')
-        separator.pack(fill=tk.X, pady=(20, 20))
-        
-        footer_label = ttk.Label(
-            container,
-            text="Made with ❤ for the Bandcamp community",
-            font=("Segoe UI", 9),
-            foreground="gray"
-        )
-        footer_label.pack()
-        
-        # Copyright
-        copyright_label = ttk.Label(
-            container,
-            text="© 2026 Bandcamp Auto Uploader",
-            font=("Segoe UI", 8),
-            foreground="gray"
-        )
-        copyright_label.pack(pady=(5, 0))
+        container.pack(fill=tk.BOTH, expand=True)
+
+        content = ttk.Frame(container)
+        content.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+
+        ttk.Label(content, text="Bandcamp Auto Uploader",
+                  font=("Segoe UI", 20, "bold")).pack()
+
+        ttk.Label(content, text=f"Version {__version__}",
+                  font=("Segoe UI", 11)).pack(pady=(5, 15))
+
+        link = ttk.Label(content,
+                         text="github.com/7x11x13/bandcamp-auto-uploader",
+                         font=("Segoe UI", 9), foreground="#4a90e2", cursor="hand2")
+        link.pack()
+        link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"))
+
+        ttk.Label(content, text="By Nai64",
+                  font=("Segoe UI", 10), foreground="gray").pack(pady=(0, 20))
+
+        btn_frame = ttk.Frame(content)
+        btn_frame.pack()
+        ttk.Button(btn_frame, text="GitHub Repository",
+                   command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"),
+                   width=22).pack(pady=3)
+        ttk.Button(btn_frame, text="Follow on Twitter",
+                   command=lambda: webbrowser.open("https://x.com/naii_dev"),
+                   width=22).pack(pady=3)
+        ttk.Button(btn_frame, text="Privacy Policy",
+                   command=self.show_privacy_policy,
+                   width=22).pack(pady=3)
+
+        ttk.Label(content, text="Made with ❤ for the Bandcamp community",
+                  font=("Segoe UI", 9), foreground="gray").pack(pady=(20, 5))
+        ttk.Label(content, text="© 2026 Bandcamp Auto Uploader",
+                  font=("Segoe UI", 8), foreground="gray").pack()
     
     def show_privacy_policy(self):
         """Show privacy policy dialog"""
