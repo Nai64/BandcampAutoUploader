@@ -12,10 +12,15 @@ from pathlib import Path
 
 DESCRIPTION_AUTO_FILL_MODES = [
     "Off",
+    "Minimal",
+    "Detailed",
     "Tracklist",
+    "Full Track Info",
     "Tracklist + Comments",
+    "Tracklist (Artist)",
     "Track Comments",
     "Album Info",
+    "Album Details",
     "Release Notes",
     "Bandcamp Classic",
     "Technical Details",
@@ -23,8 +28,12 @@ DESCRIPTION_AUTO_FILL_MODES = [
 ]
 
 DESCRIPTION_TEMPLATES = {
+    "Minimal": "{n}. {title}",
+    "Detailed": "{n}. {title} ({length})",
     "Tracklist": "{n}. {artist} - {title}",
+    "Full Track Info": "{n}. {title} — {artist}\n   {length} | {format} | {bitrate}",
     "Tracklist + Comments": "{n}. {artist} - {title}\n   {comment}",
+    "Tracklist (Artist)": "{n}. {artist} - {title} ({length})",
     "Track Comments": "{n}. {title}: {comment}",
     "Technical Details": "{n}. {title} (length: {length}, format: {format}, bitrate: {bitrate}, size: {size})",
     "Album Info": "Album: {album}\nArtist: {artist}\nRelease Date: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
