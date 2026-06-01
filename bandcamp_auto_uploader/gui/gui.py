@@ -876,8 +876,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Double-click to browse cover
         self.cover_entry.bind('<Double-Button-1>', lambda e: self.browse_cover())
-        # Enter to browse
-        self.cover_entry.bind('<Return>', lambda e: self.browse_cover())
+        # Enter to resolve (load URL or browse)
+        self.cover_entry.bind('<Return>', lambda e: self.resolve_cover_input())
 
         # Enable drag & drop for cover art (if available)
         if DRAG_DROP_AVAILABLE:
@@ -1498,8 +1498,27 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         cover_path = self.cover_path_var.get()
 
-        if not cover_path or not Path(cover_path).exists():
-            # No cover or invalid path - show placeholder
+        if not cover_path:
+            # No cover - show placeholder
+            self.cover_preview_label.configure(
+                image='',
+                text="No cover art selected\n\nClick Browse to add"
+            )
+            if hasattr(self, '_cover_photo'):
+                delattr(self, '_cover_photo')
+            return
+
+        if self._is_url(cover_path):
+            self.cover_preview_label.configure(
+                image='',
+                text="Image URL set\n\nPress Enter to load"
+            )
+            if hasattr(self, '_cover_photo'):
+                delattr(self, '_cover_photo')
+            return
+
+        if not Path(cover_path).exists():
+            # Invalid path - show placeholder
             self.cover_preview_label.configure(
                 image='',
                 text="No cover art selected\n\nClick Browse to add"
@@ -4150,6 +4169,40 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         return ()
 
+    def _is_url(self, text):
+        """Check if text looks like a URL."""
+        return text.startswith(('http://', 'https://'))
+
+    def resolve_cover_input(self, event=None):
+        """Resolve the cover entry: download URL or browse if empty."""
+        if self.is_upload_in_progress():
+            self.show_toast("Upload in progress", 1600, "warning")
+            return
+
+        value = self.cover_path_var.get().strip()
+        if not value:
+            self.browse_cover()
+        elif self._is_url(value):
+            try:
+                import tempfile
+                resp = requests.get(value, timeout=10)
+                resp.raise_for_status()
+                suffix = Path(value.split('?')[0]).suffix or '.jpg'
+                temp_dir = Path(tempfile.gettempdir()) / "bandcamp_auto_uploader_covers"
+                temp_dir.mkdir(parents=True, exist_ok=True)
+                import hashlib
+                safe_name = hashlib.md5(value.encode()).hexdigest() + suffix
+                temp_path = temp_dir / safe_name
+                temp_path.write_bytes(resp.content)
+                self.cover_path_var.set(str(temp_path))
+                self.add_to_cover_library(str(temp_path))
+                self.show_toast("Cover art loaded from URL", 2000, "success", trigger="cover_load")
+            except Exception as e:
+                logger.error(f"Failed to download cover URL: {e}")
+                self.show_toast("Failed to load cover from URL", 2000, "error")
+        else:
+            self.update_cover_preview()
+
     def browse_cover(self):
         """Browse for cover art image"""
         if self.is_upload_in_progress():
@@ -6655,31 +6708,49 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 cover_path = self.cover_path_var.get()
                 if cover_path:
                     logger.info(f"Using custom cover art: {cover_path}")
-                    cover_file = Path(cover_path)
-                    
-                    # Scale cover art if requested
-                    if self.scale_cover_var.get():
-                        size_str = self.scale_size_var.get()
-                        target_size = int(size_str.split('x')[0])
-                        logger.info(f"Scaling cover art to {size_str}...")
-                        
-                        import io
-
-                        img = self.normalize_cover_image(cover_file, "#ffffff")
-                        img = self.crop_cover_to_square(img)
-                        img = self.apply_custom_scaling(img, target_size)
-                        
-                        # Save to bytes
-                        img_bytes = io.BytesIO()
-                        img.save(img_bytes, format='JPEG', quality=95)
-                        img_bytes.seek(0)
-                        
-                        from bandcamp_auto_uploader.upload import CoverArt
-                        album.cover_art = CoverArt(data=img_bytes.read(), file_name="cover.jpg")
-                        logger.info(f"Cover art scaled to {size_str}")
+                    if self._is_url(cover_path):
+                        try:
+                            import tempfile
+                            resp = requests.get(cover_path, timeout=10)
+                            resp.raise_for_status()
+                            suffix = Path(cover_path.split('?')[0]).suffix or '.jpg'
+                            import hashlib
+                            temp_dir = Path(tempfile.gettempdir()) / "bandcamp_auto_uploader_covers"
+                            temp_dir.mkdir(parents=True, exist_ok=True)
+                            safe_name = hashlib.md5(cover_path.encode()).hexdigest() + suffix
+                            cover_file = temp_dir / safe_name
+                            cover_file.write_bytes(resp.content)
+                        except Exception as e:
+                            logger.error(f"Failed to download cover URL during upload: {e}")
+                            cover_file = None
                     else:
-                        from bandcamp_auto_uploader.upload import CoverArt
-                        album.cover_art = CoverArt(path=cover_file)
+                        cover_file = Path(cover_path)
+                    
+                    if cover_file is not None:
+
+                        # Scale cover art if requested
+                        if self.scale_cover_var.get():
+                            size_str = self.scale_size_var.get()
+                            target_size = int(size_str.split('x')[0])
+                            logger.info(f"Scaling cover art to {size_str}...")
+
+                            import io
+
+                            img = self.normalize_cover_image(cover_file, "#ffffff")
+                            img = self.crop_cover_to_square(img)
+                            img = self.apply_custom_scaling(img, target_size)
+
+                            # Save to bytes
+                            img_bytes = io.BytesIO()
+                            img.save(img_bytes, format='JPEG', quality=95)
+                            img_bytes.seek(0)
+
+                            from bandcamp_auto_uploader.upload import CoverArt
+                            album.cover_art = CoverArt(data=img_bytes.read(), file_name="cover.jpg")
+                            logger.info(f"Cover art scaled to {size_str}")
+                        else:
+                            from bandcamp_auto_uploader.upload import CoverArt
+                            album.cover_art = CoverArt(path=cover_file)
                 
                 self.update_status("Uploading to Bandcamp...", 60)
 
