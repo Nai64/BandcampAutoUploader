@@ -2636,6 +2636,8 @@ class SettingsMixin:
         self.advanced_item_mapping = {}
         item_id = self.advanced_tree.insert('', 'end', values=("Reset all settings", "Reset..."))
         self.advanced_item_mapping[item_id] = "reset_all_settings"
+        item_id = self.advanced_tree.insert('', 'end', values=("Custom Filename Patterns", "Manage..."))
+        self.advanced_item_mapping[item_id] = "custom_filename_patterns"
 
         self.advanced_tree.bind('<Button-1>', self.on_advanced_tree_click)
 
@@ -2648,6 +2650,9 @@ class SettingsMixin:
 
         if self.advanced_item_mapping.get(item_id) == "reset_all_settings":
             self.root.after_idle(self.reset_all_settings)
+            return "break"
+        if self.advanced_item_mapping.get(item_id) == "custom_filename_patterns":
+            self.root.after_idle(self.open_custom_filename_patterns_dialog)
             return "break"
 
     def reset_all_settings(self):
@@ -2719,6 +2724,120 @@ class SettingsMixin:
                 "Reset Failed",
                 f"Failed to reset settings:\n{str(e)}"
             )
+
+    def open_custom_filename_patterns_dialog(self):
+        """Open dialog to manage custom filename regex patterns."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Custom Filename Patterns")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(True, True)
+        self.center_dialog(dialog, 600, 400, self.root)
+
+        patterns = list(getattr(self.config, 'filename_track_patterns', []))
+
+        frame = ttk.Frame(dialog, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(frame, text="Custom Regex Patterns",
+                  font=("Segoe UI", 11, "bold")).pack(anchor=tk.W)
+
+        ttk.Label(frame, text="Format: regex | track_group | artist_group | title_group",
+                  font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 5))
+        ttk.Label(frame, text="Use 0 or leave empty to skip a group. Order matters.",
+                  font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 10))
+
+        list_frame = ttk.Frame(frame)
+        list_frame.pack(fill=tk.BOTH, expand=True)
+
+        listbox = tk.Listbox(list_frame, font=("Consolas", 10))
+        scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=listbox.yview)
+        listbox.configure(yscrollcommand=scroll.set)
+        listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        def refresh_listbox():
+            listbox.delete(0, tk.END)
+            for p in patterns:
+                if isinstance(p, str):
+                    listbox.insert(tk.END, p)
+                elif isinstance(p, (list, tuple)):
+                    parts = [str(x) if x is not None else "" for x in p]
+                    listbox.insert(tk.END, " | ".join(parts))
+
+        refresh_listbox()
+
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill=tk.X, pady=(10, 0))
+
+        def add_pattern():
+            add_dialog = tk.Toplevel(dialog)
+            add_dialog.title("Add Pattern")
+            add_dialog.transient(dialog)
+            add_dialog.grab_set()
+            self.center_dialog(add_dialog, 500, 200, dialog)
+
+            f = ttk.Frame(add_dialog, padding=10)
+            f.pack(fill=tk.BOTH, expand=True)
+
+            ttk.Label(f, text="Regex:").grid(row=0, column=0, sticky=tk.W, pady=3)
+            regex_entry = ttk.Entry(f, width=50)
+            regex_entry.grid(row=0, column=1, padx=(5, 0), pady=3)
+
+            ttk.Label(f, text="Track # group:").grid(row=1, column=0, sticky=tk.W, pady=3)
+            track_entry = ttk.Entry(f, width=10)
+            track_entry.grid(row=1, column=1, sticky=tk.W, padx=(5, 0), pady=3)
+
+            ttk.Label(f, text="Artist group:").grid(row=2, column=0, sticky=tk.W, pady=3)
+            artist_entry = ttk.Entry(f, width=10)
+            artist_entry.grid(row=2, column=1, sticky=tk.W, padx=(5, 0), pady=3)
+
+            ttk.Label(f, text="Title group:").grid(row=3, column=0, sticky=tk.W, pady=3)
+            title_entry = ttk.Entry(f, width=10)
+            title_entry.grid(row=3, column=1, sticky=tk.W, padx=(5, 0), pady=3)
+
+            def save_pattern():
+                regex = regex_entry.get().strip()
+                if not regex:
+                    return
+                track = track_entry.get().strip()
+                artist = artist_entry.get().strip()
+                title = title_entry.get().strip()
+                entry = (
+                    regex,
+                    int(track) if track else None,
+                    int(artist) if artist else None,
+                    int(title) if title else None,
+                )
+                patterns.append(entry)
+                refresh_listbox()
+                add_dialog.destroy()
+
+            btn_f = ttk.Frame(f)
+            btn_f.grid(row=4, column=0, columnspan=2, pady=(15, 0))
+            ttk.Button(btn_f, text="Add", command=save_pattern, width=12).pack(side=tk.LEFT, padx=5)
+            ttk.Button(btn_f, text="Cancel", command=add_dialog.destroy, width=12).pack(side=tk.LEFT)
+
+        def remove_selected():
+            sel = listbox.curselection()
+            if not sel:
+                return
+            idx = sel[0]
+            if 0 <= idx < len(patterns):
+                patterns.pop(idx)
+                refresh_listbox()
+
+        ttk.Button(btn_frame, text="Add", command=add_pattern, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Remove", command=remove_selected, width=12).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(btn_frame, text="Close", command=dialog.destroy, width=12).pack(side=tk.RIGHT, padx=5)
+
+        def on_close():
+            self.config.filename_track_patterns = patterns
+            save_config(self.config)
+            dialog.destroy()
+
+        dialog.protocol("WM_DELETE_WINDOW", on_close)
 
     def check_for_updates_now(self):
         """Check for new releases on GitHub."""
