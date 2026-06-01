@@ -23,6 +23,9 @@ DESCRIPTION_TEMPLATES = {
     "Tracklist + Comments": "{n}. {artist} - {title}\n   {comment}",
     "Track Comments": "{n}. {title}: {comment}",
     "Technical Details": "{n}. {title} (length: {length}, format: {format}, bitrate: {bitrate}, size: {size})",
+    "Album Info": "Album: {album}\nArtist: {artist}\nRelease Date: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
+    "Release Notes": "{album} by {artist}\n\nReleased: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
+    "Bandcamp Classic": "{artist} - {album}\n\nRelease date: {date}\n\n{tracklist}",
 }
 
 
