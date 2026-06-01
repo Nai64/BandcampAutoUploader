@@ -2909,9 +2909,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         templates = getattr(self.config, 'description_templates', {})
         template = templates.get(mode) or self.DEFAULT_DESCRIPTION_TEMPLATES.get(mode)
         if not template:
+            custom_modes = getattr(self.config, 'custom_description_modes', [])
+            for cm in custom_modes:
+                if cm["name"] == mode:
+                    template = cm["template"]
+                    break
+        if not template:
             return None
 
-        if mode in ("Album Info", "Release Notes", "Bandcamp Classic", "Metadata Dump"):
+        ALBUM_PLACEHOLDERS = ("{album_info}", "{track_comments}", "{technical_details}", "{tracklist}", "{tracks}", "{date}", "{tags}", "{album}")
+        is_album_mode = mode in ("Album Info", "Release Notes", "Bandcamp Classic", "Metadata Dump") or any(p in template for p in ALBUM_PLACEHOLDERS)
+
+        if is_album_mode:
             album_data = {
                 "album": self.album_name_var.get().strip(),
                 "artist": self.album_artist_var.get().strip(),

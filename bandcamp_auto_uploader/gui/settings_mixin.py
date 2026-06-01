@@ -2864,7 +2864,7 @@ class SettingsMixin:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(True, True)
-        self.center_dialog(dialog, 450, 380, self.root)
+        self.center_dialog(dialog, 450, 400, self.root)
 
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -2874,18 +2874,33 @@ class SettingsMixin:
 
         mode_tree = ttk.Treeview(list_frame, columns=('mode',), show='tree', selectmode='browse')
         mode_tree.column('#0', width=0, stretch=False)
-        mode_tree.column('mode', width=360, anchor=tk.W)
+        mode_tree.column('mode', width=400, anchor=tk.W)
 
         scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=mode_tree.yview)
         mode_tree.configure(yscrollcommand=scroll.set)
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
         mode_tree.pack(fill=tk.BOTH, expand=True)
 
-        for mode in DESCRIPTION_AUTO_FILL_MODES:
-            item = mode_tree.insert('', tk.END, values=(mode,))
-            if mode == current_value:
-                mode_tree.selection_set(item)
-                mode_tree.focus(item)
+        custom_modes = list(getattr(self.config, 'custom_description_modes', []))
+
+        def refresh_tree():
+            for item in mode_tree.get_children():
+                mode_tree.delete(item)
+            for mode in DESCRIPTION_AUTO_FILL_MODES:
+                m = mode_tree.insert('', tk.END, values=(mode,), tags=("builtin",))
+                if mode == current_value:
+                    mode_tree.selection_set(m)
+                    mode_tree.focus(m)
+            for cm in custom_modes:
+                name = cm.get("name", "?")
+                m = mode_tree.insert('', tk.END, values=(name,), tags=("custom",))
+                if name == current_value:
+                    mode_tree.selection_set(m)
+                    mode_tree.focus(m)
+
+        mode_tree.tag_configure("builtin")
+        mode_tree.tag_configure("custom", foreground="gray")
+        refresh_tree()
 
         def on_ok():
             sel = mode_tree.selection()
@@ -2896,13 +2911,16 @@ class SettingsMixin:
                 tree.set(item_id, column, new_val)
             dialog.destroy()
 
-        def on_double_click(event):
+        def edit_selected():
             sel = mode_tree.selection()
             if not sel:
                 return
             mode = mode_tree.item(sel[0], 'values')[0]
             if mode == "Off":
                 return
+            tags = mode_tree.item(sel[0], "tags")
+            is_custom = "custom" in tags
+
             edit_dialog = tk.Toplevel(dialog)
             edit_dialog.title(f"Edit Template — {mode}")
             edit_dialog.transient(dialog)
@@ -2913,8 +2931,11 @@ class SettingsMixin:
             f = ttk.Frame(edit_dialog, padding=10)
             f.pack(fill=tk.BOTH, expand=True)
 
-            templates = self.config.description_templates.copy()
-            current_template = templates.get(mode) or DESCRIPTION_TEMPLATES.get(mode, "")
+            if is_custom:
+                current_template = next((cm["template"] for cm in custom_modes if cm["name"] == mode), "")
+            else:
+                templates = self.config.description_templates.copy()
+                current_template = templates.get(mode) or DESCRIPTION_TEMPLATES.get(mode, "")
 
             text = tk.Text(f, font=("Consolas", 10), wrap=tk.WORD, height=12)
             text.pack(fill=tk.BOTH, expand=True)
@@ -2923,19 +2944,33 @@ class SettingsMixin:
 
             def save():
                 val = text.get("1.0", tk.END).strip()
-                if val:
-                    templates[mode] = val
+                if is_custom:
+                    for cm in custom_modes:
+                        if cm["name"] == mode:
+                            cm["template"] = val
+                            break
                 else:
-                    templates.pop(mode, None)
-                self.config.description_templates = templates
+                    templates = self.config.description_templates.copy()
+                    if val:
+                        templates[mode] = val
+                    else:
+                        templates.pop(mode, None)
+                    self.config.description_templates = templates
+                self.config.custom_description_modes = custom_modes
                 save_config(self.config)
                 edit_dialog.destroy()
 
             def reset():
-                templates.pop(mode, None)
-                self.config.description_templates = templates
+                if is_custom:
+                    custom_modes[:] = [cm for cm in custom_modes if cm["name"] != mode]
+                else:
+                    templates = self.config.description_templates.copy()
+                    templates.pop(mode, None)
+                    self.config.description_templates = templates
+                self.config.custom_description_modes = custom_modes
                 save_config(self.config)
                 edit_dialog.destroy()
+                refresh_tree()
 
             btn_f = ttk.Frame(f)
             btn_f.pack(fill=tk.X, pady=(10, 0))
@@ -2943,12 +2978,67 @@ class SettingsMixin:
             ttk.Button(btn_f, text="Reset to Default", command=reset, width=14).pack(side=tk.RIGHT, padx=3)
             ttk.Button(btn_f, text="Cancel", command=edit_dialog.destroy, width=10).pack(side=tk.RIGHT)
 
-        mode_tree.bind('<Double-Button-1>', on_double_click)
+        def new_custom():
+            name_dialog = tk.Toplevel(dialog)
+            name_dialog.title("New Template")
+            name_dialog.transient(dialog)
+            name_dialog.grab_set()
+            name_dialog.resizable(False, False)
+            self.center_dialog(name_dialog, 350, 120, dialog)
+
+            nf = ttk.Frame(name_dialog, padding=10)
+            nf.pack(fill=tk.BOTH, expand=True)
+            ttk.Label(nf, text="Template name:").pack(anchor=tk.W)
+            name_entry = ttk.Entry(nf, width=40)
+            name_entry.pack(fill=tk.X, pady=(5, 10))
+            name_entry.focus_set()
+
+            def create():
+                name = name_entry.get().strip()
+                if not name:
+                    return
+                custom_modes.append({"name": name, "template": "{n}. {artist} - {title}"})
+                self.config.custom_description_modes = custom_modes
+                save_config(self.config)
+                name_dialog.destroy()
+                refresh_tree()
+                for item in mode_tree.get_children():
+                    if mode_tree.item(item, 'values')[0] == name:
+                        mode_tree.selection_set(item)
+                        mode_tree.focus(item)
+                        break
+                edit_selected()
+
+            def on_enter(e):
+                create()
+
+            name_entry.bind('<Return>', on_enter)
+            btn_f = ttk.Frame(nf)
+            btn_f.pack()
+            ttk.Button(btn_f, text="Create", command=create, width=10).pack(side=tk.LEFT, padx=3)
+            ttk.Button(btn_f, text="Cancel", command=name_dialog.destroy, width=10).pack(side=tk.LEFT)
+
+        def remove_selected():
+            sel = mode_tree.selection()
+            if not sel:
+                return
+            tags = mode_tree.item(sel[0], "tags")
+            if "custom" not in tags:
+                return
+            mode = mode_tree.item(sel[0], 'values')[0]
+            custom_modes[:] = [cm for cm in custom_modes if cm["name"] != mode]
+            self.config.custom_description_modes = custom_modes
+            save_config(self.config)
+            refresh_tree()
+
+        mode_tree.bind('<Double-Button-1>', lambda e: edit_selected())
 
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X, pady=(10, 0))
         ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
         ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
+        ttk.Button(btn_frame, text="New", command=new_custom, width=8).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Delete", command=remove_selected, width=8).pack(side=tk.LEFT)
 
     def check_for_updates_now(self):
         """Check for new releases on GitHub."""

@@ -188,6 +188,7 @@ class Config:
     notify_on_artists_load: bool = False  # Notify when artists are loaded
     notify_on_template_save: bool = False  # Notify when template is saved
     description_templates: dict = dataclasses.field(default_factory=dict)  # Custom description templates per mode
+    custom_description_modes: list = dataclasses.field(default_factory=list)  # User-created modes [{"name":..., "template":...}]
     check_for_updates: bool = True  # Automatically check for updates on startup
 
 
