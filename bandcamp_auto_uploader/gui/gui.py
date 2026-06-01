@@ -2945,12 +2945,23 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 album_data["length"] = str(first[4]).strip() if len(first) > 4 else ""
                 album_data["format"] = str(first[5]).strip() if len(first) > 5 else ""
                 album_data["price"] = str(first[6]).strip() if len(first) > 6 else ""
+                album_data["nyp"] = str(first[7]).strip() if len(first) > 7 else ""
                 album_data["year"] = str(first[8]).strip() if len(first) > 8 else ""
                 album_data["genre"] = str(first[9]).strip() if len(first) > 9 else ""
                 album_data["bitrate"] = str(first[10]).strip() if len(first) > 10 else ""
                 album_data["size"] = str(first[11]).strip() if len(first) > 11 else ""
+                album_data["filename"] = str(Path(str(first[12])).stem) if len(first) > 12 and first[12] else ""
+                album_data["sample_rate"] = str(first[13]).strip() if len(first) > 13 else ""
+                album_data["channels"] = str(first[14]).strip() if len(first) > 14 else ""
+                album_data["bit_depth"] = str(first[15]).strip() if len(first) > 15 else ""
+                album_data["track_album"] = str(first[16]).strip() if len(first) > 16 else ""
+                album_data["track_artist"] = str(first[1]).strip() if len(first) > 1 else ""
+                album_data["album_artist"] = str(first[17]).strip() if len(first) > 17 else ""
+                album_data["composer"] = str(first[18]).strip() if len(first) > 18 else ""
+                album_data["isrc"] = str(first[19]).strip() if len(first) > 19 else ""
+                album_data["track_no"] = str(first[0]).strip() if len(first) > 0 else ""
             else:
-                for k in ("n", "title", "comment", "length", "format", "price", "year", "genre", "bitrate", "size"):
+                for k in ("n", "title", "comment", "length", "format", "price", "nyp", "year", "genre", "bitrate", "size", "filename", "sample_rate", "channels", "bit_depth", "track_album", "track_artist", "album_artist", "composer", "isrc", "track_no"):
                     album_data.setdefault(k, "")
             result = template.format(**album_data)
             lines = [line for line in result.split("\n") if line.strip()]
@@ -2967,31 +2978,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 "length": str(row[4]).strip() if len(row) > 4 else "",
                 "format": str(row[5]).strip() if len(row) > 5 else "",
                 "price": str(row[6]).strip() if len(row) > 6 else "",
+                "nyp": str(row[7]).strip() if len(row) > 7 else "",
                 "year": str(row[8]).strip() if len(row) > 8 else "",
                 "genre": str(row[9]).strip() if len(row) > 9 else "",
                 "bitrate": str(row[10]).strip() if len(row) > 10 else "",
                 "size": str(row[11]).strip() if len(row) > 11 else "",
+                "filename": str(Path(str(row[12])).stem) if len(row) > 12 and row[12] else "",
+                "sample_rate": str(row[13]).strip() if len(row) > 13 else "",
+                "channels": str(row[14]).strip() if len(row) > 14 else "",
+                "bit_depth": str(row[15]).strip() if len(row) > 15 else "",
+                "track_album": str(row[16]).strip() if len(row) > 16 else "",
+                "track_artist": str(row[1]).strip() if len(row) > 1 else "",
+                "album_artist": str(row[17]).strip() if len(row) > 17 else "",
+                "composer": str(row[18]).strip() if len(row) > 18 else "",
+                "isrc": str(row[19]).strip() if len(row) > 19 else "",
+                "track_no": str(row[0]).strip() if len(row) > 0 else "",
             }
             for k, v in album_data.items():
                 data.setdefault(k, v)
-            lines.append(template.format(**data))
-        return "\n".join(lines)
-
-        lines = []
-        for index, row in enumerate(rows, 1):
-            data = {
-                "n": str(index),
-                "artist": str(row[1]).strip(),
-                "title": str(row[2]).strip(),
-                "comment": str(row[3]).strip() if len(row) > 3 else "",
-                "length": str(row[4]).strip() if len(row) > 4 else "",
-                "format": str(row[5]).strip() if len(row) > 5 else "",
-                "price": str(row[6]).strip() if len(row) > 6 else "",
-                "year": str(row[8]).strip() if len(row) > 8 else "",
-                "genre": str(row[9]).strip() if len(row) > 9 else "",
-                "bitrate": str(row[10]).strip() if len(row) > 10 else "",
-                "size": str(row[11]).strip() if len(row) > 11 else "",
-            }
             lines.append(template.format(**data))
         return "\n".join(lines)
 
