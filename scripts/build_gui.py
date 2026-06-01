@@ -16,16 +16,16 @@ def build_exe():
     # Ensure PyInstaller is installed
     try:
         import PyInstaller
-        print(f"✓ PyInstaller {PyInstaller.__version__} found")
+        print(f"[OK] PyInstaller {PyInstaller.__version__} found")
     except ImportError:
-        print("✗ PyInstaller not found. Installing...")
+        print("[FAIL] PyInstaller not found. Installing...")
         subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
-        print("✓ PyInstaller installed")
+        print("[OK] PyInstaller installed")
 
     # Build using spec file
     spec_file = Path("bandcamp_auto_uploader.spec")
     if not spec_file.exists():
-        print(f"✗ Spec file not found: {spec_file}")
+        print(f"[FAIL] Spec file not found: {spec_file}")
         return 1
 
     print(f"\n{'=' * 60}")
@@ -33,19 +33,19 @@ def build_exe():
     print(f"{'=' * 60}\n")
 
     result = subprocess.run(
-        ["pyinstaller", "--clean", str(spec_file)],
+        [sys.executable, "-m", "PyInstaller", "--clean", str(spec_file)],
         check=False
     )
 
     if result.returncode == 0:
         print(f"\n{'=' * 60}")
-        print("✓ Build completed successfully!")
+        print("[OK] Build completed successfully!")
         print(f"{'=' * 60}")
         exe_path = Path("dist") / "Bandcamp Auto Uploader.exe"
         print(f"\nExecutable: {exe_path}")
     else:
         print(f"\n{'=' * 60}")
-        print("✗ Build failed!")
+        print("[FAIL] Build failed!")
         print(f"{'=' * 60}")
         return result.returncode
 
@@ -67,12 +67,12 @@ def build_installer():
     """Build the Inno Setup installer."""
     iscc = _find_iscc()
     if not iscc:
-        print("✗ Inno Setup not found. Install from https://jrsoftware.org/isdl.php")
+        print("[FAIL] Inno Setup not found. Install from https://jrsoftware.org/isdl.php")
         return 1
 
     iss_script = Path("scripts") / "installer.iss"
     if not iss_script.exists():
-        print(f"✗ Installer script not found: {iss_script}")
+        print(f"[FAIL] Installer script not found: {iss_script}")
         return 1
 
     print(f"\n{'=' * 60}")
@@ -81,10 +81,10 @@ def build_installer():
 
     result = subprocess.run([str(iscc), str(iss_script)], check=False)
     if result.returncode == 0:
-        print(f"\n✓ Installer built successfully!")
+        print(f"\n[OK] Installer built successfully!")
         print(f"  dist\\installer\\")
     else:
-        print(f"\n✗ Installer build failed!")
+        print(f"\n[FAIL] Installer build failed!")
         return result.returncode
     return 0
 
