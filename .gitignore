@@ -6,6 +6,7 @@ __pycache__/
 .venv/
 .opencode/
 .vscode/
+build/
 .DS_Store
 Thumbs.db
 AGENTS.md
@@ -13,3 +14,4 @@ PRIVACY_POLICY.txt
 assets/
 bandcamp_auto_uploader.spec
 changelog.txt
+*.exe
