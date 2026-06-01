@@ -2775,7 +2775,6 @@ class SettingsMixin:
             for p in patterns:
                 tree.insert('', tk.END, values=(fmt(p),))
 
-        tree.tag_configure("default", foreground="gray")
         refresh()
 
         btn_frame = ttk.Frame(frame)
