@@ -187,6 +187,7 @@ class Config:
     notify_on_settings_save: bool = False  # Notify when settings are saved
     notify_on_artists_load: bool = False  # Notify when artists are loaded
     notify_on_template_save: bool = False  # Notify when template is saved
+    check_for_updates: bool = True  # Automatically check for updates on startup
 
 
 def get_app_data_dir() -> Path:

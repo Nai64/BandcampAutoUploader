@@ -110,6 +110,7 @@ class SettingsMixin:
         self.settings_tree.insert(interface_id, 'end', 'logs', text='Logs')
         
         self.settings_tree.insert('', 'end', 'Advanced', text='Advanced')
+        self.settings_tree.insert('', 'end', 'Updates', text='Updates')
         self.settings_tree.insert('', 'end', 'About', text='About')
         
         # Bind selection event
@@ -175,6 +176,11 @@ class SettingsMixin:
         advanced_frame = ttk.Frame(content_frame)
         self.create_advanced_settings(advanced_frame)
         self.settings_frames["Advanced"] = advanced_frame
+
+        # Updates frame
+        updates_frame = ttk.Frame(content_frame)
+        self.create_updates_settings(updates_frame)
+        self.settings_frames["updates"] = updates_frame
 
         # Interface sub-item frames
         logs_frame = ttk.Frame(content_frame)
@@ -254,6 +260,7 @@ class SettingsMixin:
             ("Track Table Columns", "columns", "column_tree"),
             ("Logs", "logs", "logs_tree"),
             ("Advanced", "Advanced", "advanced_tree"),
+            ("Updates", "updates", "updates_tree"),
         ]
 
         self.settings_search_index = []
@@ -2285,6 +2292,7 @@ class SettingsMixin:
             ("General: Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
             ("General: Clear progress on album change", "clear_progress_on_album_change", "bool"),
             ("General: Auto load cookies on startup", "auto_load_cookies", "bool"),
+            ("General: Check for updates on startup", "check_for_updates", "bool"),
             # Context Menu settings
             ("Context: Remove Dividers", "context_menu_remove_dividers", "bool"),
             ("Context: Play", "context_menu_play", "bool"),
@@ -2706,7 +2714,89 @@ class SettingsMixin:
                 "Reset Failed",
                 f"Failed to reset settings:\n{str(e)}"
             )
-    
+
+    def create_updates_settings(self, parent):
+        """Create Updates settings section"""
+        settings = [
+            ("Check for updates on startup", "check_for_updates", "bool"),
+            ("Check for updates now", "check_updates_now", "action"),
+        ]
+
+        self.updates_tree = ttk.Treeview(
+            parent,
+            columns=('setting', 'value'),
+            show='tree',
+            selectmode='browse'
+        )
+        self.updates_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        self.updates_tree.column('#0', width=0, stretch=False)
+        self.updates_tree.column('setting', width=250, anchor=tk.W)
+        self.updates_tree.column('value', width=150, anchor=tk.W)
+
+        self.updates_vars = {}
+        self.updates_item_mapping = {}
+
+        for setting_name, config_key, setting_type in settings:
+            if setting_type == "bool":
+                var = tk.BooleanVar(value=getattr(self.config, config_key, True))
+                display_value = "☑" if var.get() else "☐"
+            elif setting_type == "action":
+                var = tk.StringVar(value="Check")
+                display_value = "Check"
+
+            self.updates_vars[config_key] = var
+            self.updates_vars[f"{config_key}_type"] = setting_type
+
+            item_id = self.updates_tree.insert('', 'end', values=(setting_name, display_value))
+            self.updates_item_mapping[item_id] = config_key
+
+        self.updates_tree.bind('<Button-1>', self.on_updates_tree_click)
+        self.updates_tree.bind('<Double-Button-1>', self.on_updates_tree_double_click)
+
+    def on_updates_tree_click(self, event):
+        """Handle single-click on the Updates settings tree."""
+        item_id = self.updates_tree.identify('item', event.x, event.y)
+        column = self.updates_tree.identify('column', event.x, event.y)
+        if not item_id or column != '#2':
+            return
+        config_key = self.updates_item_mapping.get(item_id)
+        if config_key != "check_updates_now":
+            return
+        self.root.after_idle(self.check_for_updates_now)
+        return "break"
+
+    def on_updates_tree_double_click(self, event):
+        """Handle double-click on the Updates settings tree."""
+        item_id = self.updates_tree.identify('item', event.x, event.y)
+        column = self.updates_tree.identify('column', event.x, event.y)
+        if not item_id or column != '#2':
+            return
+        config_key = self.updates_item_mapping.get(item_id)
+        if not config_key:
+            return
+        setting_type = self.updates_vars.get(f"{config_key}_type")
+
+        if setting_type == "bool":
+            current_value = self.updates_vars[config_key].get()
+            new_value = not current_value
+            self.updates_vars[config_key].set(new_value)
+            self.updates_tree.set(item_id, 'value', '☑' if new_value else '☐')
+            self.apply_updates_settings()
+        elif setting_type == "action":
+            if config_key == "check_updates_now":
+                self.check_for_updates_now()
+
+    def apply_updates_settings(self):
+        """Apply updates settings immediately"""
+        self.config.check_for_updates = self.updates_vars['check_for_updates'].get()
+        save_config(self.config)
+
+    def check_for_updates_now(self):
+        """Check for new releases on GitHub."""
+        import webbrowser
+        webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
+
     def restart_application(self):
         """Restart the application"""
         import sys
