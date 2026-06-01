@@ -49,12 +49,6 @@
 
 ---
 
-## Screenshot
-
-![Bandcamp Auto Uploader](assets/screenshot1.png)
-
----
-
 ## How It Works (the short version)
 
 1. The app grabs your Bandcamp login from your browser's cookies — **your credentials never leave your computer**.
