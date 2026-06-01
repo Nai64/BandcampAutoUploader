@@ -4,6 +4,8 @@ import logging
 import os
 import re
 import tkinter as tk
+from tkinter import ttk
+from pathlib import Path
 
 
 DESCRIPTION_AUTO_FILL_MODES = [
@@ -159,3 +161,79 @@ class ToolTip:
         self.tipwindow = None
         if tw:
             tw.destroy()
+
+
+# Theme path cache
+_TKMT_THEME_PATH = None
+_TKMT_THEME_LOADED = False
+
+
+def _get_tkmt_theme_path():
+    global _TKMT_THEME_PATH
+    if _TKMT_THEME_PATH is None:
+        try:
+            import TKinterModernThemes
+            _TKMT_THEME_PATH = str(Path(TKinterModernThemes.__file__).parent / "themes" / "sun-valley" / "sun-valley.tcl")
+        except ImportError:
+            _TKMT_THEME_PATH = ""
+    return _TKMT_THEME_PATH
+
+
+def set_ui_theme(root, theme_name):
+    global _TKMT_THEME_LOADED
+    style = ttk.Style()
+
+    if theme_name == "Sun-Valley Dark":
+        if not _TKMT_THEME_LOADED:
+            theme_path = _get_tkmt_theme_path()
+            if theme_path:
+                try:
+                    root.tk.call("source", theme_path)
+                    _TKMT_THEME_LOADED = True
+                except Exception:
+                    pass
+        try:
+            # Direct theme switch - bypasses set_theme proc which sets
+            # problematic option add *font that breaks tkinter font parsing
+            style.theme_use("sun-valley-dark")
+            style.configure(".", background="#1c1c1c", foreground="#ffffff",
+                            troughcolor="#1c1c1c", focuscolor="#2f60d8",
+                            selectbackground="#2f60d8", selectforeground="#ffffff",
+                            insertwidth=1, insertcolor="#ffffff",
+                            fieldbackground="#2f60d8", borderwidth=1, relief="flat")
+            style.configure(".", font=("Segoe UI", 9))  # 9pt instead of 10pt
+            style.map(".", foreground=[("disabled", "#595959")])
+            root.tk.eval(
+                "tk_setPalette "
+                "background #1c1c1c "
+                "foreground #ffffff "
+                "selectBackground #2f60d8 "
+                "selectForeground #ffffff "
+                "highlightColor #2f60d8 "
+                "activeBackground #2f60d8 "
+                "activeForeground #ffffff"
+            )
+            root.tk.eval("option add *Menu.selectcolor #ffffff startup")
+            root.tk.eval("option add *Menu.background #2f2f2f startup")
+        except Exception:
+            pass
+    else:
+        try:
+            style.theme_use("vista")
+            root.tk.eval(
+                "tk_setPalette "
+                "background #f0f0f0 "
+                "foreground #000000 "
+                "selectBackground #0078d7 "
+                "selectForeground #ffffff "
+                "highlightColor #0078d7 "
+                "activeBackground #0078d7 "
+                "activeForeground #ffffff"
+            )
+            root.tk.eval("option add *Menu.selectcolor #000000 startup")
+            root.tk.eval("option add *Menu.background #f0f0f0 startup")
+        except Exception:
+            try:
+                style.theme_use("clam")
+            except Exception:
+                pass

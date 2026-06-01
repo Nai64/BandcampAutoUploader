@@ -175,7 +175,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Create UI.
         self.create_widgets()
-        
+
+        # Apply theme after widgets are created (avoids font parsing conflicts)
+        from bandcamp_auto_uploader.gui.common import set_ui_theme
+        set_ui_theme(self.root, getattr(self.config, 'theme', 'Light'))
+
         # Bind keyboard shortcuts
         self.bind_keyboard_shortcuts()
         
@@ -8069,6 +8073,7 @@ def main():
         root = TkinterDnD.Tk()
     else:
         root = tk.Tk()
+
     app = BandcampUploaderGUI(root)
     root.mainloop()
 
