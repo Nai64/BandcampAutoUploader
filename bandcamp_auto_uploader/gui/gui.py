@@ -59,7 +59,7 @@ except ImportError:
 
 from bandcamp_auto_uploader.bandcamp_http_adapter import BandcampHTTPAdapter
 from bandcamp_auto_uploader.config import Config, load_config, save_config
-from bandcamp_auto_uploader.gui.common import PrivacyLogFilter, QueueHandler, RedactingFormatter, ToolTip
+from bandcamp_auto_uploader.gui.common import PrivacyLogFilter, QueueHandler, RedactingFormatter, ToolTip, DESCRIPTION_TEMPLATES
 from bandcamp_auto_uploader.gui import image_scaling
 from bandcamp_auto_uploader.gui.logs_mixin import LogsMixin
 from bandcamp_auto_uploader.gui.settings_mixin import SettingsMixin
@@ -3005,12 +3005,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             ])
         return rows
 
-    DEFAULT_DESCRIPTION_TEMPLATES = {
-        "Tracklist": "{n}. {artist} - {title}",
-        "Tracklist + Comments": "{n}. {artist} - {title}\n   {comment}",
-        "Track Comments": "{n}. {title}: {comment}",
-        "Technical Details": "{n}. {title} (length: {length}, format: {format}, bitrate: {bitrate}, size: {size})",
-    }
+    DEFAULT_DESCRIPTION_TEMPLATES = DESCRIPTION_TEMPLATES
 
     def render_description_template(self, mode, rows):
         """Render a template string with track and album data."""

@@ -18,6 +18,13 @@ DESCRIPTION_AUTO_FILL_MODES = [
     "Metadata Dump",
 ]
 
+DESCRIPTION_TEMPLATES = {
+    "Tracklist": "{n}. {artist} - {title}",
+    "Tracklist + Comments": "{n}. {artist} - {title}\n   {comment}",
+    "Track Comments": "{n}. {title}: {comment}",
+    "Technical Details": "{n}. {title} (length: {length}, format: {format}, bitrate: {bitrate}, size: {size})",
+}
+
 
 SENSITIVE_TEXT_PATTERNS = [
     re.compile(r"(?i)(cookie|token|password|secret|api[_-]?key|authorization)(\s*[:=]\s*)[^\s,;]+"),

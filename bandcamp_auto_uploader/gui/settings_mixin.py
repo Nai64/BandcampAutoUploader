@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, colorchooser
 
 from bandcamp_auto_uploader.config import Config, save_config
-from bandcamp_auto_uploader.gui.common import DESCRIPTION_AUTO_FILL_MODES, ToolTip
+from bandcamp_auto_uploader.gui.common import DESCRIPTION_AUTO_FILL_MODES, DESCRIPTION_TEMPLATES, ToolTip
 from bandcamp_auto_uploader import __version__
 
 
@@ -2919,7 +2919,7 @@ class SettingsMixin:
                       font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 5))
 
             templates = self.config.description_templates.copy()
-            current_template = templates.get(mode, "")
+            current_template = templates.get(mode) or DESCRIPTION_TEMPLATES.get(mode, "")
 
             text = tk.Text(f, font=("Consolas", 10), wrap=tk.WORD, height=12)
             text.pack(fill=tk.BOTH, expand=True)
