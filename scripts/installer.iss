@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6+ (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "Bandcamp Auto Uploader"
-#define MyAppVersion "2.0"
+#define MyAppVersion "2"
 #define MyAppPublisher "Nai64"
 #define MyAppURL "https://github.com/Nai64/bandcamp-auto-uploader"
 #define MyAppExeName "Bandcamp Auto Uploader.exe"
