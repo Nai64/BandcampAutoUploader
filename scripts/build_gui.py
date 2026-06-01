@@ -2,6 +2,7 @@
 Build script for creating executable and optional installer.
 """
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -54,12 +55,20 @@ def build_exe():
 
 def _find_iscc():
     """Locate ISCC.exe across common Inno Setup install paths (v5, v6, v7+)."""
-    root = Path("C:\\Program Files (x86)")
-    if not root.exists():
-        root = Path("C:\\Program Files")
-    for dir in root.iterdir():
-        if "Inno Setup" in dir.name and (dir / "ISCC.exe").exists():
-            return dir / "ISCC.exe"
+    search_roots = [
+        Path("C:\\Program Files (x86)"),
+        Path("C:\\Program Files"),
+    ]
+    local = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs"
+    if local.exists():
+        search_roots.append(local)
+
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for dir in root.iterdir():
+            if "Inno Setup" in dir.name and (dir / "ISCC.exe").exists():
+                return dir / "ISCC.exe"
     return None
 
 
