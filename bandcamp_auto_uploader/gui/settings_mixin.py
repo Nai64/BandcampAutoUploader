@@ -3121,10 +3121,10 @@ class SettingsMixin:
 
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X, pady=(10, 0))
-        ttk.Button(btn_frame, text="Select", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Select", command=on_ok, width=12).pack(side=tk.RIGHT, padx=(4, 0))
         ttk.Button(btn_frame, text="Close", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
-        ttk.Button(btn_frame, text="New", command=new_custom, width=8).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Duplicate", command=duplicate_selected, width=10).pack(side=tk.LEFT)
+        ttk.Button(btn_frame, text="New", command=new_custom, width=8).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(btn_frame, text="Duplicate", command=duplicate_selected, width=10).pack(side=tk.LEFT, padx=(0, 4))
         ttk.Button(btn_frame, text="Delete", command=remove_selected, width=8).pack(side=tk.LEFT)
 
     def check_for_updates_now(self):
