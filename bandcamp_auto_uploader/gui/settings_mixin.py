@@ -2906,7 +2906,6 @@ class SettingsMixin:
         btn_frame.pack(fill=tk.X, pady=(10, 0))
         ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
         ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
-        ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
         ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
 
     def check_for_updates_now(self):
