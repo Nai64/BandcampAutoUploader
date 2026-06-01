@@ -4271,8 +4271,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             from PIL import Image, ImageTk
 
-            # Load image
-            img = Image.open(cover_path)
+            # Load and apply fit mode
+            img = self.normalize_cover_image(cover_path, "#ffffff")
+            large_size = 2000
+            fit_mode = self.cover_fit_mode_var.get() if hasattr(self, 'cover_fit_mode_var') else "Crop (fill)"
+            img = self.apply_fit_mode(img, large_size, fit_mode)
+
             width, height = img.size
 
             # Create dialog
