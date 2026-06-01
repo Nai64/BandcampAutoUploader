@@ -3012,15 +3012,21 @@ class SettingsMixin:
             sel = mode_tree.selection()
             if not sel:
                 return
-            tags = mode_tree.item(sel[0], "tags")
-            if "custom" not in tags:
-                return
             mode = mode_tree.item(sel[0], 'values')[0]
+            if mode == "Off":
+                return
+
+            # Get template content from built-in or custom source
             template_content = ""
-            for cm in load_custom_description_templates():
-                if cm["name"] == mode:
-                    template_content = cm["template"]
-                    break
+            tags = mode_tree.item(sel[0], "tags")
+            if "custom" in tags:
+                for cm in load_custom_description_templates():
+                    if cm["name"] == mode:
+                        template_content = cm["template"]
+                        break
+            else:
+                templates = getattr(self.config, 'description_templates', {})
+                template_content = templates.get(mode) or DESCRIPTION_TEMPLATES.get(mode, "")
             if not template_content:
                 return
 
