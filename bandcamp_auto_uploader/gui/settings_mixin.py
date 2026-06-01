@@ -6,6 +6,7 @@ from tkinter import ttk, messagebox, colorchooser
 
 from bandcamp_auto_uploader.config import Config, save_config
 from bandcamp_auto_uploader.gui.common import DESCRIPTION_AUTO_FILL_MODES, ToolTip
+from bandcamp_auto_uploader import __version__
 
 
 SORT_METHOD_SETTINGS = [
@@ -1419,65 +1420,40 @@ class SettingsMixin:
         """Create About section"""
         import webbrowser
         import sys
-        
-        # Main container
+
         container = ttk.Frame(parent)
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        
-        # Application info
-        info_frame = ttk.LabelFrame(container, text="Application Information", padding=10)
-        info_frame.pack(fill=tk.X, pady=(0, 10))
-        
-        # Version
-        ttk.Label(info_frame, text="Version:", font=("Segoe UI", 9, "bold")).grid(row=0, column=0, sticky=tk.W, pady=2)
-        ttk.Label(info_frame, text="1.2-beta", font=("Segoe UI", 9)).grid(row=0, column=1, sticky=tk.W, pady=2, padx=(10, 0))
-        
-        # Python version
-        ttk.Label(info_frame, text="Python Version:", font=("Segoe UI", 9, "bold")).grid(row=1, column=0, sticky=tk.W, pady=2)
-        ttk.Label(info_frame, text=f"{sys.version.split()[0]}", font=("Segoe UI", 9)).grid(row=1, column=1, sticky=tk.W, pady=2, padx=(10, 0))
-        
-        # Platform
-        ttk.Label(info_frame, text="Platform:", font=("Segoe UI", 9, "bold")).grid(row=2, column=0, sticky=tk.W, pady=2)
-        ttk.Label(info_frame, text=sys.platform, font=("Segoe UI", 9)).grid(row=2, column=1, sticky=tk.W, pady=2, padx=(10, 0))
-        
-        # Running mode
-        ttk.Label(info_frame, text="Running Mode:", font=("Segoe UI", 9, "bold")).grid(row=3, column=0, sticky=tk.W, pady=2)
-        mode = "Compiled (EXE)" if getattr(sys, 'frozen', False) else "Source (Python)"
-        ttk.Label(info_frame, text=mode, font=("Segoe UI", 9)).grid(row=3, column=1, sticky=tk.W, pady=2, padx=(10, 0))
-        
-        # Links frame
-        links_frame = ttk.LabelFrame(container, text="Links", padding=10)
-        links_frame.pack(fill=tk.X, pady=(0, 10))
-        
-        # GitHub link
-        github_btn = ttk.Button(links_frame, text="GitHub Repository", 
-                               command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"))
-        github_btn.pack(fill=tk.X, pady=2)
-        
-        # Original project link
-        original_btn = ttk.Button(links_frame, text="Original Project (7x11x13)",
-                                 command=lambda: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"))
-        original_btn.pack(fill=tk.X, pady=2)
-        
-        # Credits frame
-        credits_frame = ttk.LabelFrame(container, text="Credits", padding=10)
-        credits_frame.pack(fill=tk.X, pady=(0, 10))
-        
-        credits_text = """Based on bandcamp-auto-uploader by 7x11x13
-GUI fork and enhancements by Nai64
 
-Some icons by Yusuke Kamiyamane
-Licensed under CC BY 3.0"""
-        
-        credits_label = ttk.Label(credits_frame, text=credits_text, font=("Segoe UI", 8), justify=tk.LEFT)
-        credits_label.pack(anchor=tk.W)
-        
-        # License frame
-        license_frame = ttk.LabelFrame(container, text="License", padding=10)
-        license_frame.pack(fill=tk.X)
-        
-        license_text = "MIT License - See GitHub repository for full license text"
-        ttk.Label(license_frame, text=license_text, font=("Segoe UI", 9)).pack(anchor=tk.W)
+        ttk.Label(container, text="Bandcamp Auto Uploader",
+                  font=("Segoe UI", 16, "bold")).pack()
+
+        ttk.Label(container, text=f"Version {__version__}",
+                  font=("Segoe UI", 10)).pack(pady=(5, 15))
+
+        info = f"Python {sys.version.split()[0]}  |  {sys.platform}  |  {'EXE' if getattr(sys, 'frozen', False) else 'Source'}"
+        ttk.Label(container, text=info, font=("Segoe UI", 8), foreground="gray").pack()
+
+        ttk.Separator(container, orient='horizontal').pack(fill=tk.X, pady=15)
+
+        ttk.Label(container, text="Links", font=("Segoe UI", 10, "bold")).pack()
+        ttk.Button(container, text="GitHub Repository",
+                   command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"),
+                   width=25).pack(pady=3)
+        ttk.Button(container, text="Original Project (7x11x13)",
+                   command=lambda: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"),
+                   width=25).pack(pady=3)
+
+        ttk.Separator(container, orient='horizontal').pack(fill=tk.X, pady=15)
+
+        ttk.Label(container, text="Credits", font=("Segoe UI", 10, "bold")).pack()
+        credits = ("Based on bandcamp-auto-uploader by 7x11x13\n"
+                   "GUI fork and enhancements by Nai64\n"
+                   "Some icons by Yusuke Kamiyamane (CC BY 3.0)")
+        ttk.Label(container, text=credits, font=("Segoe UI", 8), justify=tk.CENTER,
+                  foreground="gray").pack(pady=(5, 15))
+
+        ttk.Label(container, text="MIT License — See GitHub for full text",
+                  font=("Segoe UI", 8), foreground="gray").pack()
     
     def edit_treeview_cell(self, tree, item_id, column, current_value, callback):
         """Edit treeview cell inline with Entry widget"""

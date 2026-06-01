@@ -1,7 +1,6 @@
 import http.cookiejar
 import logging
 import sys
-from importlib.metadata import version
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urljoin
@@ -32,7 +31,11 @@ from bandcamp_auto_uploader.config import (
 )
 from bandcamp_auto_uploader.upload import Album
 
-__version__ = version("bandcamp_auto_uploader")
+try:
+    from bandcamp_auto_uploader import __version__
+except ImportError:
+    from importlib.metadata import version as _v
+    __version__ = _v("bandcamp_auto_uploader")
 
 logger = logging.getLogger("bandcamp-auto-uploader")
 

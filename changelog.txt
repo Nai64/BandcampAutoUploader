@@ -1,3 +1,8 @@
+3
+- Synced version across all sources (__init__.py, pyproject.toml, About tabs) to 2
+- Simplified About tab design in main GUI and Settings sidebar
+- Removed commented-out legacy code and unused imports
+
 2
 - Added new checkbox to use album artist instead of artist name for the album details
 - Fixed the issue when app doesn't have context menu icons
