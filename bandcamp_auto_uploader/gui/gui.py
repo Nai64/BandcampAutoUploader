@@ -1502,12 +1502,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if fit_mode == "Crop (fill)":
             return self.crop_cover_to_square(img)
         elif fit_mode == "Fit (contain)":
-            # Scale to fit within target square, pad with background
+            # Scale to fit within target square, pad with black
             w, h = img.size
             scale = min(target_size / w, target_size / h)
             new_w, new_h = int(w * scale), int(h * scale)
             resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-            square = Image.new("RGB", (target_size, target_size), (255, 255, 255))
+            square = Image.new("RGB", (target_size, target_size), (0, 0, 0))
             x = (target_size - new_w) // 2
             y = (target_size - new_h) // 2
             square.paste(resized, (x, y))
