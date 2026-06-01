@@ -310,9 +310,9 @@ def set_ui_theme(root, theme_name):
             set_titlebar_dark(root, False)
         except Exception:
             pass
-    elif theme_name == "xpnative":
+    elif theme_name == "keramik":
         try:
-            style.theme_use("xpnative")
+            style.theme_use("keramic")
             set_titlebar_dark(root, False)
             root.tk.eval(
                 "tk_setPalette "
