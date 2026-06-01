@@ -261,6 +261,10 @@ def set_ui_theme(root, theme_name):
             style.configure("TButton", padding=(2, 0))
             style.configure("TCheckbutton", padding=0)
             style.configure("TRadiobutton", padding=0)
+            try:
+                root.tk.eval("ttk::style element create Notebook.border from default")
+            except Exception:
+                pass
             style.configure("TNotebook", background="#1c1c1c")
             style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
             style.configure("Treeview", rowheight=20)
@@ -302,6 +306,10 @@ def set_ui_theme(root, theme_name):
             style.configure("TButton", padding=(2, 0))
             style.configure("TCheckbutton", padding=0)
             style.configure("TRadiobutton", padding=0)
+            try:
+                root.tk.eval("ttk::style element create Notebook.border from default")
+            except Exception:
+                pass
             style.configure("TNotebook", background="#fafafa")
             style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
             style.configure("Treeview", rowheight=20)
