@@ -3005,6 +3005,52 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             ])
         return rows
 
+    DEFAULT_DESCRIPTION_TEMPLATES = {
+        "Tracklist": "{n}. {artist} - {title}",
+        "Tracklist + Comments": "{n}. {artist} - {title}\n   {comment}",
+        "Track Comments": "{n}. {title}: {comment}",
+        "Technical Details": "{n}. {title} (length: {length}, format: {format}, bitrate: {bitrate}, size: {size})",
+    }
+
+    def render_description_template(self, mode, rows):
+        """Render a template string with track and album data."""
+        templates = getattr(self.config, 'description_templates', {})
+        template = templates.get(mode) or self.DEFAULT_DESCRIPTION_TEMPLATES.get(mode)
+        if not template:
+            return None
+
+        if mode in ("Album Info", "Release Notes", "Bandcamp Classic", "Metadata Dump"):
+            album_data = {
+                "album": self.album_name_var.get().strip(),
+                "artist": self.album_artist_var.get().strip(),
+                "date": self.album_publish_date_var.get().strip(),
+                "tags": self.album_tags_var.get().strip(),
+                "tracks": str(len(rows)),
+            }
+            tracklist = self.build_tracklist_description(rows)
+            album_data["tracklist"] = tracklist
+            result = template.format(**album_data)
+            lines = [line for line in result.split("\n") if line.strip()]
+            return "\n".join(lines)
+
+        lines = []
+        for index, row in enumerate(rows, 1):
+            data = {
+                "n": str(index),
+                "artist": str(row[1]).strip(),
+                "title": str(row[2]).strip(),
+                "comment": str(row[3]).strip() if len(row) > 3 else "",
+                "length": str(row[4]).strip() if len(row) > 4 else "",
+                "format": str(row[5]).strip() if len(row) > 5 else "",
+                "price": str(row[6]).strip() if len(row) > 6 else "",
+                "year": str(row[8]).strip() if len(row) > 8 else "",
+                "genre": str(row[9]).strip() if len(row) > 9 else "",
+                "bitrate": str(row[10]).strip() if len(row) > 10 else "",
+                "size": str(row[11]).strip() if len(row) > 11 else "",
+            }
+            lines.append(template.format(**data))
+        return "\n".join(lines)
+
     def build_auto_description_from_mode(self, rows=None):
         """Build the configured automatic album description without touching widgets."""
         mode = getattr(self.config, 'description_auto_fill_mode', "Off")
@@ -3013,6 +3059,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         if rows is None:
             rows = self.get_track_table_rows()
+
+        rendered = self.render_description_template(mode, rows)
+        if rendered is not None:
+            return rendered
+
         if mode == "Tracklist":
             return self.build_tracklist_description(rows)
         elif mode == "Tracklist + Comments":

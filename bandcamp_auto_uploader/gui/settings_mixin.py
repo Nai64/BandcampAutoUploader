@@ -2864,7 +2864,7 @@ class SettingsMixin:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(True, True)
-        self.center_dialog(dialog, 380, 340, self.root)
+        self.center_dialog(dialog, 400, 360, self.root)
 
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -2874,14 +2874,13 @@ class SettingsMixin:
 
         mode_tree = ttk.Treeview(list_frame, columns=('mode',), show='tree', selectmode='browse')
         mode_tree.column('#0', width=0, stretch=False)
-        mode_tree.column('mode', width=340, anchor=tk.W)
+        mode_tree.column('mode', width=360, anchor=tk.W)
 
         scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=mode_tree.yview)
         mode_tree.configure(yscrollcommand=scroll.set)
         scroll.pack(side=tk.RIGHT, fill=tk.Y)
         mode_tree.pack(fill=tk.BOTH, expand=True)
 
-        selected_id = None
         for mode in DESCRIPTION_AUTO_FILL_MODES:
             item = mode_tree.insert('', tk.END, values=(mode,))
             if mode == current_value:
@@ -2898,14 +2897,62 @@ class SettingsMixin:
             dialog.destroy()
 
         def on_double_click(event):
-            on_ok()
+            sel = mode_tree.selection()
+            if not sel:
+                return
+            mode = mode_tree.item(sel[0], 'values')[0]
+            if mode == "Off":
+                return
+            edit_dialog = tk.Toplevel(dialog)
+            edit_dialog.title(f"Edit Template — {mode}")
+            edit_dialog.transient(dialog)
+            edit_dialog.grab_set()
+            edit_dialog.resizable(True, True)
+            self.center_dialog(edit_dialog, 550, 350, dialog)
+
+            f = ttk.Frame(edit_dialog, padding=10)
+            f.pack(fill=tk.BOTH, expand=True)
+
+            ttk.Label(f, text="Template placeholders: {n} {artist} {title} {comment} {length} {format} {bitrate} {size}",
+                      font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W)
+            ttk.Label(f, text="Album modes also support: {album} {artist} {date} {tags} {tracks} {tracklist}",
+                      font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 5))
+
+            templates = self.config.description_templates.copy()
+            current_template = templates.get(mode, "")
+
+            text = tk.Text(f, font=("Consolas", 10), wrap=tk.WORD, height=12)
+            text.pack(fill=tk.BOTH, expand=True)
+            text.insert("1.0", current_template)
+            text.focus_set()
+
+            def save():
+                val = text.get("1.0", tk.END).strip()
+                if val:
+                    templates[mode] = val
+                else:
+                    templates.pop(mode, None)
+                self.config.description_templates = templates
+                save_config(self.config)
+                edit_dialog.destroy()
+
+            def reset():
+                templates.pop(mode, None)
+                self.config.description_templates = templates
+                save_config(self.config)
+                edit_dialog.destroy()
+
+            btn_f = ttk.Frame(f)
+            btn_f.pack(fill=tk.X, pady=(10, 0))
+            ttk.Button(btn_f, text="Save", command=save, width=10).pack(side=tk.RIGHT, padx=3)
+            ttk.Button(btn_f, text="Reset to Default", command=reset, width=14).pack(side=tk.RIGHT, padx=3)
+            ttk.Button(btn_f, text="Cancel", command=edit_dialog.destroy, width=10).pack(side=tk.RIGHT)
 
         mode_tree.bind('<Double-Button-1>', on_double_click)
 
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X, pady=(10, 0))
         ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
-        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
         ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
 
     def check_for_updates_now(self):
