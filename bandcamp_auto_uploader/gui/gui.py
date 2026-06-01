@@ -886,7 +886,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             except:
                 pass  # Silently fail if drag & drop setup fails
 
-        # Cover buttons
+        # Cover buttons — 2x2 grid with uniform sizing
         cover_btn_frame = ttk.Frame(cover_controls_frame)
         cover_btn_frame.pack(fill=tk.X, pady=(0, 3))
 
@@ -895,32 +895,31 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             text="Browse",
             command=self.browse_cover
         )
-        self.browse_cover_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        self.browse_cover_btn.grid(row=0, column=0, sticky="ew", padx=(0, 2))
 
         self.view_cover_btn = ttk.Button(
             cover_btn_frame,
             text="View",
             command=self.view_cover_art
         )
-        self.view_cover_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
-
-        # Library and Detect buttons side by side
-        library_detect_frame = ttk.Frame(cover_controls_frame)
-        library_detect_frame.pack(fill=tk.X, pady=(0, 3))
+        self.view_cover_btn.grid(row=0, column=1, sticky="ew")
 
         self.library_cover_btn = ttk.Button(
-            library_detect_frame,
+            cover_btn_frame,
             text="Library",
             command=self.manage_cover_art_library
         )
-        self.library_cover_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 2))
+        self.library_cover_btn.grid(row=1, column=0, sticky="ew", padx=(0, 2), pady=(3, 0))
 
         self.detect_cover_btn = ttk.Button(
-            library_detect_frame,
+            cover_btn_frame,
             text="Detect",
             command=self.detect_cover_from_tracks
         )
-        self.detect_cover_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.detect_cover_btn.grid(row=1, column=1, sticky="ew", pady=(3, 0))
+
+        cover_btn_frame.grid_columnconfigure(0, weight=1, uniform="cover_btn")
+        cover_btn_frame.grid_columnconfigure(1, weight=1, uniform="cover_btn")
 
         # Auto-scale checkbox
         self.scale_cover_var = tk.BooleanVar(value=getattr(self.config, 'always_auto_scale_cover', True))
