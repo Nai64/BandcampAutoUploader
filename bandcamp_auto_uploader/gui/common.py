@@ -1,9 +1,11 @@
 """Shared GUI helpers."""
 
+import ctypes
 import logging
 import os
 import re
 import tkinter as tk
+from ctypes import wintypes
 from tkinter import ttk
 from pathlib import Path
 
@@ -163,6 +165,29 @@ class ToolTip:
             tw.destroy()
 
 
+def set_titlebar_dark(root, dark):
+    """Set Windows titlebar to dark or light mode."""
+    try:
+        hwnd = root.winfo_id()
+        value = ctypes.c_int(1 if dark else 0)
+        for attr in (20, 19):
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, attr, ctypes.byref(value), ctypes.sizeof(value)
+            )
+        SWP_FRAMECHANGED = 0x0020
+        SWP_NOMOVE = 0x0002
+        SWP_NOSIZE = 0x0001
+        SWP_NOZORDER = 0x0004
+        ctypes.windll.user32.SetWindowPos(
+            hwnd, 0, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED
+        )
+        WM_THEMECHANGED = 0x031A
+        ctypes.windll.user32.SendMessageW(hwnd, WM_THEMECHANGED, 0, 0)
+    except Exception:
+        pass
+
+
 # Theme path cache
 _TKMT_THEME_PATH = None
 _TKMT_THEME_LOADED = False
@@ -222,11 +247,13 @@ def set_ui_theme(root, theme_name):
             style.configure("TNotebook.Tab", padding=(12, 8, 12, 4), height=26)
             style.configure("Treeview", rowheight=22)
             style.configure("TEntry", padding=(4, 2))
+            set_titlebar_dark(root, True)
         except Exception:
             pass
     else:
         try:
             style.theme_use("vista")
+            set_titlebar_dark(root, False)
             root.tk.eval(
                 "tk_setPalette "
                 "background #f0f0f0 "

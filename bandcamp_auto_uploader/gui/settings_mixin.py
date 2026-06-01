@@ -1980,13 +1980,13 @@ class SettingsMixin:
         self.config.log_max_lines = self.interface_combined_vars['log_max_lines'].get()
         self.config.log_to_file = self.interface_combined_vars['log_to_file'].get()
         self.config.log_file_level = self.interface_combined_vars['log_file_level'].get()
-        
-        save_config(self.config)
 
-        # Apply theme if changed
+        # Apply theme if changed and save config
         if 'theme' in self.interface_combined_vars:
-            new_theme = self.interface_combined_vars['theme'].get()
-            set_ui_theme(self.root, new_theme)
+            self.config.theme = self.interface_combined_vars['theme'].get()
+            set_ui_theme(self.root, self.config.theme)
+
+        save_config(self.config)
 
         # Apply visual changes
         self.apply_log_visual_settings()

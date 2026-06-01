@@ -176,6 +176,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Create UI.
         self.create_widgets()
 
+        # Ensure window is fully initialized before applying theme
+        self.root.update_idletasks()
+
         # Apply theme after widgets are created (avoids font parsing conflicts)
         from bandcamp_auto_uploader.gui.common import set_ui_theme
         set_ui_theme(self.root, getattr(self.config, 'theme', 'Light'))
@@ -8072,6 +8075,18 @@ def main():
         root = TkinterDnD.Tk()
     else:
         root = tk.Tk()
+
+    # Set dark titlebar early for Windows 11
+    try:
+        import ctypes
+        hwnd = root.winfo_id()
+        value = ctypes.c_int(1)
+        for attr in (20, 19):
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, attr, ctypes.byref(value), ctypes.sizeof(value)
+            )
+    except Exception:
+        pass
 
     app = BandcampUploaderGUI(root)
     root.mainloop()
