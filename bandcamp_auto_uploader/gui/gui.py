@@ -58,7 +58,7 @@ except ImportError:
     DRAG_DROP_AVAILABLE = False
 
 from bandcamp_auto_uploader.bandcamp_http_adapter import BandcampHTTPAdapter
-from bandcamp_auto_uploader.config import Config, load_config, save_config
+from bandcamp_auto_uploader.config import Config, load_config, save_config, load_custom_description_templates
 from bandcamp_auto_uploader.gui.common import PrivacyLogFilter, QueueHandler, RedactingFormatter, ToolTip, DESCRIPTION_TEMPLATES
 from bandcamp_auto_uploader.gui import image_scaling
 from bandcamp_auto_uploader.gui.logs_mixin import LogsMixin
@@ -2909,33 +2909,73 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         templates = getattr(self.config, 'description_templates', {})
         template = templates.get(mode) or self.DEFAULT_DESCRIPTION_TEMPLATES.get(mode)
         if not template:
-            custom_modes = getattr(self.config, 'custom_description_modes', [])
-            for cm in custom_modes:
+            for cm in load_custom_description_templates():
                 if cm["name"] == mode:
                     template = cm["template"]
                     break
         if not template:
             return None
 
-        ALBUM_PLACEHOLDERS = ("{album_info}", "{track_comments}", "{technical_details}", "{tracklist}", "{tracks}", "{date}", "{tags}", "{album}")
-        is_album_mode = mode in ("Album Info", "Release Notes", "Bandcamp Classic", "Metadata Dump") or any(p in template for p in ALBUM_PLACEHOLDERS)
+        album_data = {
+            "album": self.album_name_var.get().strip(),
+            "artist": self.album_artist_var.get().strip(),
+            "date": self.album_publish_date_var.get().strip(),
+            "tags": self.album_tags_var.get().strip(),
+            "tracks": str(len(rows)),
+            "tracklist": self.build_tracklist_description(rows),
+            "album_info": self.build_album_info_description(rows),
+            "track_comments": self.build_track_comments_description(rows),
+            "technical_details": self.build_technical_details_description(rows),
+        }
 
-        if is_album_mode:
-            album_data = {
-                "album": self.album_name_var.get().strip(),
-                "artist": self.album_artist_var.get().strip(),
-                "date": self.album_publish_date_var.get().strip(),
-                "tags": self.album_tags_var.get().strip(),
-                "tracks": str(len(rows)),
-            }
-            tracklist = self.build_tracklist_description(rows)
-            album_data["tracklist"] = tracklist
-            album_data["album_info"] = self.build_album_info_description(rows)
-            album_data["track_comments"] = self.build_track_comments_description(rows)
-            album_data["technical_details"] = self.build_technical_details_description(rows)
+        if mode in ("Album Info", "Release Notes", "Bandcamp Classic", "Metadata Dump"):
             result = template.format(**album_data)
             lines = [line for line in result.split("\n") if line.strip()]
             return "\n".join(lines)
+
+        # For custom templates: detect album-level placeholders to decide rendering mode
+        ALBUM_PLACEHOLDERS = ("{album_info}", "{track_comments}", "{technical_details}", "{tracklist}", "{tracks}", "{date}", "{tags}", "{album}")
+        if any(p in template for p in ALBUM_PLACEHOLDERS):
+            # Album-level rendering with first-track data for per-track placeholders
+            if rows:
+                first = rows[0]
+                album_data["n"] = "1"
+                album_data["title"] = str(first[2]).strip() if len(first) > 2 else ""
+                album_data["comment"] = str(first[3]).strip() if len(first) > 3 else ""
+                album_data["length"] = str(first[4]).strip() if len(first) > 4 else ""
+                album_data["format"] = str(first[5]).strip() if len(first) > 5 else ""
+                album_data["price"] = str(first[6]).strip() if len(first) > 6 else ""
+                album_data["year"] = str(first[8]).strip() if len(first) > 8 else ""
+                album_data["genre"] = str(first[9]).strip() if len(first) > 9 else ""
+                album_data["bitrate"] = str(first[10]).strip() if len(first) > 10 else ""
+                album_data["size"] = str(first[11]).strip() if len(first) > 11 else ""
+            else:
+                for k in ("n", "title", "comment", "length", "format", "price", "year", "genre", "bitrate", "size"):
+                    album_data.setdefault(k, "")
+            result = template.format(**album_data)
+            lines = [line for line in result.split("\n") if line.strip()]
+            return "\n".join(lines)
+
+        # Per-track rendering with album data merged in
+        lines = []
+        for index, row in enumerate(rows, 1):
+            data = {
+                "n": str(index),
+                "artist": str(row[1]).strip() if len(row) > 1 else "",
+                "title": str(row[2]).strip() if len(row) > 2 else "",
+                "comment": str(row[3]).strip() if len(row) > 3 else "",
+                "length": str(row[4]).strip() if len(row) > 4 else "",
+                "format": str(row[5]).strip() if len(row) > 5 else "",
+                "price": str(row[6]).strip() if len(row) > 6 else "",
+                "year": str(row[8]).strip() if len(row) > 8 else "",
+                "genre": str(row[9]).strip() if len(row) > 9 else "",
+                "bitrate": str(row[10]).strip() if len(row) > 10 else "",
+                "size": str(row[11]).strip() if len(row) > 11 else "",
+            }
+            for k, v in album_data.items():
+                data.setdefault(k, v)
+            lines.append(template.format(**data))
+        return "\n".join(lines)
 
         lines = []
         for index, row in enumerate(rows, 1):

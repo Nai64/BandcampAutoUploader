@@ -188,7 +188,6 @@ class Config:
     notify_on_artists_load: bool = False  # Notify when artists are loaded
     notify_on_template_save: bool = False  # Notify when template is saved
     description_templates: dict = dataclasses.field(default_factory=dict)  # Custom description templates per mode
-    custom_description_modes: list = dataclasses.field(default_factory=list)  # User-created modes [{"name":..., "template":...}]
     check_for_updates: bool = True  # Automatically check for updates on startup
 
 
@@ -273,3 +272,44 @@ def init_config():
         choices=["Yes", "No"],
     ).execute()
     return config
+
+
+def get_templates_autofill_dir() -> Path:
+    return get_app_data_dir() / "Templates" / "Autofill"
+
+
+def load_custom_description_templates() -> list:
+    """Load custom description templates from individual .txt files."""
+    directory = get_templates_autofill_dir()
+    if not directory.exists():
+        return []
+    templates = []
+    for f in sorted(directory.iterdir()):
+        if f.suffix.lower() == ".txt":
+            name = f.stem
+            try:
+                template = f.read_text(encoding="utf-8").strip()
+                if template:
+                    templates.append({"name": name, "template": template})
+            except Exception:
+                continue
+    return templates
+
+
+def save_custom_description_template(name: str, template: str):
+    """Save a custom description template to a .txt file."""
+    directory = get_templates_autofill_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    safe_name = "".join(c for c in name if c not in r'<>:"/\|?*').strip()
+    if not safe_name:
+        safe_name = "Unnamed"
+    (directory / f"{safe_name}.txt").write_text(template.strip(), encoding="utf-8")
+
+
+def delete_custom_description_template(name: str):
+    """Delete a custom description template .txt file."""
+    directory = get_templates_autofill_dir()
+    safe_name = "".join(c for c in name if c not in r'<>:"/\|?*').strip()
+    filepath = directory / f"{safe_name}.txt"
+    if filepath.exists():
+        filepath.unlink()
