@@ -2803,24 +2803,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             lines.append(f"{label}: {comment}")
         return "\n".join(lines)
 
-    def build_tracklist_with_comments_description(self, rows):
-        """Build a numbered tracklist with comments nested under matching tracks."""
-        lines = []
-        for index, row in enumerate(rows, 1):
-            artist = str(row[1]).strip()
-            title = str(row[2]).strip()
-            comment = str(row[3]).strip()
-            if not title and not comment:
-                continue
-
-            label = title or f"Track {index}"
-            if artist and title:
-                label = f"{artist} - {title}"
-            lines.append(f"{index}. {label}")
-            if comment:
-                lines.append(f"   {comment}")
-        return "\n".join(lines)
-
     def build_album_info_description(self, rows):
         """Build a compact album-info description from current fields and track rows."""
         lines = []
@@ -2849,69 +2831,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         return "\n".join(lines)
 
-    def build_release_notes_description(self, rows):
-        """Build a release-notes style description with album details and tracklist."""
-        lines = []
-        album_name = self.album_name_var.get().strip()
-        artist = self.album_artist_var.get().strip()
-        release_date = self.album_publish_date_var.get().strip()
-        tags = self.album_tags_var.get().strip()
-        tracklist = self.build_tracklist_description(rows)
-
-        if album_name and artist:
-            lines.append(f"{album_name} by {artist}")
-        elif album_name:
-            lines.append(album_name)
-        elif artist:
-            lines.append(f"New release by {artist}")
-
-        details = []
-        if release_date:
-            details.append(f"Released: {release_date}")
-        if rows:
-            details.append(f"Tracks: {len(rows)}")
-        if tags:
-            details.append(f"Tags: {tags}")
-        if details:
-            if lines:
-                lines.append("")
-            lines.extend(details)
-
-        if tracklist:
-            if lines:
-                lines.append("")
-            lines.append("Tracklist:")
-            lines.append(tracklist)
-
-        return "\n".join(lines)
-
-    def build_bandcamp_classic_description(self, rows):
-        """Build a simple Bandcamp-style description focused on release and tracks."""
-        lines = []
-        album_name = self.album_name_var.get().strip()
-        artist = self.album_artist_var.get().strip()
-        release_date = self.album_publish_date_var.get().strip()
-        tracklist = self.build_tracklist_with_comments_description(rows)
-
-        if artist and album_name:
-            lines.append(f"{artist} - {album_name}")
-        elif album_name:
-            lines.append(album_name)
-        elif artist:
-            lines.append(artist)
-
-        if release_date:
-            if lines:
-                lines.append("")
-            lines.append(f"Release date: {release_date}")
-
-        if tracklist:
-            if lines:
-                lines.append("")
-            lines.append(tracklist)
-
-        return "\n".join(lines)
-
     def build_technical_details_description(self, rows):
         """Build a compact technical summary using visible audio metadata."""
         lines = []
@@ -2929,28 +2848,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     fields.append(f"{label}: {value}")
             suffix = f" ({', '.join(fields)})" if fields else ""
             lines.append(f"{index}. {title}{suffix}")
-        return "\n".join(lines)
-
-    def build_metadata_dump_description(self, rows):
-        """Build a fuller metadata dump for users who want maximum detail."""
-        lines = []
-        album_info = self.build_album_info_description(rows)
-        track_comments = self.build_track_comments_description(rows)
-        technical_details = self.build_technical_details_description(rows)
-
-        if album_info:
-            lines.append(album_info)
-        if track_comments:
-            if lines:
-                lines.append("")
-            lines.append("Track Comments:")
-            lines.append(track_comments)
-        if technical_details:
-            if lines:
-                lines.append("")
-            lines.append("Technical Details:")
-            lines.append(technical_details)
-
         return "\n".join(lines)
 
     def get_album_description_rows(self, album):
@@ -3058,27 +2955,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if rows is None:
             rows = self.get_track_table_rows()
 
-        rendered = self.render_description_template(mode, rows)
-        if rendered is not None:
-            return rendered
-
-        if mode == "Tracklist":
-            return self.build_tracklist_description(rows)
-        elif mode == "Tracklist + Comments":
-            return self.build_tracklist_with_comments_description(rows)
-        elif mode == "Track Comments":
-            return self.build_track_comments_description(rows)
-        elif mode == "Album Info":
-            return self.build_album_info_description(rows)
-        elif mode == "Release Notes":
-            return self.build_release_notes_description(rows)
-        elif mode == "Bandcamp Classic":
-            return self.build_bandcamp_classic_description(rows)
-        elif mode == "Technical Details":
-            return self.build_technical_details_description(rows)
-        elif mode == "Metadata Dump":
-            return self.build_metadata_dump_description(rows)
-        return ""
+        return self.render_description_template(mode, rows) or ""
 
     def prepare_upload_description_from_template(self, rows=None, current_description=None, update_widget=True):
         """Apply the selected description template at Upload Album click time."""
