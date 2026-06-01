@@ -1119,15 +1119,15 @@ wmi = "*"
 
 [[package]]
 name = "tkinterdnd2"
-version = "0.3.0"
+version = "0.4.4.1"
 description = "TkinterDnD2 is a python wrapper for George Petasis'' tkDnD Tk extension version 2"
 optional = true
 python-versions = ">=3.6"
 groups = ["main"]
 markers = "extra == \"dragdrop\""
 files = [
-    {file = "tkinterdnd2-0.3.0-py3-none-any.whl", hash = "sha256:ef3ff4894c75e21ddc3252eb6d1292670824bf20240b9e82da9240631bbe63fe"},
-    {file = "tkinterdnd2-0.3.0.tar.gz", hash = "sha256:cb9d72634c42ff2e5a6e34823ef02f7722a5b6ad5cec5e1de82ec8f0c371a614"},
+    {file = "tkinterdnd2-0.4.4.1-py3-none-any.whl", hash = "sha256:d1af61a544a2ec6bdec26baa04c0853c97be044fd89816c0879367887419f713"},
+    {file = "tkinterdnd2-0.4.4.1.tar.gz", hash = "sha256:e8ca37be9ac4fc37d8d53850f88086a9dcb761ea63d667eaa473ed1c87c7b968"},
 ]
 
 [[package]]
@@ -1461,4 +1461,4 @@ noise = ["numpy", "scipy"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "94573640fa5d99cd2dbd4e086d8d76307d4b3a7d114322c75ab980896bd15cfd"
+content-hash = "88252d5d19ef408ffacbe651e1ce2e86ff0d89acbf2cb4c0322c634f7905d961"
