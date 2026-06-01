@@ -977,45 +977,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Action Buttons
         button_frame = ttk.Frame(bottom_section)
         button_frame.pack(fill=tk.X)
-
-        # Left group
-        self.new_track_btn = ttk.Button(
-            button_frame,
-            text="New",
-            command=self.add_track_to_album,
-            style="Subtle.TButton"
-        )
-        self.new_track_btn.pack(side=tk.LEFT, padx=(0, 4))
-        ToolTip(self.new_track_btn, "Add track files to album")
-
-        self.dup_track_btn = ttk.Button(
-            button_frame,
-            text="Duplicate",
-            command=self.duplicate_selected_track,
-            style="Subtle.TButton"
-        )
-        self.dup_track_btn.pack(side=tk.LEFT, padx=(0, 4))
-        ToolTip(self.dup_track_btn, "Duplicate selected track")
-
-        self.del_track_btn = ttk.Button(
-            button_frame,
-            text="Delete",
-            command=self.delete_selected_track,
-            style="Subtle.TButton"
-        )
-        self.del_track_btn.pack(side=tk.LEFT, padx=(0, 10))
-        ToolTip(self.del_track_btn, "Delete selected track")
-
-        # Right group
+        
+        # Preferences button
         prefs_btn = ttk.Button(
             button_frame,
             text="Preferences",
             command=self.open_preferences_dialog,
             style="Subtle.TButton"
         )
-        prefs_btn.pack(side=tk.RIGHT, padx=(10, 0))
+        prefs_btn.pack(side=tk.LEFT, padx=(0, 10))
         ToolTip(prefs_btn, "Open preferences dialog")
-
+        
         self.upload_btn = ttk.Button(
             button_frame,
             text="UPLOAD ALBUM",
@@ -1023,9 +995,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             style="Primary.TButton",
             state=tk.DISABLED
         )
-        self.upload_btn.pack(side=tk.RIGHT, padx=(0, 5))
+        self.upload_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         ToolTip(self.upload_btn, "Upload the selected album to Bandcamp (Keyboard: Ctrl+S)")
-
+        
         self.cancel_btn = ttk.Button(
             button_frame,
             text="Cancel Upload",
@@ -1033,7 +1005,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             style="Subtle.TButton",
             state=tk.DISABLED
         )
-        self.cancel_btn.pack(side=tk.RIGHT)
+        self.cancel_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ToolTip(self.cancel_btn, "Cancel the current upload operation")
 
     def create_upload_progress_section(self, parent):
         """Create the per-track upload progress section below cover art."""
@@ -5948,29 +5921,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.delete(item_id)
         self.sync_track_table_to_current_album()
         self.show_toast("Track removed", 2000, "success", trigger="track_remove")
-
-    def duplicate_selected_track(self):
-        """Duplicate the selected track."""
-        sel = self.track_table.selection()
-        if not sel:
-            self.show_toast("No track selected", 1600, "warning")
-            return
-        item_id = sel[0]
-        if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
-            return
-        values = list(self.track_table.item(item_id)['values'])
-        self.track_table.insert("", tk.END, values=tuple(values))
-        self.sync_track_table_to_current_album()
-        self.show_toast("Track duplicated", 2000, "success", trigger="track_duplicate")
-
-    def delete_selected_track(self):
-        """Delete the selected track."""
-        sel = self.track_table.selection()
-        if not sel:
-            self.show_toast("No track selected", 1600, "warning")
-            return
-        self.remove_track(sel[0])
     
     def move_track_up(self, item_id):
         """Move a track up in the order"""
