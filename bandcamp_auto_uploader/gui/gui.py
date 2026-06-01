@@ -1517,15 +1517,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def make_cover_preview_image(self, cover_path, preview_size):
         """Render cover art as an exact square preview image."""
-        from PIL import Image, ImageOps
+        from PIL import Image
 
         img = self.normalize_cover_image(cover_path, self.get_cover_preview_background())
-        return ImageOps.fit(
-            img,
-            (preview_size, preview_size),
-            method=Image.Resampling.LANCZOS,
-            centering=(0.5, 0.5),
-        )
+        fit_mode = self.cover_fit_mode_var.get() if hasattr(self, 'cover_fit_mode_var') else "Crop (fill)"
+        fitted = self.apply_fit_mode(img, preview_size, fit_mode)
+        return fitted.resize((preview_size, preview_size), Image.Resampling.LANCZOS)
 
     def update_cover_preview(self):
         """Update the cover art preview image"""
