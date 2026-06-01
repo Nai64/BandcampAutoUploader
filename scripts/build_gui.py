@@ -52,12 +52,21 @@ def build_exe():
     return 0
 
 
+def _find_iscc():
+    """Locate ISCC.exe across common Inno Setup install paths (v5, v6, v7+)."""
+    root = Path("C:\\Program Files (x86)")
+    if not root.exists():
+        root = Path("C:\\Program Files")
+    for dir in root.iterdir():
+        if "Inno Setup" in dir.name and (dir / "ISCC.exe").exists():
+            return dir / "ISCC.exe"
+    return None
+
+
 def build_installer():
     """Build the Inno Setup installer."""
-    iscc = Path("C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe")
-    if not iscc.exists():
-        iscc = Path("C:\\Program Files\\Inno Setup 6\\ISCC.exe")
-    if not iscc.exists():
+    iscc = _find_iscc()
+    if not iscc:
         print("✗ Inno Setup not found. Install from https://jrsoftware.org/isdl.php")
         return 1
 
