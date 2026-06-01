@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox, colorchooser
 
 from bandcamp_auto_uploader.config import Config, save_config, load_custom_description_templates, save_custom_description_template, delete_custom_description_template
-from bandcamp_auto_uploader.gui.common import DESCRIPTION_AUTO_FILL_MODES, DESCRIPTION_TEMPLATES, ToolTip
+from bandcamp_auto_uploader.gui.common import DESCRIPTION_AUTO_FILL_MODES, DESCRIPTION_TEMPLATES, ToolTip, set_ui_theme
 from bandcamp_auto_uploader import __version__
 
 
@@ -1776,6 +1776,8 @@ class SettingsMixin:
         """Create combined Interface settings section that includes all sub-sections"""
         # Combined settings from all interface sub-sections
         settings = [
+            # Theme setting
+            ("Interface Theme", "theme", "choice", ["Light", "Sun-Valley Dark"]),
             # Track Table Columns settings
             ("Columns: Always Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Columns: Locked Track Highlight", "locked_track_highlight_color", "color"),
@@ -1980,7 +1982,12 @@ class SettingsMixin:
         self.config.log_file_level = self.interface_combined_vars['log_file_level'].get()
         
         save_config(self.config)
-        
+
+        # Apply theme if changed
+        if 'theme' in self.interface_combined_vars:
+            new_theme = self.interface_combined_vars['theme'].get()
+            set_ui_theme(self.root, new_theme)
+
         # Apply visual changes
         self.apply_log_visual_settings()
         if hasattr(self, "setup_logging"):
