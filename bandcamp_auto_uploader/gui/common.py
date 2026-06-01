@@ -16,14 +16,8 @@ DESCRIPTION_AUTO_FILL_MODES = [
     "Detailed",
     "Tracklist",
     "Full Track Info",
-    "Tracklist + Comments",
-    "Tracklist (Artist)",
     "Track Comments",
-    "Album Info",
     "Album Details",
-    "Release Notes",
-    "Bandcamp Classic",
-    "Technical Details",
     "Metadata Dump",
 ]
 
@@ -32,13 +26,8 @@ DESCRIPTION_TEMPLATES = {
     "Detailed": "{n}. {title} ({length})",
     "Tracklist": "{n}. {artist} - {title}",
     "Full Track Info": "{n}. {title} — {artist}\n   {length} | {format} | {bitrate}",
-    "Tracklist + Comments": "{n}. {artist} - {title}\n   {comment}",
-    "Tracklist (Artist)": "{n}. {artist} - {title} ({length})",
     "Track Comments": "{n}. {title}: {comment}",
-    "Technical Details": "{n}. {title} (length: {length}, format: {format}, bitrate: {bitrate}, size: {size})",
-    "Album Info": "Album: {album}\nArtist: {artist}\nRelease Date: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
-    "Release Notes": "{album} by {artist}\n\nReleased: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
-    "Bandcamp Classic": "{artist} - {album}\n\nRelease date: {date}\n\n{tracklist}",
+    "Album Details": "{artist} - {album}\n\nRelease: {date}\nTracks: {tracks}\nTags: {tags}",
     "Metadata Dump": "{album_info}\n\nTrack Comments:\n{track_comments}\n\nTechnical Details:\n{technical_details}",
 }
 

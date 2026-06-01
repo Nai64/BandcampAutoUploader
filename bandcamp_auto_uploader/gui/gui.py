@@ -2987,7 +2987,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "technical_details": self.build_technical_details_description(rows),
         }
 
-        if mode in ("Album Info", "Album Details", "Release Notes", "Bandcamp Classic", "Metadata Dump"):
+        if mode in ("Album Details", "Metadata Dump"):
             result = template.format(**album_data)
             lines = [line for line in result.split("\n") if line.strip()]
             return "\n".join(lines)
