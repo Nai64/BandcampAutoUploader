@@ -1777,7 +1777,7 @@ class SettingsMixin:
         # Combined settings from all interface sub-sections
         settings = [
             # Theme setting
-            ("Interface Theme", "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark"]),
+            ("Interface Theme", "theme", "choice", ["Light", "xpnative", "Sun-Valley Light", "Sun-Valley Dark"]),
             # Track Table Columns settings
             ("Columns: Always Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Columns: Locked Track Highlight", "locked_track_highlight_color", "color"),

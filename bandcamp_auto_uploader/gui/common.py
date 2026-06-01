@@ -310,6 +310,24 @@ def set_ui_theme(root, theme_name):
             set_titlebar_dark(root, False)
         except Exception:
             pass
+    elif theme_name == "xpnative":
+        try:
+            style.theme_use("xpnative")
+            set_titlebar_dark(root, False)
+            root.tk.eval(
+                "tk_setPalette "
+                "background #f0f0f0 "
+                "foreground #000000 "
+                "selectBackground #0078d7 "
+                "selectForeground #ffffff "
+                "highlightColor #0078d7 "
+                "activeBackground #0078d7 "
+                "activeForeground #ffffff"
+            )
+            root.tk.eval("option add *Menu.selectcolor #000000 startup")
+            root.tk.eval("option add *Menu.background #f0f0f0 startup")
+        except Exception:
+            pass
     else:
         try:
             style.theme_use("vista")
