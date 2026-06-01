@@ -2723,9 +2723,14 @@ class SettingsMixin:
     def check_for_updates_now(self):
         """Check for new releases on GitHub."""
         import json
+        import re
         import webbrowser
         import urllib.request
         from tkinter import messagebox
+
+        def parse_ver(v):
+            nums = re.findall(r'\d+', v)
+            return tuple(int(n) for n in nums) if nums else (0,)
 
         try:
             req = urllib.request.Request(
@@ -2737,13 +2742,10 @@ class SettingsMixin:
 
             latest_tag = data.get("tag_name", "").lstrip("v")
             current = __version__
+            latest_ver = parse_ver(latest_tag)
+            current_ver = parse_ver(current)
 
-            if latest_tag == current:
-                messagebox.showinfo(
-                    "Up to Date",
-                    f"You're running the latest version ({__version__})."
-                )
-            else:
+            if latest_ver > current_ver:
                 result = messagebox.askyesno(
                     "Update Available",
                     f"A new version is available: v{latest_tag}\n"
@@ -2752,6 +2754,17 @@ class SettingsMixin:
                 )
                 if result:
                     webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
+            elif latest_ver < current_ver:
+                messagebox.showinfo(
+                    "Up to Date",
+                    f"You're running a newer version ({__version__}) "
+                    f"than the latest release (v{latest_tag})."
+                )
+            else:
+                messagebox.showinfo(
+                    "Up to Date",
+                    f"You're running the latest version ({__version__})."
+                )
 
         except Exception as e:
             messagebox.showerror(
