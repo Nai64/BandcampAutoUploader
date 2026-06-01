@@ -2722,8 +2722,45 @@ class SettingsMixin:
 
     def check_for_updates_now(self):
         """Check for new releases on GitHub."""
+        import json
         import webbrowser
-        webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
+        import urllib.request
+        from tkinter import messagebox
+
+        try:
+            req = urllib.request.Request(
+                "https://api.github.com/repos/Nai64/BandcampAutoUploader/releases/latest",
+                headers={"Accept": "application/vnd.github.v3+json", "User-Agent": "BandcampAutoUploader"}
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode())
+
+            latest_tag = data.get("tag_name", "").lstrip("v")
+            current = __version__
+
+            if latest_tag == current:
+                messagebox.showinfo(
+                    "Up to Date",
+                    f"You're running the latest version ({__version__})."
+                )
+            else:
+                result = messagebox.askyesno(
+                    "Update Available",
+                    f"A new version is available: v{latest_tag}\n"
+                    f"You have: v{__version__}\n\n"
+                    "Would you like to open the releases page to download it?"
+                )
+                if result:
+                    webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
+
+        except Exception as e:
+            messagebox.showerror(
+                "Check Failed",
+                f"Could not check for updates:\n{e}\n\n"
+                "Open the releases page manually?"
+            )
+            if messagebox.askyesno("Open Releases?", "Open GitHub releases page?"):
+                webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
 
     def restart_application(self):
         """Restart the application"""
