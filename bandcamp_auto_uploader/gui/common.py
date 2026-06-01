@@ -200,7 +200,7 @@ def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
                     highlightthickness=1,
                     highlightbackground=bg,
                     highlightcolor=selectbg,
-                    padx=4, pady=1
+                    padx=4, pady=0
                 )
             else:
                 style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg)
