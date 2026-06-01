@@ -2915,7 +2915,7 @@ class SettingsMixin:
 
             ttk.Label(f, text="Template placeholders: {n} {artist} {title} {comment} {length} {format} {bitrate} {size}",
                       font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W)
-            ttk.Label(f, text="Album modes also support: {album} {artist} {date} {tags} {tracks} {tracklist}",
+            ttk.Label(f, text="Album modes also support: {album} {artist} {date} {tags} {tracks} {tracklist} {album_info} {track_comments} {technical_details}",
                       font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 5))
 
             templates = self.config.description_templates.copy()

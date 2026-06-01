@@ -26,6 +26,7 @@ DESCRIPTION_TEMPLATES = {
     "Album Info": "Album: {album}\nArtist: {artist}\nRelease Date: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
     "Release Notes": "{album} by {artist}\n\nReleased: {date}\nTracks: {tracks}\nTags: {tags}\n\nTracklist:\n{tracklist}",
     "Bandcamp Classic": "{artist} - {album}\n\nRelease date: {date}\n\n{tracklist}",
+    "Metadata Dump": "{album_info}\n\nTrack Comments:\n{track_comments}\n\nTechnical Details:\n{technical_details}",
 }
 
 

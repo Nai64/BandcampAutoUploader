@@ -3024,6 +3024,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             }
             tracklist = self.build_tracklist_description(rows)
             album_data["tracklist"] = tracklist
+            album_data["album_info"] = self.build_album_info_description(rows)
+            album_data["track_comments"] = self.build_track_comments_description(rows)
+            album_data["technical_details"] = self.build_technical_details_description(rows)
             result = template.format(**album_data)
             lines = [line for line in result.split("\n") if line.strip()]
             return "\n".join(lines)
