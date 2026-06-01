@@ -2864,7 +2864,7 @@ class SettingsMixin:
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(True, True)
-        self.center_dialog(dialog, 400, 360, self.root)
+        self.center_dialog(dialog, 450, 380, self.root)
 
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -2908,15 +2908,10 @@ class SettingsMixin:
             edit_dialog.transient(dialog)
             edit_dialog.grab_set()
             edit_dialog.resizable(True, True)
-            self.center_dialog(edit_dialog, 550, 350, dialog)
+            self.center_dialog(edit_dialog, 700, 400, dialog)
 
             f = ttk.Frame(edit_dialog, padding=10)
             f.pack(fill=tk.BOTH, expand=True)
-
-            ttk.Label(f, text="Template placeholders: {n} {artist} {title} {comment} {length} {format} {bitrate} {size}",
-                      font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W)
-            ttk.Label(f, text="Album modes also support: {album} {artist} {date} {tags} {tracks} {tracklist} {album_info} {track_comments} {technical_details}",
-                      font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 5))
 
             templates = self.config.description_templates.copy()
             current_template = templates.get(mode) or DESCRIPTION_TEMPLATES.get(mode, "")
