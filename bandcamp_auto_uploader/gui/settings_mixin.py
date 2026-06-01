@@ -2739,9 +2739,6 @@ class SettingsMixin:
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(frame, text="Custom Regex Patterns",
-                  font=("Segoe UI", 11, "bold")).pack(anchor=tk.W, pady=(0, 10))
-
         list_frame = ttk.Frame(frame)
         list_frame.pack(fill=tk.BOTH, expand=True)
 
