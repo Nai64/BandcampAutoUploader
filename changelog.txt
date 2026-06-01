@@ -1,9 +1,4 @@
-3
-- Synced version across all sources (__init__.py, pyproject.toml, About tabs) to 2
-- Simplified About tab design in main GUI and Settings sidebar
-- Removed commented-out legacy code and unused imports
-
-2
+Version 2
 - Added new checkbox to use album artist instead of artist name for the album details
 - Fixed the issue when app doesn't have context menu icons
 - Removed some of legacy codes and features
@@ -17,3 +12,6 @@
 - Added support for OGG Vorbis, Opus, and M4A/AAC audio formats
 - Added drag-and-drop support for adding audio files and album folders to the track table
 - Fixed crash when album folder contains subdirectories (skip non-files in Album.from_directory)
+- Synced version across all sources (__init__.py, pyproject.toml, About tabs) to 2
+- Simplified About tab design in main GUI and Settings sidebar
+- Removed commented-out legacy code and unused imports
