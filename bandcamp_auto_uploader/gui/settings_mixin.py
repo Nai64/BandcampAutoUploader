@@ -2740,12 +2740,7 @@ class SettingsMixin:
         frame.pack(fill=tk.BOTH, expand=True)
 
         ttk.Label(frame, text="Custom Regex Patterns",
-                  font=("Segoe UI", 11, "bold")).pack(anchor=tk.W)
-
-        ttk.Label(frame, text="Format: regex | track_group | artist_group | title_group",
-                  font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 5))
-        ttk.Label(frame, text="Use 0 or leave empty to skip a group. Order matters.",
-                  font=("Segoe UI", 8), foreground="gray").pack(anchor=tk.W, pady=(0, 10))
+                  font=("Segoe UI", 11, "bold")).pack(anchor=tk.W, pady=(0, 10))
 
         list_frame = ttk.Frame(frame)
         list_frame.pack(fill=tk.BOTH, expand=True)
