@@ -2792,19 +2792,19 @@ class SettingsMixin:
             f.pack(fill=tk.BOTH, expand=True)
 
             ttk.Label(f, text="Regex:").grid(row=0, column=0, sticky=tk.W, pady=3)
-            regex_entry = ttk.Entry(f, width=50)
+            regex_entry = ttk.Entry(f, width=40)
             regex_entry.grid(row=0, column=1, padx=(5, 0), pady=3)
 
             ttk.Label(f, text="Track # group:").grid(row=1, column=0, sticky=tk.W, pady=3)
-            track_entry = ttk.Entry(f, width=10)
+            track_entry = ttk.Entry(f, width=40)
             track_entry.grid(row=1, column=1, sticky=tk.W, padx=(5, 0), pady=3)
 
             ttk.Label(f, text="Artist group:").grid(row=2, column=0, sticky=tk.W, pady=3)
-            artist_entry = ttk.Entry(f, width=10)
+            artist_entry = ttk.Entry(f, width=40)
             artist_entry.grid(row=2, column=1, sticky=tk.W, padx=(5, 0), pady=3)
 
             ttk.Label(f, text="Title group:").grid(row=3, column=0, sticky=tk.W, pady=3)
-            title_entry = ttk.Entry(f, width=10)
+            title_entry = ttk.Entry(f, width=40)
             title_entry.grid(row=3, column=1, sticky=tk.W, padx=(5, 0), pady=3)
 
             def save_pattern():
