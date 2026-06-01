@@ -215,6 +215,13 @@ def set_ui_theme(root, theme_name):
             )
             root.tk.eval("option add *Menu.selectcolor #ffffff startup")
             root.tk.eval("option add *Menu.background #2f2f2f startup")
+            # Compact sizing overrides
+            style.configure("TButton", padding=(6, 2))
+            style.configure("TCheckbutton", padding=2)
+            style.configure("TRadiobutton", padding=2)
+            style.configure("TNotebook.Tab", padding=(12, 8, 12, 4), height=26)
+            style.configure("Treeview", rowheight=22)
+            style.configure("TEntry", padding=(4, 2))
         except Exception:
             pass
     else:
