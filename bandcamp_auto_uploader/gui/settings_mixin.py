@@ -1232,14 +1232,9 @@ class SettingsMixin:
                 save_config(self.config)
         elif setting_type == "str":
             if config_key == "description_auto_fill_mode":
-                self.edit_treeview_cell_dropdown(
-                    self.general_tree,
-                    item_id,
-                    'value',
-                    DESCRIPTION_AUTO_FILL_MODES,
+                self.open_description_autofill_dialog(self.general_tree, item_id, 'value',
                     self.general_vars[config_key].get(),
-                    lambda v: self.apply_general_str_setting(config_key, v),
-                )
+                    lambda v: self.apply_general_str_setting(config_key, v))
             elif config_key == "cover_scaling_method":
                 self.edit_treeview_cell_dropdown(
                     self.general_tree,
@@ -1258,6 +1253,13 @@ class SettingsMixin:
             return
 
         config_key = self.general_item_mapping.get(item_id)
+        if config_key == "description_auto_fill_mode":
+            self.root.after_idle(lambda: self.open_description_autofill_dialog(
+                self.general_tree,
+                item_id, 'value',
+                self.general_vars[config_key].get(),
+                lambda v: self.apply_general_str_setting(config_key, v)))
+            return "break"
         if config_key == "preview_description":
             self.root.after_idle(self.open_description_preview_dialog)
             return "break"
@@ -2393,6 +2395,13 @@ class SettingsMixin:
             return
 
         config_key = self.general_combined_item_mapping.get(item_id)
+        if config_key == "description_auto_fill_mode":
+            self.root.after_idle(lambda: self.open_description_autofill_dialog(
+                self.general_combined_tree,
+                item_id, 'value',
+                self.general_combined_vars[config_key].get(),
+                lambda v: self.apply_general_combined_str_setting(config_key, v)))
+            return "break"
         if config_key == "preview_description":
             self.root.after_idle(self.open_description_preview_dialog)
             return "break"
@@ -2442,14 +2451,9 @@ class SettingsMixin:
             self.apply_general_combined_settings()
         elif setting_type == "str":
             if config_key == "description_auto_fill_mode":
-                self.edit_treeview_cell_dropdown(
-                    self.general_combined_tree,
-                    item_id,
-                    'value',
-                    DESCRIPTION_AUTO_FILL_MODES,
+                self.open_description_autofill_dialog(self.general_combined_tree, item_id, 'value',
                     self.general_combined_vars[config_key].get(),
-                    lambda v: self.apply_general_combined_str_setting(config_key, v),
-                )
+                    lambda v: self.apply_general_combined_str_setting(config_key, v))
             elif config_key == "cover_scaling_method":
                 self.edit_treeview_cell_dropdown(
                     self.general_combined_tree,
@@ -2852,6 +2856,34 @@ class SettingsMixin:
             dialog.destroy()
 
         dialog.protocol("WM_DELETE_WINDOW", on_close)
+
+    def open_description_autofill_dialog(self, tree, item_id, column, current_value, callback):
+        """Open dialog to select a description auto-fill mode (single selection)."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Description Auto-Fill")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(False, False)
+        self.center_dialog(dialog, 360, 300, self.root)
+
+        frame = ttk.Frame(dialog, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        selected = tk.StringVar(value=current_value)
+
+        for mode in DESCRIPTION_AUTO_FILL_MODES:
+            ttk.Radiobutton(frame, text=mode, variable=selected, value=mode).pack(anchor=tk.W, pady=3)
+
+        def on_ok():
+            new_val = selected.get()
+            if callback(new_val):
+                tree.set(item_id, column, new_val)
+            dialog.destroy()
+
+        btn_frame = ttk.Frame(dialog, padding=10)
+        btn_frame.pack(fill=tk.X)
+        ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
 
     def check_for_updates_now(self):
         """Check for new releases on GitHub."""
