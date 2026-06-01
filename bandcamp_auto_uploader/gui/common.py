@@ -188,6 +188,28 @@ def set_titlebar_dark(root, dark):
         pass
 
 
+def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
+    """Style plain tk Text widgets to match the current ttk theme."""
+    try:
+        for widget in root.winfo_children():
+            if isinstance(widget, tk.Text):
+                widget.configure(
+                    background=bg, foreground=fg,
+                    insertbackground=insertcolor,
+                    selectbackground=selectbg,
+                    selectforeground=selectfg,
+                    relief="flat", borderwidth=1,
+                    highlightthickness=1,
+                    highlightbackground=bg,
+                    highlightcolor=selectbg,
+                    padx=4, pady=1
+                )
+            else:
+                style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg)
+    except Exception:
+        pass
+
+
 # Theme path cache
 _TKMT_THEME_PATH = None
 _TKMT_THEME_LOADED = False
@@ -218,15 +240,13 @@ def set_ui_theme(root, theme_name):
                 except Exception:
                     pass
         try:
-            # Direct theme switch - bypasses set_theme proc which sets
-            # problematic option add *font that breaks tkinter font parsing
             style.theme_use("sun-valley-dark")
             style.configure(".", background="#1c1c1c", foreground="#ffffff",
                             troughcolor="#1c1c1c", focuscolor="#2f60d8",
                             selectbackground="#2f60d8", selectforeground="#ffffff",
                             insertwidth=1, insertcolor="#ffffff",
                             fieldbackground="#2f60d8", borderwidth=1, relief="flat")
-            style.configure(".", font=("Segoe UI", 9))  # 9pt instead of 10pt
+            style.configure(".", font=("Segoe UI", 8))
             style.map(".", foreground=[("disabled", "#595959")])
             root.tk.eval(
                 "tk_setPalette "
@@ -240,14 +260,54 @@ def set_ui_theme(root, theme_name):
             )
             root.tk.eval("option add *Menu.selectcolor #ffffff startup")
             root.tk.eval("option add *Menu.background #2f2f2f startup")
-            # Compact sizing overrides
-            style.configure("TButton", padding=(6, 2))
-            style.configure("TCheckbutton", padding=2)
-            style.configure("TRadiobutton", padding=2)
-            style.configure("TNotebook.Tab", padding=(12, 8, 12, 4), height=26)
-            style.configure("Treeview", rowheight=22)
-            style.configure("TEntry", padding=(4, 2))
+            style.configure("TButton", padding=(2, 0))
+            style.configure("TCheckbutton", padding=0)
+            style.configure("TRadiobutton", padding=0)
+            style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
+            style.configure("Treeview", rowheight=20)
+            style.configure("TEntry", padding=(2, 1))
+            style_tk_text_widgets(root, "#1c1c1c", "#ffffff", "#ffffff", "#2f60d8", "#ffffff")
             set_titlebar_dark(root, True)
+        except Exception:
+            pass
+    elif theme_name == "Sun-Valley Light":
+        if not _TKMT_THEME_LOADED:
+            theme_path = _get_tkmt_theme_path()
+            if theme_path:
+                try:
+                    root.tk.call("source", theme_path)
+                    _TKMT_THEME_LOADED = True
+                except Exception:
+                    pass
+        try:
+            style.theme_use("sun-valley-light")
+            style.configure(".", background="#fafafa", foreground="#202020",
+                            troughcolor="#fafafa", focuscolor="#2f60d8",
+                            selectbackground="#2f60d8", selectforeground="#ffffff",
+                            insertwidth=1, insertcolor="#202020",
+                            fieldbackground="#2f60d8", borderwidth=1, relief="flat")
+            style.configure(".", font=("Segoe UI", 8))
+            style.map(".", foreground=[("disabled", "#a0a0a0")])
+            root.tk.eval(
+                "tk_setPalette "
+                "background #fafafa "
+                "foreground #202020 "
+                "selectBackground #2f60d8 "
+                "selectForeground #ffffff "
+                "highlightColor #2f60d8 "
+                "activeBackground #2f60d8 "
+                "activeForeground #ffffff"
+            )
+            root.tk.eval("option add *Menu.selectcolor #202020 startup")
+            root.tk.eval("option add *Menu.background #e7e7e7 startup")
+            style.configure("TButton", padding=(2, 0))
+            style.configure("TCheckbutton", padding=0)
+            style.configure("TRadiobutton", padding=0)
+            style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
+            style.configure("Treeview", rowheight=20)
+            style.configure("TEntry", padding=(2, 1))
+            style_tk_text_widgets(root, "#fafafa", "#202020", "#202020", "#2f60d8", "#ffffff")
+            set_titlebar_dark(root, False)
         except Exception:
             pass
     else:
