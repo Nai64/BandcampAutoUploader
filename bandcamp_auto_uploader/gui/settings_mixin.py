@@ -2863,25 +2863,49 @@ class SettingsMixin:
         dialog.title("Description Auto-Fill")
         dialog.transient(self.root)
         dialog.grab_set()
-        dialog.resizable(False, False)
-        self.center_dialog(dialog, 360, 300, self.root)
+        dialog.resizable(True, True)
+        self.center_dialog(dialog, 380, 340, self.root)
 
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        selected = tk.StringVar(value=current_value)
+        list_frame = ttk.Frame(frame)
+        list_frame.pack(fill=tk.BOTH, expand=True)
 
+        mode_tree = ttk.Treeview(list_frame, columns=('mode',), show='tree', selectmode='browse')
+        mode_tree.column('#0', width=0, stretch=False)
+        mode_tree.column('mode', width=340, anchor=tk.W)
+
+        scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=mode_tree.yview)
+        mode_tree.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        mode_tree.pack(fill=tk.BOTH, expand=True)
+
+        selected_id = None
         for mode in DESCRIPTION_AUTO_FILL_MODES:
-            ttk.Radiobutton(frame, text=mode, variable=selected, value=mode).pack(anchor=tk.W, pady=3)
+            item = mode_tree.insert('', tk.END, values=(mode,))
+            if mode == current_value:
+                mode_tree.selection_set(item)
+                mode_tree.focus(item)
 
         def on_ok():
-            new_val = selected.get()
+            sel = mode_tree.selection()
+            if not sel:
+                return
+            new_val = mode_tree.item(sel[0], 'values')[0]
             if callback(new_val):
                 tree.set(item_id, column, new_val)
             dialog.destroy()
 
-        btn_frame = ttk.Frame(dialog, padding=10)
-        btn_frame.pack(fill=tk.X)
+        def on_double_click(event):
+            on_ok()
+
+        mode_tree.bind('<Double-Button-1>', on_double_click)
+
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill=tk.X, pady=(10, 0))
+        ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
         ttk.Button(btn_frame, text="OK", command=on_ok, width=12).pack(side=tk.RIGHT, padx=5)
         ttk.Button(btn_frame, text="Cancel", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
 
