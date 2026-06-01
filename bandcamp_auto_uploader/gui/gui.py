@@ -955,6 +955,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(scale_method_frame, text="Fit:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
 
         self.cover_fit_mode_var = tk.StringVar(value=getattr(self.config, 'cover_fit_mode', 'Crop (fill)'))
+        self.cover_fit_mode_var.trace_add('write', lambda *args: self.update_cover_preview())
         self.cover_fit_mode_combo = ttk.Combobox(
             scale_method_frame,
             textvariable=self.cover_fit_mode_var,
