@@ -56,6 +56,7 @@ class Config:
     auto_guess_case_on_album_load: bool = False  # Apply Guess Case to track titles after loading an album
     always_auto_scale_cover: bool = True  # Start with cover auto-scaling enabled
     cover_scaling_method: str = "Lanczos"  # Preferred cover art scaling method
+    cover_fit_mode: str = "Crop (fill)"  # How to fit cover art: Crop (fill), Fit (contain), Stretch
     description_auto_fill_mode: str = "Off"  # Auto-fill album description behavior
     description_auto_fill_on_upload: bool = True  # Create auto-description when upload starts
     extract_track_cover_if_missing: bool = True  # Extract embedded cover art when no cover file is found

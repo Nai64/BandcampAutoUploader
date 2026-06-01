@@ -934,7 +934,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         self.scale_cover_check.pack(anchor=tk.W, pady=(0, 2))
 
-        # Scale size and method dropdowns on same line
+        # Scale size, fit mode and method dropdowns on same line
         scale_method_frame = ttk.Frame(cover_controls_frame)
         scale_method_frame.pack(fill=tk.X, pady=(0, 1))
 
@@ -951,6 +951,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             font=("Segoe UI", 8)
         )
         self.scale_size_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+
+        ttk.Label(scale_method_frame, text="Fit:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
+
+        self.cover_fit_mode_var = tk.StringVar(value=getattr(self.config, 'cover_fit_mode', 'Crop (fill)'))
+        self.cover_fit_mode_combo = ttk.Combobox(
+            scale_method_frame,
+            textvariable=self.cover_fit_mode_var,
+            values=["Crop (fill)", "Fit (contain)", "Stretch"],
+            state="readonly",
+            width=12,
+            font=("Segoe UI", 8)
+        )
+        self.cover_fit_mode_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+
+        ttk.Label(scale_method_frame, text="Method:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
 
         self.create_upload_progress_section(right_column)
 
@@ -1478,6 +1493,27 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         left = (width - square_size) // 2
         top = (height - square_size) // 2
         return img.crop((left, top, left + square_size, top + square_size))
+
+    def apply_fit_mode(self, img, target_size, fit_mode):
+        """Apply the selected fit mode before scaling."""
+        from PIL import Image
+
+        if fit_mode == "Crop (fill)":
+            return self.crop_cover_to_square(img)
+        elif fit_mode == "Fit (contain)":
+            # Scale to fit within target square, pad with background
+            w, h = img.size
+            scale = min(target_size / w, target_size / h)
+            new_w, new_h = int(w * scale), int(h * scale)
+            resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            square = Image.new("RGB", (target_size, target_size), (255, 255, 255))
+            x = (target_size - new_w) // 2
+            y = (target_size - new_h) // 2
+            square.paste(resized, (x, y))
+            return square
+        elif fit_mode == "Stretch":
+            return img.resize((target_size, target_size), Image.Resampling.LANCZOS)
+        return img
 
     def make_cover_preview_image(self, cover_path, preview_size):
         """Render cover art as an exact square preview image."""
@@ -6732,12 +6768,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         if self.scale_cover_var.get():
                             size_str = self.scale_size_var.get()
                             target_size = int(size_str.split('x')[0])
-                            logger.info(f"Scaling cover art to {size_str}...")
+                            fit_mode = self.cover_fit_mode_var.get()
+                            logger.info(f"Scaling cover art to {size_str} (fit: {fit_mode})...")
 
                             import io
 
                             img = self.normalize_cover_image(cover_file, "#ffffff")
-                            img = self.crop_cover_to_square(img)
+                            img = self.apply_fit_mode(img, target_size, fit_mode)
                             img = self.apply_custom_scaling(img, target_size)
 
                             # Save to bytes

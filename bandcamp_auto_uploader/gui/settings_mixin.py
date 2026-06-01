@@ -411,6 +411,7 @@ class SettingsMixin:
             ("Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
             ("Always auto-scale cover art", "always_auto_scale_cover", "bool"),
             ("Cover scaling method", "cover_scaling_method", "str"),
+            ("Cover fit mode", "cover_fit_mode", "str"),
             ("Description auto-fill", "description_auto_fill_mode", "str"),
             ("Preview Description", "preview_description", "action"),
             ("Create description on upload", "description_auto_fill_on_upload", "bool"),
@@ -1244,6 +1245,15 @@ class SettingsMixin:
                     self.general_vars[config_key].get(),
                     lambda v: self.apply_general_str_setting(config_key, v),
                 )
+            elif config_key == "cover_fit_mode":
+                self.edit_treeview_cell_dropdown(
+                    self.general_tree,
+                    item_id,
+                    'value',
+                    ["Crop (fill)", "Fit (contain)", "Stretch"],
+                    self.general_vars[config_key].get(),
+                    lambda v: self.apply_general_str_setting(config_key, v),
+                )
 
     def on_general_tree_click(self, event):
         """Handle single-click actions in the General settings tree."""
@@ -1363,11 +1373,15 @@ class SettingsMixin:
         """Apply a General string/dropdown setting and update config."""
         if config_key == "cover_scaling_method" and new_value not in SCALING_METHOD_OPTIONS:
             return False
+        if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
+            return False
 
         self.general_vars[config_key].set(new_value)
         setattr(self.config, config_key, new_value)
         if config_key == "cover_scaling_method" and hasattr(self, 'scaling_method_var'):
             self.scaling_method_var.set(new_value)
+        if config_key == "cover_fit_mode" and hasattr(self, 'cover_fit_mode_var'):
+            self.cover_fit_mode_var.set(new_value)
         save_config(self.config)
         if config_key == "description_auto_fill_mode" and getattr(self.config, 'notify_on_template_save', False):
             self.show_toast(f"Description template set to: {new_value}", 1800, "success", trigger="template_save")
@@ -2294,6 +2308,7 @@ class SettingsMixin:
             ("General: Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
             ("General: Always auto-scale cover art", "always_auto_scale_cover", "bool"),
             ("General: Cover scaling method", "cover_scaling_method", "str"),
+            ("General: Cover fit mode", "cover_fit_mode", "str"),
             ("General: Description auto-fill", "description_auto_fill_mode", "str"),
             ("General: Preview Description", "preview_description", "action"),
             ("General: Create description on upload", "description_auto_fill_on_upload", "bool"),
@@ -2468,6 +2483,15 @@ class SettingsMixin:
                     self.general_combined_vars[config_key].get(),
                     lambda v: self.apply_general_combined_str_setting(config_key, v),
                 )
+            elif config_key == "cover_fit_mode":
+                self.edit_treeview_cell_dropdown(
+                    self.general_combined_tree,
+                    item_id,
+                    'value',
+                    ["Crop (fill)", "Fit (contain)", "Stretch"],
+                    self.general_combined_vars[config_key].get(),
+                    lambda v: self.apply_general_combined_str_setting(config_key, v),
+                )
     
     def apply_general_combined_settings(self):
         """Apply combined general settings immediately"""
@@ -2485,6 +2509,7 @@ class SettingsMixin:
         self.config.auto_guess_case_on_album_load = self.general_combined_vars['auto_guess_case_on_album_load'].get()
         self.config.always_auto_scale_cover = self.general_combined_vars['always_auto_scale_cover'].get()
         self.config.cover_scaling_method = self.general_combined_vars['cover_scaling_method'].get()
+        self.config.cover_fit_mode = self.general_combined_vars['cover_fit_mode'].get()
         self.config.description_auto_fill_mode = self.general_combined_vars['description_auto_fill_mode'].get()
         self.config.description_auto_fill_on_upload = self.general_combined_vars['description_auto_fill_on_upload'].get()
         self.config.extract_track_cover_if_missing = self.general_combined_vars['extract_track_cover_if_missing'].get()
@@ -2496,6 +2521,8 @@ class SettingsMixin:
             self.scale_cover_var.set(self.config.always_auto_scale_cover)
         if hasattr(self, 'scaling_method_var'):
             self.scaling_method_var.set(self.config.cover_scaling_method)
+        if hasattr(self, 'cover_fit_mode_var'):
+            self.cover_fit_mode_var.set(self.config.cover_fit_mode)
         
         # Apply context menu settings
         self.config.context_menu_remove_dividers = self.general_combined_vars['context_menu_remove_dividers'].get()
@@ -2553,11 +2580,15 @@ class SettingsMixin:
             return False
         if config_key == "cover_scaling_method" and new_value not in SCALING_METHOD_OPTIONS:
             return False
+        if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
+            return False
 
         self.general_combined_vars[config_key].set(new_value)
         setattr(self.config, config_key, new_value)
         if config_key == "cover_scaling_method" and hasattr(self, 'scaling_method_var'):
             self.scaling_method_var.set(new_value)
+        if config_key == "cover_fit_mode" and hasattr(self, 'cover_fit_mode_var'):
+            self.cover_fit_mode_var.set(new_value)
         save_config(self.config)
         return True
     
