@@ -784,13 +784,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_video_caption_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_video_caption_var, font=("Segoe UI", 8))
         self.td_video_caption_entry.pack(fill=tk.X, pady=(0, 2))
 
+        self.td_featured_var = tk.BooleanVar(value=False)
         self.td_streaming_var = tk.BooleanVar(value=True)
         self.td_enable_dl_var = tk.BooleanVar(value=True)
-        self.td_featured_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W)
+        ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W, pady=(0, 2))
         self.td_featured_var.trace_add("write", self._on_featured_toggled)
+        ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W)
 
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
         self.track_details_frame.pack_forget()
@@ -3879,7 +3879,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_save_current_track()
         self.details_frame.pack_forget()
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
-        self.root.after(10, lambda: self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all")))
+        self.root.update_idletasks()
+        self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
         self._track_details_path = file_path
 
         values = self.track_table.item(item)['values']
@@ -3911,7 +3912,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_save_current_track()
         self.track_details_frame.pack_forget()
         self.details_frame.pack(fill=tk.BOTH, expand=True)
-        self.root.after(10, lambda: self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all")))
+        self.root.update_idletasks()
+        self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
         self._track_details_path = None
         self._track_details_item = None
 
