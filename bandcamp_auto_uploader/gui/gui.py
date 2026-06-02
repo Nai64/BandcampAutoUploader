@@ -92,6 +92,179 @@ def set_windows_app_user_model_id():
         logger.debug(f"Failed to set Windows app identity: {e}")
 
 
+def create_canvas_round_rect(canvas, x1, y1, x2, y2, radius, **kwargs):
+    points = [
+        x1 + radius, y1,
+        x2 - radius, y1,
+        x2, y1,
+        x2, y1 + radius,
+        x2, y2 - radius,
+        x2, y2,
+        x2 - radius, y2,
+        x1 + radius, y2,
+        x1, y2,
+        x1, y2 - radius,
+        x1, y1 + radius,
+        x1, y1,
+    ]
+    return canvas.create_polygon(points, smooth=True, splinesteps=8, **kwargs)
+
+
+def get_splash_image_path():
+    candidates = []
+    if getattr(sys, "frozen", False):
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        candidates.extend([
+            bundle_root / "assets" / "splash.png",
+            Path(sys.executable).parent / "assets" / "splash.png",
+        ])
+
+    project_root = Path(__file__).resolve().parents[2]
+    candidates.extend([
+        project_root / "assets" / "splash.png",
+        Path.cwd() / "assets" / "splash.png",
+    ])
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def show_startup_intro(root, launch_callback):
+    """Show a short startup intro while the main UI is created."""
+    root.withdraw()
+
+    splash_path = get_splash_image_path()
+    splash_photo = None
+    if splash_path:
+        try:
+            from PIL import Image, ImageTk
+            with Image.open(splash_path) as source:
+                image = source.convert("RGBA")
+                image.thumbnail((560, 340), Image.Resampling.LANCZOS)
+                splash_photo = ImageTk.PhotoImage(image, master=root)
+        except Exception as exc:
+            logger.debug(f"Failed to load splash image: {exc}")
+            splash_photo = None
+
+    width = splash_photo.width() if splash_photo else 460
+    height = splash_photo.height() if splash_photo else 260
+    splash = tk.Toplevel(root)
+    splash.withdraw()
+    splash.overrideredirect(True)
+    transparent_color = "#010203"
+    splash.configure(bg=transparent_color)
+
+    try:
+        splash.attributes("-topmost", True)
+        splash.attributes("-alpha", 0.0)
+        splash.attributes("-transparentcolor", transparent_color)
+    except tk.TclError:
+        pass
+
+    x = (splash.winfo_screenwidth() // 2) - (width // 2)
+    y = (splash.winfo_screenheight() // 2) - (height // 2)
+    splash.geometry(f"{width}x{height}+{max(0, x)}+{max(0, y)}")
+
+    canvas = tk.Canvas(splash, width=width, height=height, highlightthickness=0, bg=transparent_color)
+    canvas.pack(fill=tk.BOTH, expand=True)
+    if splash_photo:
+        canvas.create_image(0, 0, image=splash_photo, anchor=tk.NW)
+        canvas.image = splash_photo
+        status_text = None
+        progress = None
+    else:
+        canvas.configure(bg="#111827")
+        create_canvas_round_rect(canvas, 8, 8, width - 8, height - 8, 18, fill="#111827", outline="#334155", width=1)
+        create_canvas_round_rect(canvas, 24, 24, width - 24, height - 24, 14, fill="#0f172a", outline="#1f2937", width=1)
+        canvas.create_text(
+            width // 2,
+            74,
+            text="Bandcamp Auto Uploader",
+            fill="#f8fafc",
+            font=("Segoe UI", 18, "bold"),
+        )
+        canvas.create_text(
+            width // 2,
+            108,
+            text="Preparing your workspace",
+            fill="#94a3b8",
+            font=("Segoe UI", 9),
+        )
+        status_text = canvas.create_text(
+            width // 2,
+            158,
+            text="Loading interface...",
+            fill="#cbd5e1",
+            font=("Segoe UI", 9),
+        )
+        create_canvas_round_rect(canvas, 86, 184, width - 86, 194, 5, fill="#1e293b", outline="")
+        progress = canvas.create_rectangle(86, 184, 86, 194, fill="#1d9bf0", outline="")
+
+    splash.deiconify()
+    splash.lift()
+    splash.update_idletasks()
+
+    def set_alpha(value):
+        try:
+            splash.attributes("-alpha", value)
+        except tk.TclError:
+            pass
+
+    def animate_in(step=0):
+        set_alpha(min(1.0, step / 8))
+        if step < 8:
+            splash.after(18, lambda: animate_in(step + 1))
+        else:
+            splash.after(80, build_app)
+
+    def update_progress(fraction, label=None):
+        if progress is not None:
+            bar_right = 86 + ((width - 172) * max(0, min(1, fraction)))
+            canvas.coords(progress, *canvas.coords(progress)[:2], bar_right, 194)
+        if label and status_text is not None:
+            canvas.itemconfigure(status_text, text=label)
+        splash.update_idletasks()
+
+    def finish(step=8):
+        set_alpha(max(0.0, step / 8))
+        if step > 0:
+            splash.after(22, lambda: finish(step - 1))
+            return
+        try:
+            splash.attributes("-topmost", False)
+        except tk.TclError:
+            pass
+        splash.destroy()
+        root.deiconify()
+        root.lift()
+        try:
+            root.focus_force()
+        except tk.TclError:
+            pass
+
+    def build_app():
+        try:
+            update_progress(0.35, "Loading settings...")
+            app = launch_callback()
+            root._bandcamp_uploader_app = app
+            update_progress(0.82, "Applying theme...")
+            root.update_idletasks()
+            update_progress(1.0, "Ready")
+            splash.after(260, finish)
+        except Exception as exc:
+            try:
+                splash.destroy()
+            except tk.TclError:
+                pass
+            root.deiconify()
+            messagebox.showerror("Startup Error", f"Failed to start Bandcamp Auto Uploader:\n\n{exc}")
+            raise
+
+    animate_in()
+
+
 class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def __init__(self, root):
         self.root = root
@@ -9109,7 +9282,7 @@ def main():
     except Exception:
         pass
 
-    app = BandcampUploaderGUI(root)
+    show_startup_intro(root, lambda: BandcampUploaderGUI(root))
     root.mainloop()
 
 

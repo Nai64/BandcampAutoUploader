@@ -11,9 +11,9 @@ build/
 Thumbs.db
 AGENTS.md
 PRIVACY_POLICY.txt
-assets/
 bandcamp_auto_uploader.spec
 changelog.txt
 *.exe
 dist/
+tests/
 Features.txt

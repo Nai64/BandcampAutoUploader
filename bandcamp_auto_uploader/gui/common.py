@@ -188,6 +188,29 @@ def set_titlebar_dark(root, dark):
         pass
 
 
+def set_window_redraw(root, enabled):
+    """Temporarily suspend or resume redraw for smoother bulk UI updates."""
+    if sys.platform != "win32":
+        return
+    try:
+        hwnd = wintypes.HWND(root.winfo_id())
+        WM_SETREDRAW = 0x000B
+        ctypes.windll.user32.SendMessageW(hwnd, WM_SETREDRAW, int(enabled), 0)
+        if enabled:
+            RDW_INVALIDATE = 0x0001
+            RDW_ALLCHILDREN = 0x0080
+            RDW_UPDATENOW = 0x0100
+            RDW_FRAME = 0x0400
+            ctypes.windll.user32.RedrawWindow(
+                hwnd,
+                None,
+                None,
+                RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_FRAME,
+            )
+    except Exception:
+        pass
+
+
 def preserve_tk_text_colors(widget, **colors):
     """Keep explicit Text widget colors intact across tk_setPalette calls."""
     widget._bau_preserved_text_colors = colors.copy()
@@ -353,6 +376,7 @@ def _get_azure_theme_path():
 def set_ui_theme(root, theme_name):
     global _TKMT_THEME_LOADED, _AZURE_THEME_LOADED
     style = ttk.Style()
+    set_window_redraw(root, False)
 
     if theme_name == "Azure Dark":
         if not _AZURE_THEME_LOADED:
@@ -524,3 +548,4 @@ def set_ui_theme(root, theme_name):
                 style.theme_use("clam")
             except Exception:
                 pass
+    set_window_redraw(root, True)
