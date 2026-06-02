@@ -216,6 +216,7 @@ class BandcampTrackData:
     tags: str = ""
     license_type: str = "1"
     isrc: str = ""
+    iswc: str = ""
     release_date: str = ""
     encodings_id: str = ""
     require_email: int = 0

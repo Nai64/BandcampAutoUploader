@@ -16,7 +16,7 @@ from pathlib import Path
 from tkinter import ttk, scrolledtext, messagebox
 
 from bandcamp_auto_uploader.config import get_app_data_dir, get_config_file_path
-from bandcamp_auto_uploader.gui.common import sanitize_log_text
+from bandcamp_auto_uploader.gui.common import preserve_tk_text_colors, sanitize_log_text
 
 
 ISSUE_URL = "https://github.com/Nai64/BandcampAutoUploader/issues/new"
@@ -72,6 +72,14 @@ class LogsMixin:
             font=(font_family, font_size, font_weight),
             bg=bg_color,
             fg=text_color
+        )
+        preserve_tk_text_colors(
+            self.log_text,
+            background=bg_color,
+            foreground=text_color,
+            insertbackground=text_color,
+            selectbackground="#0078d7",
+            selectforeground="#ffffff",
         )
         self.log_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         

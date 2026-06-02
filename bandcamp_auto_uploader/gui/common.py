@@ -186,22 +186,44 @@ def set_titlebar_dark(root, dark):
         pass
 
 
+def preserve_tk_text_colors(widget, **colors):
+    """Keep explicit Text widget colors intact across tk_setPalette calls."""
+    widget._bau_preserved_text_colors = colors.copy()
+    widget.configure(**colors)
+
+
+def style_multiline_editbox(widget):
+    """Use normal edit-field colors for editable multiline Text widgets."""
+    preserve_tk_text_colors(
+        widget,
+        background="#ffffff",
+        foreground="#000000",
+        insertbackground="#000000",
+        selectbackground="#0078d7",
+        selectforeground="#ffffff",
+    )
+
+
 def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
     """Style plain tk Text widgets to match the current ttk theme."""
     try:
         for widget in root.winfo_children():
             if isinstance(widget, tk.Text):
-                widget.configure(
-                    background=bg, foreground=fg,
-                    insertbackground=insertcolor,
-                    selectbackground=selectbg,
-                    selectforeground=selectfg,
-                    relief="flat", borderwidth=1,
-                    highlightthickness=1,
-                    highlightbackground=bg,
-                    highlightcolor=selectbg,
-                    padx=4, pady=0
-                )
+                preserved_colors = getattr(widget, "_bau_preserved_text_colors", None)
+                if preserved_colors:
+                    widget.configure(**preserved_colors)
+                else:
+                    widget.configure(
+                        background=bg, foreground=fg,
+                        insertbackground=insertcolor,
+                        selectbackground=selectbg,
+                        selectforeground=selectfg,
+                        relief="flat", borderwidth=1,
+                        highlightthickness=1,
+                        highlightbackground=bg,
+                        highlightcolor=selectbg,
+                        padx=4, pady=0
+                    )
             else:
                 style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg)
     except Exception:

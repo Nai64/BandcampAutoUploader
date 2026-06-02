@@ -5,7 +5,14 @@ import tkinter as tk
 from tkinter import ttk, messagebox, colorchooser
 
 from bandcamp_auto_uploader.config import Config, save_config, load_custom_description_templates, save_custom_description_template, delete_custom_description_template
-from bandcamp_auto_uploader.gui.common import DESCRIPTION_AUTO_FILL_MODES, DESCRIPTION_TEMPLATES, ToolTip, set_ui_theme
+from bandcamp_auto_uploader.gui.common import (
+    DESCRIPTION_AUTO_FILL_MODES,
+    DESCRIPTION_TEMPLATES,
+    ToolTip,
+    preserve_tk_text_colors,
+    set_ui_theme,
+    style_multiline_editbox,
+)
 from bandcamp_auto_uploader import __version__
 
 
@@ -1863,7 +1870,14 @@ class SettingsMixin:
         self.log_text.configure(font=(font_family, font_size, font_weight))
 
         # Apply color settings
-        self.log_text.configure(fg=self.config.log_text_color, bg=self.config.log_bg_color)
+        preserve_tk_text_colors(
+            self.log_text,
+            background=self.config.log_bg_color,
+            foreground=self.config.log_text_color,
+            insertbackground=self.config.log_text_color,
+            selectbackground="#0078d7",
+            selectforeground="#ffffff",
+        )
 
         # Apply word wrap
         wrap_mode = tk.WORD if self.config.log_word_wrap else tk.NONE
@@ -3136,6 +3150,7 @@ class SettingsMixin:
                 current_template = templates.get(mode) or DESCRIPTION_TEMPLATES.get(mode, "")
 
             text = tk.Text(f, font=("Consolas", 10), wrap=tk.WORD, height=12)
+            style_multiline_editbox(text)
             text.pack(fill=tk.BOTH, expand=True)
             text.insert("1.0", current_template)
             text.focus_set()
