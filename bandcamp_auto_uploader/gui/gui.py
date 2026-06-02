@@ -519,15 +519,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         middle_section = ttk.Frame(scrollable_frame)
         middle_section.pack(fill=tk.BOTH, expand=True, padx=12, pady=4)
         
-        # Left column - Basic Details (scrollable)
+        # Left column - Basic Details (scrollable, hidden scrollbar)
         left_column = ttk.Frame(middle_section, width=300)
         left_column.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 5))
         left_column.pack_propagate(False)
 
         left_canvas = tk.Canvas(left_column, highlightthickness=0, borderwidth=0)
-        left_scrollbar = ttk.Scrollbar(left_column, orient=tk.VERTICAL, command=left_canvas.yview)
-        left_canvas.configure(yscrollcommand=left_scrollbar.set)
-        left_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         left_scroll_frame = ttk.Frame(left_canvas)
@@ -536,9 +533,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         left_canvas.bind("<Configure>", lambda e: left_canvas.itemconfig(1, width=e.width))
 
         def _on_left_scroll(event):
+            if isinstance(event.widget, tk.Text):
+                return
             left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-        left_canvas.bind("<MouseWheel>", _on_left_scroll, add=True)
-        left_scroll_frame.bind("<MouseWheel>", _on_left_scroll, add=True)
+
+        def _bind_left_scroll(widget):
+            widget.bind("<MouseWheel>", _on_left_scroll, add=True)
+            for child in widget.winfo_children():
+                _bind_left_scroll(child)
+        _bind_left_scroll(left_scroll_frame)
         
         details_frame = ttk.LabelFrame(left_scroll_frame, text="Album Details", padding=4)
         details_frame.pack(fill=tk.BOTH, expand=True)
