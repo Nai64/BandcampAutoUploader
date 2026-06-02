@@ -547,6 +547,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.left_canvas.bind_all("<MouseWheel>", _on_left_scroll, add=True)
         
         self.details_frame = ttk.LabelFrame(left_scroll_frame, text="Details", padding=4)
+        self.details_frame.bind("<Map>", lambda e: self._refresh_left_scrollregion())
         self.details_frame.pack(fill=tk.BOTH, expand=True)
         
         # Album Name
@@ -694,6 +695,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Track Details frame (hidden initially, shown when a track is selected)
         self.track_details_frame = ttk.LabelFrame(left_scroll_frame, text="Track Details", padding=4)
+        self.track_details_frame.bind("<Map>", lambda e: self._refresh_left_scrollregion())
 
         name_row2 = ttk.Frame(self.track_details_frame)
         name_row2.pack(fill=tk.X, pady=(0, 2))
@@ -710,6 +712,26 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_artist_var = tk.StringVar()
         self.td_artist_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_artist_var, font=("Segoe UI", 8))
         self.td_artist_entry.pack(fill=tk.X, pady=(0, 2))
+
+        # Release Date
+        ttk.Label(self.track_details_frame, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        rd_row2 = ttk.Frame(self.track_details_frame)
+        rd_row2.pack(fill=tk.X, pady=(0, 2))
+        self.td_release_date_var = tk.StringVar()
+        self.td_release_date_entry = ttk.Entry(rd_row2, textvariable=self.td_release_date_var, font=("Segoe UI", 8))
+        self.td_release_date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
+        self.td_release_date_btn = ttk.Button(rd_row2, text="Edit", command=self.td_show_calendar, width=5)
+        self.td_release_date_btn.pack(side=tk.LEFT)
+
+        # Track Price
+        ttk.Label(self.track_details_frame, text="Track Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        td_price_row = ttk.Frame(self.track_details_frame)
+        td_price_row.pack(fill=tk.X, pady=(0, 2))
+        self.td_price_var = tk.StringVar(value="")
+        self.td_price_entry = ttk.Entry(td_price_row, textvariable=self.td_price_var, font=("Segoe UI", 8))
+        self.td_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        self.td_nyp_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(td_price_row, text="Name Your Price", variable=self.td_nyp_var).pack(side=tk.LEFT)
 
         ttk.Label(self.track_details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_tags_var = tk.StringVar()
@@ -750,24 +772,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_download_desc_var = tk.StringVar()
         self.td_download_desc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_download_desc_var, font=("Segoe UI", 8))
         self.td_download_desc_entry.pack(fill=tk.X, pady=(0, 2))
-
-        ttk.Label(self.track_details_frame, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        rd_row2 = ttk.Frame(self.track_details_frame)
-        rd_row2.pack(fill=tk.X, pady=(0, 2))
-        self.td_release_date_var = tk.StringVar()
-        self.td_release_date_entry = ttk.Entry(rd_row2, textvariable=self.td_release_date_var, font=("Segoe UI", 8))
-        self.td_release_date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
-        self.td_release_date_btn = ttk.Button(rd_row2, text="Edit", command=self.td_show_calendar, width=5)
-        self.td_release_date_btn.pack(side=tk.LEFT)
-
-        ttk.Label(self.track_details_frame, text="Track Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        td_price_row = ttk.Frame(self.track_details_frame)
-        td_price_row.pack(fill=tk.X, pady=(0, 2))
-        self.td_price_var = tk.StringVar(value="")
-        self.td_price_entry = ttk.Entry(td_price_row, textvariable=self.td_price_var, font=("Segoe UI", 8))
-        self.td_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
-        self.td_nyp_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(td_price_row, text="Name Your Price", variable=self.td_nyp_var).pack(side=tk.LEFT)
 
         ttk.Label(self.track_details_frame, text="ISRC:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_isrc_var = tk.StringVar()
@@ -3852,6 +3856,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         except:
             messagebox.showwarning("Paste Error", "Could not paste from clipboard")
 
+    def _refresh_left_scrollregion(self):
+        self.root.update_idletasks()
+        self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
+
     # --- Track Details panel ---
     def td_auto_fill_name(self):
         path = self._track_details_path
@@ -3879,8 +3887,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_save_current_track()
         self.details_frame.pack_forget()
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
-        self.root.update_idletasks()
-        self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
+        self._refresh_left_scrollregion()
         self._track_details_path = file_path
 
         values = self.track_table.item(item)['values']
@@ -3912,8 +3919,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_save_current_track()
         self.track_details_frame.pack_forget()
         self.details_frame.pack(fill=tk.BOTH, expand=True)
-        self.root.update_idletasks()
-        self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all"))
+        self._refresh_left_scrollregion()
         self._track_details_path = None
         self._track_details_item = None
 
