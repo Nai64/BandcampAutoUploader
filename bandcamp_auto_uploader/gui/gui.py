@@ -771,6 +771,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
         ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W, pady=(0, 2))
         ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W)
+        self.td_featured_var.trace_add("write", self._on_featured_toggled)
 
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
         self.track_details_frame.pack_forget()
@@ -3870,10 +3871,23 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self._track_details_path = None
         self._track_details_item = None
 
+    def _on_featured_toggled(self, *_):
+        path = self._track_details_path
+        if not path or not self.td_featured_var.get():
+            return
+        for other_path, other_data in self.track_editor_data.items():
+            if other_path != path and other_data.get('featured', False):
+                other_data['featured'] = False
+                break
+        self._featured_track_path = path
+        self.refresh_all_track_row_tags()
+
     def td_save_current_track(self):
         path = self._track_details_path
         if not path:
             return
+        was_featured = self.track_editor_data.get(path, {}).get('featured', False)
+        now_featured = self.td_featured_var.get()
         data = {
             'name': self.td_name_var.get(),
             'artist': self.td_artist_var.get(),
@@ -3887,8 +3901,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             'isrc': self.td_isrc_var.get(),
             'streaming': self.td_streaming_var.get(),
             'enable_download': self.td_enable_dl_var.get(),
-            'featured': self.td_featured_var.get(),
+            'featured': now_featured,
         }
+        if now_featured:
+            for other_path, other_data in self.track_editor_data.items():
+                if other_path != path and other_data.get('featured', False):
+                    other_data['featured'] = False
+                    break
         self.track_editor_data[path] = data
 
         item = self._track_details_item
@@ -4036,9 +4055,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.tag_configure("locked", background=getattr(self.config, 'locked_track_highlight_color', '#fff4ce'))
         self.track_table.tag_configure("corrupted", background=getattr(self.config, 'corrupted_track_highlight_color', '#ffd6d6'))
         self.track_table.tag_configure("drag_target", background="#e8f4fd")
+        self.track_table.tag_configure("featured", background="#c8e6c9")
+        self._featured_track_path = None
 
     def apply_track_item_tags(self, item_id, *extra_tags):
-        """Restore row tags while preserving locked-row and corrupted-row highlighting."""
+        """Restore row tags while preserving locked-row, corrupted, and featured highlighting."""
         if not self.track_table.exists(item_id):
             return
         tags = ["normal"]
@@ -4046,10 +4067,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             tags.append("locked")
         if getattr(self.config, 'highlight_corrupted_tracks', True) and self.is_track_item_corrupted(item_id):
             tags.append("corrupted")
+        if self.is_track_item_featured(item_id):
+            tags.append("featured")
         for tag in extra_tags:
             if tag not in tags:
                 tags.append(tag)
         self.track_table.item(item_id, tags=tuple(tags))
+
+    def is_track_item_featured(self, item_id):
+        """Check if a track row is currently featured based on stored editor data."""
+        values = self.track_table.item(item_id).get("values", ())
+        if len(values) > 12:
+            file_path = str(values[12])
+            data = self.track_editor_data.get(file_path, {})
+            return data.get('featured', False)
+        return False
 
     def refresh_all_track_row_tags(self):
         """Re-apply tags to every row in the track table."""
