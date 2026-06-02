@@ -35,6 +35,21 @@ class LogsMixin:
             self._app_log_file_path = self.get_app_log_dir() / f"bau_{timestamp}.log"
         return self._app_log_file_path
 
+    def cleanup_old_log_files(self):
+        """Delete old log files beyond the configured limit."""
+        log_dir = self.get_app_log_dir()
+        if not log_dir.exists():
+            return
+        limit = getattr(self.config, 'log_file_limit', 3)
+        if limit < 1:
+            limit = 3
+        log_files = sorted(log_dir.glob("bau_*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for old_file in log_files[limit:]:
+            try:
+                old_file.unlink()
+            except Exception:
+                pass
+
     def create_log_tab(self, parent):
         """Create log viewer"""
         # Get font settings from config

@@ -426,6 +426,7 @@ class SettingsMixin:
             ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Show Total Album Duration", "show_total_album_duration", "bool"),
             ("Remember Last Opened Album", "remember_last_album", "bool"),
+            ("Limit Log Files", "log_file_limit", "int", 1, 99),
         ]
         
         # Create treeview for general settings (no headings)
@@ -448,7 +449,11 @@ class SettingsMixin:
         self.general_vars = {}
         self.general_item_mapping = {}
         
-        for setting_name, config_key, setting_type in settings:
+        for setting_data in settings:
+            setting_name = setting_data[0]
+            config_key = setting_data[1]
+            setting_type = setting_data[2]
+            
             if setting_type == "bool":
                 var = tk.BooleanVar(value=getattr(self.config, config_key, True))
                 display_value = "☑" if var.get() else "☐"
@@ -458,6 +463,11 @@ class SettingsMixin:
             elif setting_type == "color":
                 var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
                 display_value = var.get()
+            elif setting_type == "int":
+                min_val = setting_data[3]
+                max_val = setting_data[4]
+                var = tk.IntVar(value=getattr(self.config, config_key, min_val))
+                display_value = str(var.get())
             elif setting_type == "action":
                 var = None
                 display_value = "Preview..."
@@ -465,6 +475,9 @@ class SettingsMixin:
             if var is not None:
                 self.general_vars[config_key] = var
             self.general_vars[f"{config_key}_type"] = setting_type
+            if setting_type == "int":
+                self.general_vars[f"{config_key}_min"] = min_val
+                self.general_vars[f"{config_key}_max"] = max_val
             
             # Add item to treeview
             item_id = self.general_tree.insert('', 'end', values=(setting_name, display_value))
@@ -1280,6 +1293,27 @@ class SettingsMixin:
                     self.general_vars[config_key].get(),
                     lambda v: self.apply_general_str_setting(config_key, v),
                 )
+        elif setting_type == "int":
+            min_val = self.general_vars.get(f"{config_key}_min", 1)
+            max_val = self.general_vars.get(f"{config_key}_max", 99)
+            current_value = str(self.general_vars[config_key].get())
+            
+            def validate_and_save(new_value):
+                try:
+                    int_val = int(new_value)
+                    if min_val <= int_val <= max_val:
+                        self.general_vars[config_key].set(int_val)
+                        self.general_tree.set(item_id, 'value', str(int_val))
+                        setattr(self.config, config_key, int_val)
+                        save_config(self.config)
+                        if hasattr(self, 'cleanup_old_log_files'):
+                            self.cleanup_old_log_files()
+                        return True
+                except ValueError:
+                    pass
+                return False
+            
+            self.edit_treeview_cell(self.general_tree, item_id, 'value', current_value, validate_and_save)
         elif setting_type == "color":
             current_color = self.general_vars[config_key].get()
             new_color = colorchooser.askcolor(color=current_color)[1]

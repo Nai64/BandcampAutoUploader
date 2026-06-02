@@ -236,6 +236,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             file_handler.setFormatter(file_formatter)
             logger.addHandler(file_handler)
 
+        if hasattr(self, 'cleanup_old_log_files'):
+            self.cleanup_old_log_files()
+
         logger.info("Logging initialized")
 
     def handle_tk_callback_exception(self, exc_type, exc_value, exc_traceback):
