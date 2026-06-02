@@ -310,6 +310,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "Clear Metadata": "broom.png",
             "Clear All Metadata": "eraser--minus.png",
             "Clear All Tracks": "eraser.png",
+            "Upload as Single": "upload.png",
         }
 
         candidate_dirs = []
@@ -5828,6 +5829,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     _enabled, label, command, icon_label, *undo_label = option
                     add_menu_command(label, command, icon_label, undo_label=undo_label[0] if undo_label else None)
 
+            if getattr(self.config, 'context_menu_upload_as_single', True):
+                add_separator_if_needed()
+                add_menu_command("Upload as Single", lambda: self.upload_as_single(item_id), "Upload as Single")
+
         session_options = [
             (getattr(self.config, 'context_menu_extract_tracklist', True), "Extract Tracklist", self.extract_tracklist, "Extract Tracklist", None),
             (getattr(self.config, 'context_menu_open_session', True), "Open session.txt", self.open_album_session_file, "Open session.txt", None),
@@ -6546,6 +6551,48 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.sync_track_table_to_current_album()
     
+    def upload_as_single(self, item_id):
+        """Upload the selected track as a standalone single-track release."""
+        if not self.session or not self.selected_artist_url:
+            messagebox.showerror("Error", "Please select an artist first")
+            return
+        if self.upload_thread and self.upload_thread.is_alive():
+            messagebox.showwarning("Upload Running", "An upload is already in progress.")
+            return
+
+        track_values = self.track_table.item(item_id)['values']
+        file_path = track_values[12] if len(track_values) > 12 else ""
+        if not file_path or not Path(file_path).exists():
+            self.show_toast("No valid track file available", 2000, "warning")
+            return
+
+        track_path = Path(file_path)
+        self._single_upload_saved_state = {
+            'manual_tracks': list(getattr(self, 'manual_tracks', []) or []),
+            'album_path': self.album_path_var.get(),
+            'album_name': self.album_name_var.get(),
+        }
+        self.manual_tracks = [track_path]
+        self.album_path_var.set("")
+        if not self.album_name_var.get().strip():
+            self.album_name_var.set(track_path.stem)
+        self._single_upload_pending = True
+        self.show_toast(f"Uploading {track_path.stem} as single...", 2500, "info")
+        self.start_upload()
+
+    def upload_finished(self):
+        """Reset UI after upload completes or is cancelled"""
+        if getattr(self, '_single_upload_pending', False):
+            self._single_upload_pending = False
+            saved = getattr(self, '_single_upload_saved_state', None)
+            if saved:
+                self.manual_tracks = saved['manual_tracks']
+                self.album_path_var.set(saved['album_path'])
+                if saved['album_name']:
+                    self.album_name_var.set(saved['album_name'])
+        self.enable_ui_after_upload()
+        self.set_cancel_buttons_state(tk.DISABLED)
+
     def start_upload(self):
         """Start album upload in background thread"""
         if self.upload_thread and self.upload_thread.is_alive():
@@ -7122,11 +7169,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if hasattr(self, 'album_path_entry'):
             self.album_path_entry['state'] = tk.NORMAL
 
-    def upload_finished(self):
-        """Reset UI after upload completes or is cancelled"""
-        self.enable_ui_after_upload()
-        self.set_cancel_buttons_state(tk.DISABLED)
-    
     def add_track_to_album(self):
         """Add individual track files to the current album"""
         if self.is_upload_in_progress():

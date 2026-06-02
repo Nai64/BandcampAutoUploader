@@ -495,7 +495,8 @@ class SettingsMixin:
             ("Sort By", "context_menu_sort_by", "bool"),
             ("Clear Metadata", "context_menu_clear_metadata", "bool"),
             ("Clear All Metadata", "context_menu_clear_all_metadata", "bool"),
-            ("Clear All Tracks", "context_menu_clear_all", "bool")
+            ("Clear All Tracks", "context_menu_clear_all", "bool"),
+            ("Upload as Single", "context_menu_upload_as_single", "bool")
         ]
         
         # Create treeview for context menu settings (no headings)
@@ -568,7 +569,7 @@ class SettingsMixin:
             "context_menu_revert_to_original", "context_menu_lock_unlock",
             "context_menu_randomize", "context_menu_smart_randomize",
             "context_menu_sort_by", "context_menu_clear_metadata", "context_menu_clear_all_metadata",
-            "context_menu_clear_all"
+            "context_menu_clear_all", "context_menu_upload_as_single"
         ]
         
         for config_key in context_menu_configs:
@@ -2343,6 +2344,7 @@ class SettingsMixin:
             ("Context: Clear Metadata", "context_menu_clear_metadata", "bool"),
             ("Context: Clear All Metadata", "context_menu_clear_all_metadata", "bool"),
             ("Context: Clear All", "context_menu_clear_all", "bool"),
+            ("Context: Upload as Single", "context_menu_upload_as_single", "bool"),
             # Sort method settings
             *[(f"Sort: {setting_name}", config_key, "bool") for setting_name, config_key in SORT_METHOD_SETTINGS],
             # Auto Tagging settings
@@ -2551,6 +2553,7 @@ class SettingsMixin:
         self.config.context_menu_clear_metadata = self.general_combined_vars['context_menu_clear_metadata'].get()
         self.config.context_menu_clear_all_metadata = self.general_combined_vars['context_menu_clear_all_metadata'].get()
         self.config.context_menu_clear_all = self.general_combined_vars['context_menu_clear_all'].get()
+        self.config.context_menu_upload_as_single = self.general_combined_vars['context_menu_upload_as_single'].get()
 
         # Apply sort method settings
         for _setting_name, config_key in SORT_METHOD_SETTINGS:
