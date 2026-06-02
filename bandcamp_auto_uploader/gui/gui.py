@@ -773,6 +773,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W)
         self.td_featured_var.trace_add("write", self._on_featured_toggled)
 
+        ttk.Label(self.track_details_frame, text="Track Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_price_var = tk.StringVar(value="")
+        self.td_price_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_price_var, font=("Segoe UI", 8))
+        self.td_price_entry.pack(fill=tk.X, pady=(0, 2))
+
+        self.td_nyp_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(self.track_details_frame, text="Name Your Price", variable=self.td_nyp_var).pack(anchor=tk.W, pady=(0, 2))
+
+        ttk.Label(self.track_details_frame, text="Video ID (YouTube/Vimeo):", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_video_id_var = tk.StringVar(value="")
+        self.td_video_id_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_video_id_var, font=("Segoe UI", 8))
+        self.td_video_id_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.track_details_frame, text="Video Caption:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_video_caption_var = tk.StringVar(value="")
+        self.td_video_caption_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_video_caption_var, font=("Segoe UI", 8))
+        self.td_video_caption_entry.pack(fill=tk.X, pady=(0, 2))
+
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
         self.track_details_frame.pack_forget()
 
@@ -3876,6 +3894,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_streaming_var.set(data.get('streaming', True))
         self.td_enable_dl_var.set(data.get('enable_download', True))
         self.td_featured_var.set(data.get('featured', False))
+        self.td_price_var.set(data.get('price', ""))
+        self.td_nyp_var.set(data.get('nyp', True))
+        self.td_video_id_var.set(data.get('video_id', ""))
+        self.td_video_caption_var.set(data.get('video_caption', ""))
 
         self.td_desc_text.delete("1.0", tk.END)
         self.td_desc_text.insert("1.0", data.get('description', ""))
@@ -3940,6 +3962,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             'streaming': self.td_streaming_var.get(),
             'enable_download': self.td_enable_dl_var.get(),
             'featured': now_featured,
+            'price': self.td_price_var.get(),
+            'nyp': self.td_nyp_var.get(),
+            'video_id': self.td_video_id_var.get(),
+            'video_caption': self.td_video_caption_var.get(),
         }
         if now_featured:
             for other_path, other_data in self.track_editor_data.items():
@@ -3994,6 +4020,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             track.track_data.streaming = int(data.get('streaming', True))
             track.track_data.enable_download = int(data.get('enable_download', True))
             track.track_data.featured = int(data.get('featured', False))
+            if data.get('price'):
+                track.track_data.price = data['price']
+            if 'nyp' in data:
+                track.track_data.nyp = int(data['nyp'])
+            if data.get('video_id'):
+                track.track_data.video_id = data['video_id']
+            if data.get('video_caption'):
+                track.track_data.video_caption = data['video_caption']
 
     def show_album_context_menu(self, event):
         """Show context menu for album entry"""
