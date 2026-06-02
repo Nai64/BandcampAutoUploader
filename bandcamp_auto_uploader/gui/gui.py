@@ -232,12 +232,7 @@ def show_startup_intro(root, launch_callback):
             canvas.itemconfigure(status_text, text=label)
         splash.update_idletasks()
 
-    def finish():
-        try:
-            splash.attributes("-topmost", False)
-        except tk.TclError:
-            pass
-        splash.destroy()
+    def reveal_app():
         root.deiconify()
         root.lift()
         try:
@@ -245,25 +240,31 @@ def show_startup_intro(root, launch_callback):
         except tk.TclError:
             pass
 
+    def dismiss_splash():
+        try:
+            splash.attributes("-topmost", False)
+        except tk.TclError:
+            pass
+        splash.destroy()
+        root.after(10, build_app)
+
     def build_app():
         try:
-            update_progress(0.35, "Loading settings...")
             app = launch_callback()
             root._bandcamp_uploader_app = app
-            update_progress(0.82, "Applying theme...")
             root.update_idletasks()
-            update_progress(1.0, "Ready")
-            splash.after(120, finish)
+            reveal_app()
         except Exception as exc:
             try:
-                splash.destroy()
+                if splash.winfo_exists():
+                    splash.destroy()
             except tk.TclError:
                 pass
             root.deiconify()
             messagebox.showerror("Startup Error", f"Failed to start Bandcamp Auto Uploader:\n\n{exc}")
             raise
 
-    splash.after(80, build_app)
+    splash.after(650, dismiss_splash)
 
 
 class BandcampUploaderGUI(SettingsMixin, LogsMixin):

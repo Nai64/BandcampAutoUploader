@@ -192,11 +192,29 @@ def set_window_redraw(root, enabled):
     """Temporarily suspend or resume redraw for smoother bulk UI updates."""
     if sys.platform != "win32":
         return
+
+    def iter_widgets(widget):
+        yield widget
+        try:
+            children = widget.winfo_children()
+        except tk.TclError:
+            children = ()
+        for child in children:
+            yield from iter_widgets(child)
+
     try:
-        hwnd = wintypes.HWND(root.winfo_id())
         WM_SETREDRAW = 0x000B
-        ctypes.windll.user32.SendMessageW(hwnd, WM_SETREDRAW, int(enabled), 0)
+        widgets = list(iter_widgets(root))
         if enabled:
+            widgets.reverse()
+        for widget in widgets:
+            try:
+                hwnd = wintypes.HWND(widget.winfo_id())
+                ctypes.windll.user32.SendMessageW(hwnd, WM_SETREDRAW, int(enabled), 0)
+            except tk.TclError:
+                pass
+        if enabled:
+            hwnd = wintypes.HWND(root.winfo_id())
             RDW_INVALIDATE = 0x0001
             RDW_ALLCHILDREN = 0x0080
             RDW_UPDATENOW = 0x0100
