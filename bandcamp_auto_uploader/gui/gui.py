@@ -655,7 +655,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         middle_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 5))
         
         # Album Preview
-        preview_frame = ttk.LabelFrame(middle_column, text="Preview", padding=8)
+        preview_title = ttk.Frame(middle_column)
+        self.preview_title_label = ttk.Label(
+            preview_title,
+            text="Preview",
+            font=("Segoe UI", 9, "bold")
+        )
+        self.preview_title_label.pack(side=tk.LEFT)
+        self.preview_total_duration_label = ttk.Label(
+            preview_title,
+            text="",
+            font=("Segoe UI", 8),
+            foreground="#64748b"
+        )
+        self.preview_total_duration_label.pack(side=tk.LEFT, padx=(5, 0))
+
+        preview_frame = ttk.LabelFrame(middle_column, labelwidget=preview_title, padding=8)
         preview_frame.pack(fill=tk.BOTH, expand=True)
         
         # Main container with side-by-side layout
@@ -1309,6 +1324,46 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 text = f"remaining {self.format_progress_duration(remaining)}"
 
         self.upload_progress_remaining_label.configure(text=text)
+
+    def update_preview_total_duration_label(self):
+        """Refresh the muted total-duration suffix in the Preview title."""
+        if not hasattr(self, 'preview_total_duration_label'):
+            return
+        if not hasattr(self, 'track_table'):
+            return
+
+        total_seconds = 0
+        has_any = False
+        for item in self.track_table.get_children():
+            values = self.track_table.item(item).get("values", ())
+            if len(values) <= 4:
+                continue
+            length_text = str(values[4]).strip()
+            if not length_text:
+                continue
+            has_any = True
+            seconds = self.parse_duration_seconds(length_text)
+            if seconds is not None:
+                total_seconds += seconds
+
+        if not has_any:
+            text = ""
+        else:
+            text = self.format_total_duration(total_seconds)
+
+        self.preview_total_duration_label.configure(text=text)
+
+    @staticmethod
+    def format_total_duration(seconds):
+        """Format a total album duration with hours, minutes, and seconds."""
+        seconds = max(0, int(seconds))
+        minutes, sec = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        if hours:
+            return f"{hours}h {minutes}m {sec:02d}s"
+        if minutes:
+            return f"{minutes}m {sec:02d}s"
+        return f"{sec}s"
 
     def refresh_upload_progress_timing_labels(self):
         """Update live ETA/elapsed labels while upload runs."""
@@ -2524,6 +2579,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.renumber_tracks()
         self.maybe_auto_fit_track_columns()
+        self.update_preview_total_duration_label()
 
     def load_or_create_album_session_file(self, album_path):
         """Load an album session sidecar if it exists, otherwise create one."""
@@ -2638,6 +2694,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             self.sync_track_table_to_current_album()
             self.maybe_auto_fit_track_columns()
+            self.update_preview_total_duration_label()
         finally:
             self._album_session_loading = False
         self.queue_album_session_save()
@@ -4739,6 +4796,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 )
 
             self.maybe_auto_fit_track_columns()
+            self.update_preview_total_duration_label()
 
         except Exception as e:
             messagebox.showerror("Preview Error", f"Failed to preview album:\n{e}")
@@ -6047,6 +6105,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
         self.track_table.delete(item_id)
         self.sync_track_table_to_current_album()
+        self.update_preview_total_duration_label()
         self.show_toast("Track removed", 2000, "success", trigger="track_remove")
     
     def move_track_up(self, item_id):
@@ -7670,6 +7729,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.track_table.insert("", tk.END, values=values, tags=self.get_track_row_tags(values))
 
         self.maybe_auto_fit_track_columns()
+        self.update_preview_total_duration_label()
     
 
 
