@@ -519,12 +519,28 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         middle_section = ttk.Frame(scrollable_frame)
         middle_section.pack(fill=tk.BOTH, expand=True, padx=12, pady=4)
         
-        # Left column - Basic Details
+        # Left column - Basic Details (scrollable)
         left_column = ttk.Frame(middle_section, width=300)
         left_column.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 5))
-        left_column.pack_propagate(False)  # Maintain fixed width
+        left_column.pack_propagate(False)
+
+        left_canvas = tk.Canvas(left_column, highlightthickness=0, borderwidth=0)
+        left_scrollbar = ttk.Scrollbar(left_column, orient=tk.VERTICAL, command=left_canvas.yview)
+        left_canvas.configure(yscrollcommand=left_scrollbar.set)
+        left_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        left_scroll_frame = ttk.Frame(left_canvas)
+        left_canvas.create_window((0, 0), window=left_scroll_frame, anchor=tk.NW)
+        left_scroll_frame.bind("<Configure>", lambda e: left_canvas.configure(scrollregion=left_canvas.bbox("all")))
+        left_canvas.bind("<Configure>", lambda e: left_canvas.itemconfig(1, width=e.width))
+
+        def _on_left_scroll(event):
+            left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        left_canvas.bind("<MouseWheel>", _on_left_scroll, add=True)
+        left_scroll_frame.bind("<MouseWheel>", _on_left_scroll, add=True)
         
-        details_frame = ttk.LabelFrame(left_column, text="Album Details", padding=4)
+        details_frame = ttk.LabelFrame(left_scroll_frame, text="Album Details", padding=4)
         details_frame.pack(fill=tk.BOTH, expand=True)
         
         # Album Name
