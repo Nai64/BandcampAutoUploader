@@ -351,7 +351,7 @@ def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg, edit_bg
                     )
             elif getattr(widget, "_bau_rounded_text_container", False):
                 edit_field_bg = edit_bg or bg
-                border_color = "#475569" if fg == "#ffffff" else "#a0a0a0"
+                border_color = "#596475" if fg == "#ffffff" else "#d6d6d6"
                 widget._bau_rounded_text_colors = (bg, edit_field_bg, border_color)
                 _draw_rounded_text_container(widget, bg, edit_field_bg, border_color)
                 style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg, edit_bg)
@@ -391,6 +391,40 @@ def _get_azure_theme_path():
     return _AZURE_THEME_PATH
 
 
+def _use_azure_theme(root, style, dark):
+    bg = "#333333" if dark else "#ffffff"
+    fg = "#ffffff" if dark else "#000000"
+    disabled_fg = "#ffffff" if dark else "#737373"
+    select_bg = "#007fff"
+    style.theme_use("azure-dark" if dark else "azure-light")
+    style.configure(
+        ".",
+        background=bg,
+        foreground=fg,
+        troughcolor=bg,
+        focuscolor=select_bg,
+        selectbackground=select_bg,
+        selectforeground="#ffffff",
+        insertcolor=fg,
+        insertwidth=1,
+        fieldbackground=select_bg,
+        borderwidth=1,
+        relief="flat",
+    )
+    style.map(".", foreground=[("disabled", disabled_fg)])
+    root.tk.eval(
+        "tk_setPalette "
+        f"background {bg} "
+        f"foreground {fg} "
+        f"highlightColor {select_bg} "
+        f"selectBackground {select_bg} "
+        "selectForeground #ffffff "
+        f"activeBackground {select_bg} "
+        "activeForeground #ffffff"
+    )
+    root.tk.eval(f"option add *Menu.selectcolor {fg} startup")
+
+
 def set_ui_theme(root, theme_name):
     global _TKMT_THEME_LOADED, _AZURE_THEME_LOADED
     style = ttk.Style()
@@ -406,7 +440,7 @@ def set_ui_theme(root, theme_name):
                 except Exception:
                     pass
         try:
-            root.tk.call("set_theme", "dark")
+            _use_azure_theme(root, style, True)
             style.configure(".", font=("Segoe UI", 8))
             root.tk.eval("option add *Menu.background #333333 startup")
             root.tk.eval("option add *Menu.selectcolor #ffffff startup")
@@ -435,7 +469,7 @@ def set_ui_theme(root, theme_name):
                 except Exception:
                     pass
         try:
-            root.tk.call("set_theme", "light")
+            _use_azure_theme(root, style, False)
             style.configure(".", font=("Segoe UI", 8))
             root.tk.eval("option add *Menu.background #ffffff startup")
             root.tk.eval("option add *Menu.selectcolor #000000 startup")
