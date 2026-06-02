@@ -658,8 +658,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         price_inner = ttk.Frame(details_frame)
         price_inner.pack(fill=tk.X, pady=(0, 2))
-        self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, width=8, font=("Segoe UI", 8))
-        self.album_price_entry.pack(side=tk.LEFT, padx=(0, 6))
+        self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, font=("Segoe UI", 8))
+        self.album_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
         self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
         self.album_nyp_check.pack(side=tk.LEFT)
 
