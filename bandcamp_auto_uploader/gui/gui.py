@@ -527,13 +527,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         left_column.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 5))
         left_column.pack_propagate(False)
 
-        left_canvas = tk.Canvas(left_column, highlightthickness=0, borderwidth=0)
-        left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        self.left_canvas = tk.Canvas(left_column, highlightthickness=0, borderwidth=0)
+        self.left_canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        left_scroll_frame = ttk.Frame(left_canvas)
-        left_canvas.create_window((0, 0), window=left_scroll_frame, anchor=tk.NW)
-        left_scroll_frame.bind("<Configure>", lambda e: left_canvas.configure(scrollregion=left_canvas.bbox("all")))
-        left_canvas.bind("<Configure>", lambda e: left_canvas.itemconfig(1, width=e.width, height=max(e.height, left_scroll_frame.winfo_reqheight())))
+        left_scroll_frame = ttk.Frame(self.left_canvas)
+        self.left_canvas.create_window((0, 0), window=left_scroll_frame, anchor=tk.NW)
+        left_scroll_frame.bind("<Configure>", lambda e: self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all")))
+        self.left_canvas.bind("<Configure>", lambda e: self.left_canvas.itemconfig(1, width=e.width, height=max(e.height, left_scroll_frame.winfo_reqheight())))
 
         def _on_left_scroll(event):
             if isinstance(event.widget, tk.Text):
@@ -541,10 +541,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             widget = event.widget
             while widget:
                 if widget == left_column:
-                    left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                    self.left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
                     return
                 widget = widget.master
-        left_canvas.bind_all("<MouseWheel>", _on_left_scroll, add=True)
+        self.left_canvas.bind_all("<MouseWheel>", _on_left_scroll, add=True)
         
         self.details_frame = ttk.LabelFrame(left_scroll_frame, text="Details", padding=4)
         self.details_frame.pack(fill=tk.BOTH, expand=True)
@@ -774,12 +774,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_featured_var.trace_add("write", self._on_featured_toggled)
 
         ttk.Label(self.track_details_frame, text="Track Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        td_price_row = ttk.Frame(self.track_details_frame)
+        td_price_row.pack(fill=tk.X, pady=(0, 2))
         self.td_price_var = tk.StringVar(value="")
-        self.td_price_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_price_var, font=("Segoe UI", 8))
-        self.td_price_entry.pack(fill=tk.X, pady=(0, 2))
-
+        self.td_price_entry = ttk.Entry(td_price_row, textvariable=self.td_price_var, font=("Segoe UI", 8))
+        self.td_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
         self.td_nyp_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(self.track_details_frame, text="Name Your Price", variable=self.td_nyp_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(td_price_row, text="Name Your Price", variable=self.td_nyp_var).pack(side=tk.LEFT)
 
         ttk.Label(self.track_details_frame, text="Video ID (YouTube/Vimeo):", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_video_id_var = tk.StringVar(value="")
@@ -3878,6 +3879,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_save_current_track()
         self.details_frame.pack_forget()
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
+        self.after(10, lambda: self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all")))
         self._track_details_path = file_path
         self._track_details_item = item
 
@@ -3910,6 +3912,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_save_current_track()
         self.track_details_frame.pack_forget()
         self.details_frame.pack(fill=tk.BOTH, expand=True)
+        self.after(10, lambda: self.left_canvas.configure(scrollregion=self.left_canvas.bbox("all")))
         self._track_details_path = None
         self._track_details_item = None
 
