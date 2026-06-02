@@ -351,7 +351,7 @@ def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg, edit_bg
                     )
             elif getattr(widget, "_bau_rounded_text_container", False):
                 edit_field_bg = edit_bg or bg
-                border_color = selectbg if fg == "#ffffff" else "#a0a0a0"
+                border_color = "#475569" if fg == "#ffffff" else "#a0a0a0"
                 widget._bau_rounded_text_colors = (bg, edit_field_bg, border_color)
                 _draw_rounded_text_container(widget, bg, edit_field_bg, border_color)
                 style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg, edit_bg)
