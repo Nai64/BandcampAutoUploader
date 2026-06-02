@@ -365,6 +365,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Create all GUI widgets"""
         # Initialize tracking variables
         self.manual_tracks = []  # Store manually added tracks for current album
+        self.track_editor_data = {}  # Per-track detail edits keyed by file path
+        self._track_details_path = None
+        self._track_details_item = None
         
         # Main container
         main_frame = ttk.Frame(self.root)
@@ -543,11 +546,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 widget = widget.master
         left_canvas.bind_all("<MouseWheel>", _on_left_scroll, add=True)
         
-        details_frame = ttk.LabelFrame(left_scroll_frame, text="Album Details", padding=4)
-        details_frame.pack(fill=tk.BOTH, expand=True)
+        self.details_frame = ttk.LabelFrame(left_scroll_frame, text="Details", padding=4)
+        self.details_frame.pack(fill=tk.BOTH, expand=True)
         
         # Album Name
-        name_row = ttk.Frame(details_frame)
+        name_row = ttk.Frame(self.details_frame)
         name_row.pack(fill=tk.X, pady=(0, 2))
         
         ttk.Label(name_row, text="Album Name:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
@@ -569,7 +572,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ToolTip(name_inner.winfo_children()[-1], "Auto-fill from folder name")
         
         # Artist
-        artist_row = ttk.Frame(details_frame)
+        artist_row = ttk.Frame(self.details_frame)
         artist_row.pack(fill=tk.X, pady=(0, 2))
         
         ttk.Label(artist_row, text="Artist:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
@@ -591,7 +594,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ToolTip(artist_inner.winfo_children()[-1], "Auto-fill from track metadata")
 
         # Release Date
-        release_date_row = ttk.Frame(details_frame)
+        release_date_row = ttk.Frame(self.details_frame)
         release_date_row.pack(fill=tk.X, pady=(0, 2))
 
         ttk.Label(release_date_row, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
@@ -612,13 +615,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ToolTip(release_date_inner.winfo_children()[-1], "Choose release date from calendar")
 
         # Tags
-        ttk.Label(details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_tags_var = tk.StringVar()
-        self.create_tag_input(details_frame)
+        self.create_tag_input(self.details_frame)
         
         # Description
-        ttk.Label(details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.desc_text = scrolledtext.ScrolledText(details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.desc_text = scrolledtext.ScrolledText(self.details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
         self.desc_text.pack(fill=tk.X, pady=(0, 2))
         self.desc_text.insert("1.0", self.album_description_var.get())
         self.desc_text.bind('<KeyRelease>', lambda e: self.album_description_var.set(self.desc_text.get("1.0", "end-1c")))
@@ -626,8 +629,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.desc_text.vbar.pack_forget()
 
         # Credits
-        ttk.Label(details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.credits_text = scrolledtext.ScrolledText(details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.credits_text = scrolledtext.ScrolledText(self.details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
         self.credits_text.pack(fill=tk.X, pady=(0, 2))
         # Hide vertical scrollbar
         self.credits_text.vbar.pack_forget()
@@ -635,9 +638,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.credits_text.bind('<KeyRelease>', lambda e: self.album_credits_var.set(self.credits_text.get("1.0", "end-1c")))
 
         # License
-        ttk.Label(details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_license_combo = ttk.Combobox(
-            details_frame,
+            self.details_frame,
             textvariable=self.album_license_var,
             values=[
                 "All Rights Reserved",
@@ -654,38 +657,115 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         self.album_license_combo.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Download Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.album_download_desc_entry = ttk.Entry(details_frame, textvariable=self.album_download_desc_var, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Download Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_download_desc_entry = ttk.Entry(self.details_frame, textvariable=self.album_download_desc_var, font=("Segoe UI", 8))
         self.album_download_desc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Release Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.album_release_message_entry = ttk.Entry(details_frame, textvariable=self.album_release_message_var, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Release Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_release_message_entry = ttk.Entry(self.details_frame, textvariable=self.album_release_message_var, font=("Segoe UI", 8))
         self.album_release_message_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Record Label:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.album_record_label_entry = ttk.Entry(details_frame, textvariable=self.album_record_label_var, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Record Label:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_record_label_entry = ttk.Entry(self.details_frame, textvariable=self.album_record_label_var, font=("Segoe UI", 8))
         self.album_record_label_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Catalog #:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.album_catalog_number_entry = ttk.Entry(details_frame, textvariable=self.album_catalog_number_var, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Catalog #:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_catalog_number_entry = ttk.Entry(self.details_frame, textvariable=self.album_catalog_number_var, font=("Segoe UI", 8))
         self.album_catalog_number_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.album_upc_entry = ttk.Entry(details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_upc_entry = ttk.Entry(self.details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        price_inner = ttk.Frame(details_frame)
+        ttk.Label(self.details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        price_inner = ttk.Frame(self.details_frame)
         price_inner.pack(fill=tk.X, pady=(0, 2))
         self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, font=("Segoe UI", 8))
         self.album_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
         self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
         self.album_nyp_check.pack(side=tk.LEFT)
 
-        ttk.Label(details_frame, text="Subscriber Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.album_subscriber_entry = ttk.Entry(details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
+        ttk.Label(self.details_frame, text="Subscriber Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_subscriber_entry = ttk.Entry(self.details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
         self.album_subscriber_entry.pack(fill=tk.X, pady=(0, 2))
         self.setup_album_session_autosave()
+
+        # Track Details frame (hidden initially, shown when a track is selected)
+        self.track_details_frame = ttk.LabelFrame(left_scroll_frame, text="Track Details", padding=4)
+
+        name_row2 = ttk.Frame(self.track_details_frame)
+        name_row2.pack(fill=tk.X, pady=(0, 2))
+        ttk.Label(name_row2, text="Track Name:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        name_inner2 = ttk.Frame(name_row2)
+        name_inner2.pack(fill=tk.X)
+        self.td_name_var = tk.StringVar()
+        self.td_name_entry = ttk.Entry(name_inner2, textvariable=self.td_name_var, font=("Segoe UI", 8))
+        self.td_name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
+        self.td_name_auto_btn = ttk.Button(name_inner2, text="Auto", command=self.td_auto_fill_name, width=5)
+        self.td_name_auto_btn.pack(side=tk.LEFT)
+
+        ttk.Label(self.track_details_frame, text="Artist:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_artist_var = tk.StringVar()
+        self.td_artist_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_artist_var, font=("Segoe UI", 8))
+        self.td_artist_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.track_details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_tags_var = tk.StringVar()
+        self.td_tags_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_tags_var, font=("Segoe UI", 8))
+        self.td_tags_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.track_details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_desc_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
+        self.td_desc_text.pack(fill=tk.X, pady=(0, 2))
+        self.td_desc_text.vbar.pack_forget()
+
+        ttk.Label(self.track_details_frame, text="Lyrics:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_lyrics_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
+        self.td_lyrics_text.pack(fill=tk.X, pady=(0, 2))
+        self.td_lyrics_text.vbar.pack_forget()
+
+        ttk.Label(self.track_details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_credits_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
+        self.td_credits_text.pack(fill=tk.X, pady=(0, 2))
+        self.td_credits_text.vbar.pack_forget()
+
+        ttk.Label(self.track_details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_license_var = tk.StringVar(value="All Rights Reserved")
+        self.td_license_combo = ttk.Combobox(self.track_details_frame, textvariable=self.td_license_var,
+            values=["All Rights Reserved","CC Attribution","CC Attribution-ShareAlike","CC Attribution-NoDerivatives",
+                    "CC Attribution-NonCommercial","CC Attribution-NonCommercial-ShareAlike",
+                    "CC Attribution-NonCommercial-NoDerivatives","Public Domain"],
+            state="readonly", font=("Segoe UI", 8))
+        self.td_license_combo.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.track_details_frame, text="Download Desc.:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_download_desc_var = tk.StringVar()
+        self.td_download_desc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_download_desc_var, font=("Segoe UI", 8))
+        self.td_download_desc_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.track_details_frame, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        rd_row2 = ttk.Frame(self.track_details_frame)
+        rd_row2.pack(fill=tk.X, pady=(0, 2))
+        self.td_release_date_var = tk.StringVar()
+        self.td_release_date_entry = ttk.Entry(rd_row2, textvariable=self.td_release_date_var, font=("Segoe UI", 8))
+        self.td_release_date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
+        self.td_release_date_btn = ttk.Button(rd_row2, text="Edit", command=self.td_show_calendar, width=5)
+        self.td_release_date_btn.pack(side=tk.LEFT)
+
+        ttk.Label(self.track_details_frame, text="ISRC:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_isrc_var = tk.StringVar()
+        self.td_isrc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_isrc_var, font=("Segoe UI", 8))
+        self.td_isrc_entry.pack(fill=tk.X, pady=(0, 2))
+
+        self.td_streaming_var = tk.BooleanVar(value=True)
+        self.td_enable_dl_var = tk.BooleanVar(value=True)
+        self.td_featured_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W)
+
+        self.track_details_frame.pack(fill=tk.BOTH, expand=True)
+        self.track_details_frame.pack_forget()
 
         # Middle column - Preview
         middle_column = ttk.Frame(middle_section)
@@ -874,6 +954,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.bind('<Button-1>', self.on_drag_start)
         self.track_table.bind('<B1-Motion>', self.on_drag_motion)
         self.track_table.bind('<ButtonRelease-1>', self.on_drag_release)
+        self.track_table.bind('<<TreeviewSelect>>', self.on_track_select)
 
         # Enable drag & drop for adding audio files (if available)
         try:
@@ -2360,6 +2441,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_nyp_var.set(True)
         self.album_subscriber_message_var.set("")
         self.album_license_var.set("All Rights Reserved")
+        self.track_editor_data.clear()
+        self._track_details_path = None
+        self._track_details_item = None
+        if hasattr(self, 'track_details_frame'):
+            self.track_details_frame.pack_forget()
+            self.details_frame.pack(fill=tk.BOTH, expand=True)
 
     def get_album_description_text(self):
         """Return current album description text from the widget when available."""
@@ -3652,14 +3739,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def select_date(self, date_str):
         """Select a date from calendar"""
-        self.album_publish_date_var.set(date_str)
+        target = getattr(self, '_calendar_target_var', self.album_publish_date_var)
+        target.set(date_str)
         self.cal_dialog.destroy()
 
     def select_today(self):
         """Select today's date"""
         from datetime import datetime
         today = datetime.now().strftime("%Y-%m-%d")
-        self.album_publish_date_var.set(today)
+        target = getattr(self, '_calendar_target_var', self.album_publish_date_var)
+        target.set(today)
         self.cal_dialog.destroy()
 
     def clear_all_fields(self):
@@ -3714,7 +3803,133 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 messagebox.showwarning("Invalid Path", "Clipboard does not contain a valid folder path")
         except:
             messagebox.showwarning("Paste Error", "Could not paste from clipboard")
-    
+
+    # --- Track Details panel ---
+    def td_auto_fill_name(self):
+        path = self._track_details_path
+        if path:
+            self.td_name_var.set(Path(path).stem)
+
+    def td_show_calendar(self):
+        self._calendar_target_var = self.td_release_date_var
+        try:
+            self.show_release_date_calendar()
+        finally:
+            self._calendar_target_var = None
+
+    def on_track_select(self, event):
+        sel = self.track_table.selection()
+        if len(sel) == 1:
+            item = sel[0]
+            values = self.track_table.item(item)['values']
+            file_path = str(values[12]) if len(values) > 12 else ""
+            self._show_track_details(file_path, item)
+        else:
+            self._show_album_details()
+
+    def _show_track_details(self, file_path, item):
+        self.td_save_current_track()
+        self.details_frame.pack_forget()
+        self.track_details_frame.pack(fill=tk.BOTH, expand=True)
+        self._track_details_path = file_path
+        self._track_details_item = item
+
+        values = self.track_table.item(item)['values']
+        data = self.track_editor_data.get(file_path, {})
+
+        self.td_name_var.set(data.get('name', str(values[2]) if len(values) > 2 else ""))
+        self.td_artist_var.set(data.get('artist', str(values[1]) if len(values) > 1 else ""))
+        self.td_tags_var.set(data.get('tags', str(values[9]) if len(values) > 9 else ""))
+        self.td_isrc_var.set(data.get('isrc', str(values[19]) if len(values) > 19 else ""))
+        self.td_download_desc_var.set(data.get('download_desc', str(values[3]) if len(values) > 3 else ""))
+        self.td_release_date_var.set(data.get('release_date', ""))
+        self.td_license_var.set(data.get('license', "All Rights Reserved"))
+        self.td_streaming_var.set(data.get('streaming', True))
+        self.td_enable_dl_var.set(data.get('enable_download', True))
+        self.td_featured_var.set(data.get('featured', False))
+
+        self.td_desc_text.delete("1.0", tk.END)
+        self.td_desc_text.insert("1.0", data.get('description', ""))
+        self.td_lyrics_text.delete("1.0", tk.END)
+        self.td_lyrics_text.insert("1.0", data.get('lyrics', ""))
+        self.td_credits_text.delete("1.0", tk.END)
+        self.td_credits_text.insert("1.0", data.get('credits', ""))
+
+    def _show_album_details(self):
+        self.td_save_current_track()
+        self.track_details_frame.pack_forget()
+        self.details_frame.pack(fill=tk.BOTH, expand=True)
+        self._track_details_path = None
+        self._track_details_item = None
+
+    def td_save_current_track(self):
+        path = self._track_details_path
+        if not path:
+            return
+        data = {
+            'name': self.td_name_var.get(),
+            'artist': self.td_artist_var.get(),
+            'tags': self.td_tags_var.get(),
+            'description': self.td_desc_text.get("1.0", "end-1c"),
+            'lyrics': self.td_lyrics_text.get("1.0", "end-1c"),
+            'credits': self.td_credits_text.get("1.0", "end-1c"),
+            'license': self.td_license_var.get(),
+            'download_desc': self.td_download_desc_var.get(),
+            'release_date': self.td_release_date_var.get(),
+            'isrc': self.td_isrc_var.get(),
+            'streaming': self.td_streaming_var.get(),
+            'enable_download': self.td_enable_dl_var.get(),
+            'featured': self.td_featured_var.get(),
+        }
+        self.track_editor_data[path] = data
+
+        item = self._track_details_item
+        if item:
+            values = list(self.track_table.item(item).get("values", ()))
+            if len(values) > 2:
+                values[2] = data['name']
+            if len(values) > 1:
+                values[1] = data['artist']
+            if len(values) > 3:
+                values[3] = data['download_desc']
+            if len(values) > 9:
+                values[9] = data['tags']
+            if len(values) > 19:
+                values[19] = data['isrc']
+            self.track_table.item(item, values=tuple(values))
+
+    def apply_track_editor_data_to_album(self, album):
+        """Apply stored track editor data to all tracks in the album."""
+        for track in album.tracks:
+            path = str(track.path)
+            data = self.track_editor_data.get(path)
+            if data is None:
+                continue
+            if data.get('name'):
+                track.track_data.title = data['name']
+            if data.get('artist'):
+                track.track_data.artist = data['artist']
+            if data.get('tags'):
+                track.track_data.tags = data['tags']
+            if data.get('description'):
+                track.track_data.about = data['description']
+            if data.get('lyrics'):
+                track.track_data.lyrics = data['lyrics']
+            if data.get('credits'):
+                track.track_data.credits = data['credits']
+            if data.get('license') and data['license'] in ("All Rights Reserved","CC Attribution","CC Attribution-ShareAlike","CC Attribution-NoDerivatives","CC Attribution-NonCommercial","CC Attribution-NonCommercial-ShareAlike","CC Attribution-NonCommercial-NoDerivatives","Public Domain"):
+                license_map = {"All Rights Reserved": "1","CC Attribution": "2","CC Attribution-ShareAlike": "3","CC Attribution-NoDerivatives": "4","CC Attribution-NonCommercial": "5","CC Attribution-NonCommercial-ShareAlike": "6","CC Attribution-NonCommercial-NoDerivatives": "7","Public Domain": "8"}
+                track.track_data.license_type = license_map[data['license']]
+            if data.get('download_desc'):
+                track.track_data.download_desc = data['download_desc']
+            if data.get('release_date'):
+                track.track_data.release_date = data['release_date']
+            if data.get('isrc'):
+                track.track_data.isrc = data['isrc']
+            track.track_data.streaming = int(data.get('streaming', True))
+            track.track_data.enable_download = int(data.get('enable_download', True))
+            track.track_data.featured = int(data.get('featured', False))
+
     def show_album_context_menu(self, event):
         """Show context menu for album entry"""
         if self.is_upload_in_progress():
@@ -7200,6 +7415,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                             album.cover_art = CoverArt(path=cover_file)
                 
                 self.update_status("Uploading to Bandcamp...", 60)
+
+                self.td_save_current_track()
+                self.apply_track_editor_data_to_album(album)
 
                 def progress_callback(event, payload):
                     self.root.after(0, lambda e=event, p=dict(payload): self.handle_upload_progress_event(e, p))
