@@ -2568,6 +2568,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "locked_track_keys": sorted(getattr(self, 'locked_track_keys', set())),
             "track_columns": columns,
             "tracks": rows,
+            "track_editor_data": {k: v for k, v in self.track_editor_data.items() if v},
         }
 
     def render_album_session_text(self, payload):
@@ -2753,6 +2754,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.maybe_auto_fit_track_columns()
         self.update_preview_total_duration_label()
 
+    def apply_album_session_track_editor_data(self, payload):
+        """Restore per-track detail edits from the session file."""
+        saved = payload.get("track_editor_data", {})
+        if not saved:
+            return
+        if not hasattr(self, 'track_table'):
+            return
+        valid_paths = set()
+        for item in self.track_table.get_children():
+            values = self.track_table.item(item).get("values", ())
+            if len(values) > 12 and str(values[12]).strip():
+                valid_paths.add(str(values[12]).strip())
+        for path, data in saved.items():
+            if path in valid_paths and isinstance(data, dict):
+                self.track_editor_data[path] = data
+
     def load_or_create_album_session_file(self, album_path):
         """Load an album session sidecar if it exists, otherwise create one."""
         if not getattr(self.config, 'create_album_session_files', True):
@@ -2789,7 +2806,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.apply_album_session_details(payload.get("album_details", {}))
             self.locked_track_keys = set(payload.get("locked_track_keys", []))
             self.apply_album_session_tracks(payload)
+            self.apply_album_session_track_editor_data(payload)
             self.sync_track_table_to_current_album()
+            self.refresh_all_track_row_tags()
+            self._auto_feature_first_track()
             self.show_toast("Album session restored", 1800, "success", trigger="file_add")
         except Exception as e:
             logger.warning(f"Failed to load album session file: {e}")
@@ -3883,6 +3903,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 other_data['featured'] = False
                 break
         self._featured_track_path = path
+        self.refresh_all_track_row_tags()
+
+    def _auto_feature_first_track(self):
+        children = self.track_table.get_children()
+        if not children:
+            return
+        for data in self.track_editor_data.values():
+            if data.get('featured', False):
+                return
+        first_values = self.track_table.item(children[0]).get('values', ())
+        if len(first_values) > 12:
+            path = str(first_values[12])
+            if path not in self.track_editor_data:
+                self.track_editor_data[path] = {}
+            self.track_editor_data[path]['featured'] = True
         self.refresh_all_track_row_tags()
 
     def td_save_current_track(self):
@@ -5227,6 +5262,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             self.maybe_auto_fit_track_columns()
             self.update_preview_total_duration_label()
+            self._auto_feature_first_track()
 
         except Exception as e:
             messagebox.showerror("Preview Error", f"Failed to preview album:\n{e}")
@@ -8172,6 +8208,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.maybe_auto_fit_track_columns()
         self.update_preview_total_duration_label()
+        self._auto_feature_first_track()
     
 
 
