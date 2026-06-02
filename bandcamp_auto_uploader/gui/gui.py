@@ -667,9 +667,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_subscriber_entry = ttk.Entry(details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
         self.album_subscriber_entry.pack(fill=tk.X, pady=(0, 2))
         self.setup_album_session_autosave()
-        presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
-        presets_btn.pack(fill=tk.X, pady=(2, 0))
-        
+
         # Middle column - Preview
         middle_column = ttk.Frame(middle_section)
         middle_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 5))
