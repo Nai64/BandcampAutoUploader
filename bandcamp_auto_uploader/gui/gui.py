@@ -533,7 +533,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         left_scroll_frame = ttk.Frame(left_canvas)
         left_canvas.create_window((0, 0), window=left_scroll_frame, anchor=tk.NW)
         left_scroll_frame.bind("<Configure>", lambda e: left_canvas.configure(scrollregion=left_canvas.bbox("all")))
-        left_canvas.bind("<Configure>", lambda e: left_canvas.itemconfig(1, width=e.width))
+        left_canvas.bind("<Configure>", lambda e: left_canvas.itemconfig(1, width=e.width, height=max(e.height, left_scroll_frame.winfo_reqheight())))
 
         def _on_left_scroll(event):
             if isinstance(event.widget, tk.Text):
