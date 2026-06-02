@@ -3875,6 +3875,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         path = self._track_details_path
         if not path or not self.td_featured_var.get():
             return
+        if path not in self.track_editor_data:
+            self.track_editor_data[path] = {}
+        self.track_editor_data[path]['featured'] = True
         for other_path, other_data in self.track_editor_data.items():
             if other_path != path and other_data.get('featured', False):
                 other_data['featured'] = False
@@ -6267,7 +6270,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         return self.is_track_corrupted(file_path)
 
     def get_track_row_tags(self, values):
-        """Build the tag tuple for a track row based on lock and corruption state."""
+        """Build the tag tuple for a track row based on lock, corruption, and featured state."""
         key = self.get_track_lock_key_from_values(values)
         tags = ["normal"]
         if key in getattr(self, 'locked_track_keys', set()):
@@ -6276,6 +6279,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             file_path = str(values[12]).strip()
             if file_path and self.is_track_corrupted(file_path):
                 tags.append("corrupted")
+            if file_path and self.track_editor_data.get(file_path, {}).get('featured', False):
+                tags.append("featured")
         return tuple(tags)
 
     def insert_track_row(self, values, index=tk.END):
