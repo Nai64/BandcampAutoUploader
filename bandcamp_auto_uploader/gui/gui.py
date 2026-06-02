@@ -653,7 +653,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 6))
         self.setup_album_session_autosave()
         presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
-        presets_btn.pack(fill=tk.X, pady=(0, 6))
+        presets_btn.pack(fill=tk.X, pady=(6, 0))
         
         # Middle column - Preview
         middle_column = ttk.Frame(middle_section)
