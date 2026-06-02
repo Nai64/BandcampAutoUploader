@@ -4,6 +4,7 @@ import ctypes
 import logging
 import os
 import re
+import sys
 import tkinter as tk
 from ctypes import wintypes
 from tkinter import ttk
@@ -233,6 +234,8 @@ def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
 # Theme path cache
 _TKMT_THEME_PATH = None
 _TKMT_THEME_LOADED = False
+_AZURE_THEME_PATH = None
+_AZURE_THEME_LOADED = False
 
 
 def _get_tkmt_theme_path():
@@ -246,11 +249,81 @@ def _get_tkmt_theme_path():
     return _TKMT_THEME_PATH
 
 
+def _get_azure_theme_path():
+    global _AZURE_THEME_PATH
+    if _AZURE_THEME_PATH is None:
+        if getattr(sys, "frozen", False):
+            base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+            theme_path = base_dir / "bandcamp_auto_uploader" / "themes" / "azure" / "azure.tcl"
+        else:
+            theme_path = Path(__file__).resolve().parents[1] / "themes" / "azure" / "azure.tcl"
+        _AZURE_THEME_PATH = str(theme_path) if theme_path.exists() else ""
+    return _AZURE_THEME_PATH
+
+
 def set_ui_theme(root, theme_name):
-    global _TKMT_THEME_LOADED
+    global _TKMT_THEME_LOADED, _AZURE_THEME_LOADED
     style = ttk.Style()
 
-    if theme_name == "Sun-Valley Dark":
+    if theme_name == "Azure Dark":
+        if not _AZURE_THEME_LOADED:
+            theme_path = _get_azure_theme_path()
+            if theme_path:
+                try:
+                    root.tk.call("source", theme_path)
+                    _AZURE_THEME_LOADED = True
+                except Exception:
+                    pass
+        try:
+            root.tk.call("set_theme", "dark")
+            style.configure(".", font=("Segoe UI", 8))
+            root.tk.eval("option add *Menu.background #333333 startup")
+            root.tk.eval("option add *Menu.selectcolor #ffffff startup")
+            style.configure("TButton", padding=(2, 0))
+            style.configure("TCheckbutton", padding=0)
+            style.configure("TRadiobutton", padding=0)
+            try:
+                root.tk.eval("ttk::style element create Notebook.border from default")
+            except Exception:
+                pass
+            style.configure("TNotebook", background="#333333")
+            style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
+            style.configure("Treeview", rowheight=20)
+            style.configure("TEntry", padding=(2, 1))
+            style_tk_text_widgets(root, "#333333", "#ffffff", "#ffffff", "#007fff", "#ffffff")
+            set_titlebar_dark(root, True)
+        except Exception:
+            pass
+    elif theme_name == "Azure Light":
+        if not _AZURE_THEME_LOADED:
+            theme_path = _get_azure_theme_path()
+            if theme_path:
+                try:
+                    root.tk.call("source", theme_path)
+                    _AZURE_THEME_LOADED = True
+                except Exception:
+                    pass
+        try:
+            root.tk.call("set_theme", "light")
+            style.configure(".", font=("Segoe UI", 8))
+            root.tk.eval("option add *Menu.background #ffffff startup")
+            root.tk.eval("option add *Menu.selectcolor #000000 startup")
+            style.configure("TButton", padding=(2, 0))
+            style.configure("TCheckbutton", padding=0)
+            style.configure("TRadiobutton", padding=0)
+            try:
+                root.tk.eval("ttk::style element create Notebook.border from default")
+            except Exception:
+                pass
+            style.configure("TNotebook", background="#ffffff")
+            style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
+            style.configure("Treeview", rowheight=20)
+            style.configure("TEntry", padding=(2, 1))
+            style_tk_text_widgets(root, "#ffffff", "#000000", "#000000", "#007fff", "#ffffff")
+            set_titlebar_dark(root, False)
+        except Exception:
+            pass
+    elif theme_name == "Sun-Valley Dark":
         if not _TKMT_THEME_LOADED:
             theme_path = _get_tkmt_theme_path()
             if theme_path:

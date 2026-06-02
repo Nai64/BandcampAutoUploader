@@ -79,6 +79,11 @@ FLAC, WAV, AIFF, and MP3. Only lossy formats (MP3) are converted to FLAC 16-bit 
 ### What if I don't use a supported browser?
 You can upload a `cookies.txt` file instead. The CLI (`bc-upload`) guides you through this.
 
+## Third-party licenses
+
+- [Azure ttk theme](https://github.com/rdbende/Azure-ttk-theme) by rdbende is bundled under the MIT License.
+- [TKinterModernThemes](https://github.com/RobertJN64/TKinterModernThemes) by Robert Nies is used for Sun-Valley theme support under the MIT License. TKinterModernThemes credits the included Sun-Valley theme work to [rdbende](https://github.com/rdbende).
+
 ## Need Help?
 
 - [Browse open issues](https://github.com/Nai64/BandcampAutoUploader/issues)

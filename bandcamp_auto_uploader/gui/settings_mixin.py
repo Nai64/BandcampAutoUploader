@@ -1891,7 +1891,7 @@ class SettingsMixin:
         # Combined settings from all interface sub-sections
         settings = [
             # Theme setting
-            ("Interface Theme (Experimental)", "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark"]),
+            ("Interface Theme (Experimental)", "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark", "Azure Light", "Azure Dark"]),
             # Track Table Columns settings
             ("Columns: Track No.", "show_track_no", "bool"),
             ("Columns: Artist", "show_artist", "bool"),
