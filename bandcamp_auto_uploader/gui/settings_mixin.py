@@ -2769,7 +2769,8 @@ class SettingsMixin:
             return
 
         if self.advanced_item_mapping.get(item_id) == "reset_all_settings":
-            self.root.after_idle(self.reset_all_settings)
+            if not getattr(self, '_reset_in_progress', False):
+                self.root.after_idle(self.reset_all_settings)
             return "break"
         if self.advanced_item_mapping.get(item_id) == "custom_filename_patterns":
             self.root.after_idle(self.open_custom_filename_patterns_dialog)
@@ -2777,73 +2778,68 @@ class SettingsMixin:
 
     def reset_all_settings(self):
         """Reset all settings to defaults with 3 confirmation dialogs"""
-        # First confirmation dialog
-        confirm1 = messagebox.askyesno(
-            "Reset All Settings - Confirmation 1/3",
-            "Are you sure you want to reset ALL settings to defaults?\n\n"
-            "This will reset:\n"
-            "- All preferences and configurations\n"
-            "- UI customizations (colors and fonts)\n"
-            "- Column visibility settings\n"
-            "- Context menu settings\n"
-            "- Upload settings\n"
-            "- Notification settings\n"
-            "- And all other configurable options\n\n"
-            "This action cannot be undone.",
-            icon='warning'
-        )
-        
-        if not confirm1:
+        if getattr(self, '_reset_in_progress', False):
             return
-        
-        # Second confirmation dialog
-        confirm2 = messagebox.askyesno(
-            "Reset All Settings - Confirmation 2/3",
-            "This is your second warning.\n\n"
-            "All your carefully customized settings will be lost.\n"
-            "You will need to reconfigure everything from scratch.\n\n"
-            "Are you absolutely sure you want to proceed?",
-            icon='warning'
-        )
-        
-        if not confirm2:
-            return
-        
-        # Third confirmation dialog
-        confirm3 = messagebox.askyesno(
-            "Reset All Settings - Final Confirmation",
-            "FINAL WARNING: This is your last chance to cancel.\n\n"
-            "Once you click Yes, all settings will be immediately reset\n"
-            "to their default values and the application will restart.\n\n"
-            "Click Yes to reset everything or No to cancel.",
-            icon='warning'
-        )
-        
-        if not confirm3:
-            return
-        
-        # Perform the reset
+        self._reset_in_progress = True
         try:
+            confirm1 = messagebox.askyesno(
+                "Reset All Settings - Confirmation 1/3",
+                "Are you sure you want to reset ALL settings to defaults?\n\n"
+                "This will reset:\n"
+                "- All preferences and configurations\n"
+                "- UI customizations (colors and fonts)\n"
+                "- Column visibility settings\n"
+                "- Context menu settings\n"
+                "- Upload settings\n"
+                "- Notification settings\n"
+                "- And all other configurable options\n\n"
+                "This action cannot be undone.",
+                icon='warning'
+            )
+
+            if not confirm1:
+                return
+
+            confirm2 = messagebox.askyesno(
+                "Reset All Settings - Confirmation 2/3",
+                "This is your second warning.\n\n"
+                "All your carefully customized settings will be lost.\n"
+                "You will need to reconfigure everything from scratch.\n\n"
+                "Are you absolutely sure you want to proceed?",
+                icon='warning'
+            )
+
+            if not confirm2:
+                return
+
+            confirm3 = messagebox.askyesno(
+                "Reset All Settings - Final Confirmation",
+                "FINAL WARNING: This is your last chance to cancel.\n\n"
+                "Once you click Yes, all settings will be immediately reset\n"
+                "to their default values and the application will restart.\n\n"
+                "Click Yes to reset everything or No to cancel.",
+                icon='warning'
+            )
+
+            if not confirm3:
+                return
+
             default_config = Config()
-            
-            # Save the default config
             save_config(default_config)
-            
-            # Show success message
             messagebox.showinfo(
                 "Settings Reset Complete",
                 "All settings have been reset to defaults.\n\n"
                 "The application will now restart to apply the changes."
             )
-            
-            # Restart the application
             self.restart_application()
-            
+
         except Exception as e:
             messagebox.showerror(
                 "Reset Failed",
                 f"Failed to reset settings:\n{str(e)}"
             )
+        finally:
+            self._reset_in_progress = False
 
     DEFAULT_FILENAME_PATTERNS = [
         (r"^(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
