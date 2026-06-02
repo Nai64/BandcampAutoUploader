@@ -7,6 +7,7 @@ import re
 import sys
 import tkinter as tk
 from ctypes import wintypes
+from tkinter import font as tkfont
 from tkinter import ttk
 from pathlib import Path
 
@@ -194,18 +195,90 @@ def preserve_tk_text_colors(widget, **colors):
 
 
 def style_multiline_editbox(widget):
-    """Use normal edit-field colors for editable multiline Text widgets."""
-    preserve_tk_text_colors(
-        widget,
+    """Mark editable multiline Text widgets for theme-aware field colors."""
+    widget._bau_text_color_role = "editbox"
+    widget.configure(
         background="#ffffff",
         foreground="#000000",
         insertbackground="#000000",
         selectbackground="#0078d7",
         selectforeground="#ffffff",
+        padx=4,
+        pady=0,
     )
 
 
-def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
+def _draw_rounded_text_container(container, outer_bg, field_bg, border_color):
+    width = max(1, container.winfo_width())
+    height = max(1, container.winfo_height())
+    radius = 5
+    inset = 1
+    points = [
+        inset + radius, inset,
+        width - inset - radius, inset,
+        width - inset, inset,
+        width - inset, inset + radius,
+        width - inset, height - inset - radius,
+        width - inset, height - inset,
+        width - inset - radius, height - inset,
+        inset + radius, height - inset,
+        inset, height - inset,
+        inset, height - inset - radius,
+        inset, inset + radius,
+        inset, inset,
+    ]
+    container.configure(background=outer_bg)
+    container.delete("rounded_text_bg")
+    container.create_polygon(
+        points,
+        smooth=True,
+        splinesteps=8,
+        fill=field_bg,
+        outline=border_color,
+        width=1,
+        tags=("rounded_text_bg",),
+    )
+    container.tag_lower("rounded_text_bg")
+    window_id = getattr(container, "_bau_rounded_text_window", None)
+    if window_id is not None:
+        pad = 2
+        container.coords(window_id, pad, pad)
+        container.itemconfigure(
+            window_id,
+            width=max(1, width - (pad * 2)),
+            height=max(1, height - (pad * 2)),
+        )
+
+
+def create_rounded_text_editbox(parent, **text_options):
+    """Create a lightly rounded container around a multiline Text editbox."""
+    container = tk.Canvas(parent, highlightthickness=0, borderwidth=0)
+    text_options.setdefault("relief", tk.FLAT)
+    text_options.setdefault("borderwidth", 0)
+    text_options.setdefault("highlightthickness", 0)
+    text = tk.Text(container, **text_options)
+    style_multiline_editbox(text)
+
+    container._bau_rounded_text_container = True
+    container._bau_rounded_text_window = container.create_window(2, 2, anchor=tk.NW, window=text)
+
+    def resize(_event=None):
+        colors = getattr(container, "_bau_rounded_text_colors", None)
+        if colors:
+            _draw_rounded_text_container(container, *colors)
+
+    def set_initial_height():
+        line_count = int(text.cget("height"))
+        line_height = tkfont.Font(font=text.cget("font")).metrics("linespace")
+        container.configure(height=(line_height * line_count) + 8)
+        resize()
+
+    container.bind("<Configure>", resize)
+    container.after_idle(set_initial_height)
+    return container, text
+
+
+def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg, edit_bg=None):
     """Style plain tk Text widgets to match the current ttk theme."""
     try:
         for widget in root.winfo_children():
@@ -213,6 +286,16 @@ def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
                 preserved_colors = getattr(widget, "_bau_preserved_text_colors", None)
                 if preserved_colors:
                     widget.configure(**preserved_colors)
+                elif getattr(widget, "_bau_text_color_role", None) == "editbox":
+                    widget.configure(
+                        background=edit_bg or bg,
+                        foreground=fg,
+                        insertbackground=insertcolor,
+                        selectbackground=selectbg,
+                        selectforeground=selectfg,
+                        padx=4,
+                        pady=0,
+                    )
                 else:
                     widget.configure(
                         background=bg, foreground=fg,
@@ -225,8 +308,14 @@ def style_tk_text_widgets(root, bg, fg, insertcolor, selectbg, selectfg):
                         highlightcolor=selectbg,
                         padx=4, pady=0
                     )
+            elif getattr(widget, "_bau_rounded_text_container", False):
+                edit_field_bg = edit_bg or bg
+                border_color = selectbg if fg == "#ffffff" else "#a0a0a0"
+                widget._bau_rounded_text_colors = (bg, edit_field_bg, border_color)
+                _draw_rounded_text_container(widget, bg, edit_field_bg, border_color)
+                style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg, edit_bg)
             else:
-                style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg)
+                style_tk_text_widgets(widget, bg, fg, insertcolor, selectbg, selectfg, edit_bg)
     except Exception:
         pass
 
@@ -290,7 +379,7 @@ def set_ui_theme(root, theme_name):
             style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
             style.configure("Treeview", rowheight=20)
             style.configure("TEntry", padding=(2, 1))
-            style_tk_text_widgets(root, "#333333", "#ffffff", "#ffffff", "#007fff", "#ffffff")
+            style_tk_text_widgets(root, "#333333", "#ffffff", "#ffffff", "#007fff", "#ffffff", "#333333")
             set_titlebar_dark(root, True)
         except Exception:
             pass
@@ -319,7 +408,7 @@ def set_ui_theme(root, theme_name):
             style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
             style.configure("Treeview", rowheight=20)
             style.configure("TEntry", padding=(2, 1))
-            style_tk_text_widgets(root, "#ffffff", "#000000", "#000000", "#007fff", "#ffffff")
+            style_tk_text_widgets(root, "#ffffff", "#000000", "#000000", "#007fff", "#ffffff", "#ffffff")
             set_titlebar_dark(root, False)
         except Exception:
             pass
@@ -364,7 +453,7 @@ def set_ui_theme(root, theme_name):
             style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
             style.configure("Treeview", rowheight=20)
             style.configure("TEntry", padding=(2, 1))
-            style_tk_text_widgets(root, "#1c1c1c", "#ffffff", "#ffffff", "#2f60d8", "#ffffff")
+            style_tk_text_widgets(root, "#1c1c1c", "#ffffff", "#ffffff", "#2f60d8", "#ffffff", "#2f2f2f")
             set_titlebar_dark(root, True)
         except Exception:
             pass
@@ -409,7 +498,7 @@ def set_ui_theme(root, theme_name):
             style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
             style.configure("Treeview", rowheight=20)
             style.configure("TEntry", padding=(2, 1))
-            style_tk_text_widgets(root, "#fafafa", "#202020", "#202020", "#2f60d8", "#ffffff")
+            style_tk_text_widgets(root, "#fafafa", "#202020", "#202020", "#2f60d8", "#ffffff", "#ffffff")
             set_titlebar_dark(root, False)
         except Exception:
             pass
@@ -429,6 +518,7 @@ def set_ui_theme(root, theme_name):
             )
             root.tk.eval("option add *Menu.selectcolor #000000 startup")
             root.tk.eval("option add *Menu.background #f0f0f0 startup")
+            style_tk_text_widgets(root, "#f0f0f0", "#000000", "#000000", "#0078d7", "#ffffff", "#ffffff")
         except Exception:
             try:
                 style.theme_use("clam")
