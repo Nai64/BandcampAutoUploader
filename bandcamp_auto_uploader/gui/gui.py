@@ -143,6 +143,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_record_label_var = tk.StringVar()
         self.album_download_desc_var = tk.StringVar()
         self.album_release_message_var = tk.StringVar()
+        self.album_price_var = tk.StringVar(value="0.00")
+        self.album_nyp_var = tk.BooleanVar(value=True)
+        self.album_subscriber_message_var = tk.StringVar()
 
         # Toast queue
         self.toast_queue = queue.Queue()
@@ -651,6 +654,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_upc_entry = ttk.Entry(details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        price_inner = ttk.Frame(details_frame)
+        price_inner.pack(fill=tk.X, pady=(0, 2))
+        self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, width=8, font=("Segoe UI", 8))
+        self.album_price_entry.pack(side=tk.LEFT, padx=(0, 6))
+        self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
+        self.album_nyp_check.pack(side=tk.LEFT)
+
+        ttk.Label(details_frame, text="Subscriber Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_subscriber_entry = ttk.Entry(details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
+        self.album_subscriber_entry.pack(fill=tk.X, pady=(0, 2))
         self.setup_album_session_autosave()
         presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
         presets_btn.pack(fill=tk.X, pady=(2, 0))
@@ -2324,6 +2339,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_upc_var.set("")
         self.album_download_desc_var.set("")
         self.album_release_message_var.set("")
+        self.album_price_var.set("0.00")
+        self.album_nyp_var.set(True)
+        self.album_subscriber_message_var.set("")
         self.album_license_var.set("All Rights Reserved")
 
     def get_album_description_text(self):
@@ -2362,6 +2380,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.album_record_label_var,
             self.album_download_desc_var,
             self.album_release_message_var,
+            self.album_price_var,
+            self.album_nyp_var,
+            self.album_subscriber_message_var,
         )
         for var in vars_to_watch:
             var.trace_add('write', lambda *args: self.queue_album_session_save())
@@ -2405,6 +2426,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "license": self.album_license_var.get(),
             "download_description": self.album_download_desc_var.get(),
             "release_message": self.album_release_message_var.get(),
+            "album_price": self.album_price_var.get(),
+            "album_nyp": self.album_nyp_var.get(),
+            "subscriber_message": self.album_subscriber_message_var.get(),
             "record_label": self.album_record_label_var.get(),
             "catalog_number": self.album_catalog_number_var.get(),
             "upc": self.album_upc_var.get(),
@@ -2552,6 +2576,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_license_var.set(details.get("license", "All Rights Reserved"))
         self.album_download_desc_var.set(details.get("download_description", ""))
         self.album_release_message_var.set(details.get("release_message", ""))
+        self.album_price_var.set(details.get("album_price", "0.00"))
+        self.album_nyp_var.set(details.get("album_nyp", True))
+        self.album_subscriber_message_var.set(details.get("subscriber_message", ""))
         self.album_record_label_var.set(details.get("record_label", ""))
         self.album_catalog_number_var.set(details.get("catalog_number", ""))
         self.album_upc_var.set(details.get("upc", ""))
@@ -3642,6 +3669,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.album_upc_var.set("")
             self.album_download_desc_var.set("")
             self.album_release_message_var.set("")
+            self.album_price_var.set("0.00")
+            self.album_nyp_var.set(True)
+            self.album_subscriber_message_var.set("")
             self.album_license_var.set("All Rights Reserved")
     
     def paste_album_path(self):
@@ -7055,6 +7085,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if release_message:
                     album.album_data.tralbum_release_message = release_message
                     logger.info(f"Using release message: {release_message}")
+
+                album_price = self.album_price_var.get().strip()
+                try:
+                    album.album_data.price = str(float(album_price))
+                except (ValueError, TypeError):
+                    album.album_data.price = str(self.config.album_price)
+
+                album.album_data.nyp = int(self.album_nyp_var.get())
+
+                subscriber_message = self.album_subscriber_message_var.get().strip()
+                if subscriber_message:
+                    album.album_data.subscriber_only_message = subscriber_message
+                    logger.info(f"Using subscriber message: {subscriber_message}")
 
                 # Set album description and credits after the final album object is ready.
                 upload_description = self.prepare_upload_description_from_template(
