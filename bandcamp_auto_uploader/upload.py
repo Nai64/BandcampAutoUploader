@@ -177,6 +177,10 @@ class BandcampAlbumData:
     public: int = 1
     tralbum_release_message: str = ""
     subscriber_only_message: str = ""
+    require_email: int = 0
+    pro: int = 0
+    composer: str = ""
+    publisher: str = ""
 
     def to_dict(self) -> dict:
         d = {}
@@ -214,6 +218,8 @@ class BandcampTrackData:
     isrc: str = ""
     release_date: str = ""
     encodings_id: str = ""
+    require_email: int = 0
+    private: int = 0
 
     def to_dict(self, track_number: int) -> dict:
         d = {}

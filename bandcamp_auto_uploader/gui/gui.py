@@ -146,6 +146,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_price_var = tk.StringVar(value="0.00")
         self.album_nyp_var = tk.BooleanVar(value=True)
         self.album_subscriber_message_var = tk.StringVar()
+        self.album_require_email_var = tk.BooleanVar(value=False)
+        self.album_public_var = tk.BooleanVar(value=True)
+        self.album_pro_var = tk.BooleanVar(value=False)
+        self.album_composer_var = tk.StringVar()
+        self.album_publisher_var = tk.StringVar()
 
         # Toast queue
         self.toast_queue = queue.Queue()
@@ -691,6 +696,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(self.details_frame, text="Subscriber Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_subscriber_entry = ttk.Entry(self.details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
         self.album_subscriber_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.details_frame, text="Composers (songwriters):", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_composer_entry = ttk.Entry(self.details_frame, textvariable=self.album_composer_var, font=("Segoe UI", 8))
+        self.album_composer_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Label(self.details_frame, text="Publishers:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.album_publisher_entry = ttk.Entry(self.details_frame, textvariable=self.album_publisher_var, font=("Segoe UI", 8))
+        self.album_publisher_entry.pack(fill=tk.X, pady=(0, 2))
+
+        ttk.Checkbutton(self.details_frame, text="Require email (if fan enters $0)", variable=self.album_require_email_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.details_frame, text="Registered with collection society (PRO/CMO)", variable=self.album_pro_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.details_frame, text="Public (uncheck for private)", variable=self.album_public_var).pack(anchor=tk.W, pady=(0, 2))
+
         self.setup_album_session_autosave()
 
         # Track Details frame (hidden initially, shown when a track is selected)
@@ -2472,6 +2490,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_price_var.set("0.00")
         self.album_nyp_var.set(True)
         self.album_subscriber_message_var.set("")
+        self.album_require_email_var.set(False)
+        self.album_public_var.set(True)
+        self.album_pro_var.set(False)
+        self.album_composer_var.set("")
+        self.album_publisher_var.set("")
         self.album_license_var.set("All Rights Reserved")
         self.track_editor_data.clear()
         self._track_details_path = None
@@ -2519,6 +2542,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.album_price_var,
             self.album_nyp_var,
             self.album_subscriber_message_var,
+            self.album_require_email_var,
+            self.album_public_var,
+            self.album_pro_var,
+            self.album_composer_var,
+            self.album_publisher_var,
         )
         for var in vars_to_watch:
             var.trace_add('write', lambda *args: self.queue_album_session_save())
@@ -2569,6 +2597,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "catalog_number": self.album_catalog_number_var.get(),
             "upc": self.album_upc_var.get(),
             "cover_art": self.cover_path_var.get() if hasattr(self, 'cover_path_var') else "",
+            "require_email": self.album_require_email_var.get(),
+            "public": self.album_public_var.get(),
+            "pro": self.album_pro_var.get(),
+            "composer": self.album_composer_var.get(),
+            "publisher": self.album_publisher_var.get(),
         }
 
     def get_album_session_payload(self):
@@ -2719,6 +2752,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_record_label_var.set(details.get("record_label", ""))
         self.album_catalog_number_var.set(details.get("catalog_number", ""))
         self.album_upc_var.set(details.get("upc", ""))
+        self.album_require_email_var.set(details.get("require_email", False))
+        self.album_public_var.set(details.get("public", True))
+        self.album_pro_var.set(details.get("pro", False))
+        self.album_composer_var.set(details.get("composer", ""))
+        self.album_publisher_var.set(details.get("publisher", ""))
 
         self.cover_path_var.set(details.get("cover_art", ""))
 
@@ -3830,6 +3868,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.album_price_var.set("0.00")
             self.album_nyp_var.set(True)
             self.album_subscriber_message_var.set("")
+            self.album_require_email_var.set(False)
+            self.album_public_var.set(True)
+            self.album_pro_var.set(False)
+            self.album_composer_var.set("")
+            self.album_publisher_var.set("")
             self.album_license_var.set("All Rights Reserved")
     
     def paste_album_path(self):
@@ -7454,6 +7497,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     album.album_data.price = str(self.config.album_price)
 
                 album.album_data.nyp = int(self.album_nyp_var.get())
+                album.album_data.require_email = int(self.album_require_email_var.get())
+                album.album_data.public = int(self.album_public_var.get())
+                album.album_data.pro = int(self.album_pro_var.get())
+
+                composer = self.album_composer_var.get().strip()
+                if composer:
+                    album.album_data.composer = composer
+                    logger.info(f"Using composer: {composer}")
+
+                publisher = self.album_publisher_var.get().strip()
+                if publisher:
+                    album.album_data.publisher = publisher
+                    logger.info(f"Using publisher: {publisher}")
 
                 subscriber_message = self.album_subscriber_message_var.get().strip()
                 if subscriber_message:
