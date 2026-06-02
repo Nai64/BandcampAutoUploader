@@ -59,7 +59,7 @@ except ImportError:
 
 from bandcamp_auto_uploader.bandcamp_http_adapter import BandcampHTTPAdapter
 from bandcamp_auto_uploader.config import Config, load_config, save_config, load_custom_description_templates
-from bandcamp_auto_uploader.gui.common import PrivacyLogFilter, QueueHandler, RedactingFormatter, ToolTip, DESCRIPTION_TEMPLATES
+from bandcamp_auto_uploader.gui.common import PrivacyLogFilter, QueueHandler, RedactingFormatter, ToolTip, DESCRIPTION_TEMPLATES, DESCRIPTION_AUTO_FILL_MODES
 from bandcamp_auto_uploader.gui import image_scaling
 from bandcamp_auto_uploader.gui.logs_mixin import LogsMixin
 from bandcamp_auto_uploader.gui.settings_mixin import SettingsMixin
@@ -651,6 +651,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
         self.album_upc_entry = ttk.Entry(details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 6))
+        presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
+        presets_btn.pack(pady=(0, 6))
         self.setup_album_session_autosave()
         
         # Middle column - Preview
@@ -3183,6 +3185,56 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             logger.warning(f"Description template '{mode}' produced no upload description")
 
         return upload_description
+
+    def open_description_presets_dialog(self):
+        """Open dialog to pick a description template and fill the description box."""
+        rows = self.get_track_table_rows()
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Description Presets")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        dialog.resizable(True, True)
+        self.center_dialog(dialog, 520, 400, self.root)
+
+        frame = ttk.Frame(dialog, padding=10)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        list_frame = ttk.Frame(frame)
+        list_frame.pack(fill=tk.BOTH, expand=True)
+
+        mode_tree = ttk.Treeview(list_frame, columns=('mode',), show='tree', selectmode='browse')
+        mode_tree.column('#0', width=0, stretch=False)
+        mode_tree.column('mode', width=460, anchor=tk.W)
+
+        scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=mode_tree.yview)
+        mode_tree.configure(yscrollcommand=scroll.set)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        mode_tree.pack(fill=tk.BOTH, expand=True)
+
+        for mode in DESCRIPTION_AUTO_FILL_MODES:
+            mode_tree.insert('', tk.END, values=(mode,), tags=("builtin",))
+        for cm in load_custom_description_templates():
+            mode_tree.insert('', tk.END, values=(cm.get("name", "?"),), tags=("custom",))
+
+        mode_tree.tag_configure("builtin")
+        mode_tree.tag_configure("custom")
+
+        def apply():
+            sel = mode_tree.selection()
+            if not sel:
+                return
+            mode = mode_tree.item(sel[0], 'values')[0]
+            if mode == "Off":
+                self.set_album_description_text("")
+            else:
+                text = self.render_description_template(mode, rows)
+                self.set_album_description_text(text)
+            dialog.destroy()
+
+        btn_f = ttk.Frame(frame)
+        btn_f.pack(fill=tk.X, pady=(10, 0))
+        ttk.Button(btn_f, text="Apply", command=apply, width=10).pack(side=tk.RIGHT, padx=3)
+        ttk.Button(btn_f, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.RIGHT)
 
     def browse_album(self):
         """Browse for album directory"""
