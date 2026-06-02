@@ -427,6 +427,7 @@ class SettingsMixin:
             ("Show Total Album Duration", "show_total_album_duration", "bool"),
             ("Remember Last Opened Album", "remember_last_album", "bool"),
             ("Limit Log Files", "log_file_limit", "int", 1, 99),
+            ("File Size Unit", "file_size_unit", "str"),
         ]
         
         # Create treeview for general settings (no headings)
@@ -1293,6 +1294,15 @@ class SettingsMixin:
                     self.general_vars[config_key].get(),
                     lambda v: self.apply_general_str_setting(config_key, v),
                 )
+            elif config_key == "file_size_unit":
+                self.edit_treeview_cell_dropdown(
+                    self.general_tree,
+                    item_id,
+                    'value',
+                    ["Auto", "MB", "GB", "KB", "Bytes"],
+                    self.general_vars[config_key].get(),
+                    lambda v: self.apply_general_str_setting(config_key, v),
+                )
         elif setting_type == "int":
             min_val = self.general_vars.get(f"{config_key}_min", 1)
             max_val = self.general_vars.get(f"{config_key}_max", 99)
@@ -1445,6 +1455,8 @@ class SettingsMixin:
             return False
         if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
             return False
+        if config_key == "file_size_unit" and new_value not in ("Auto", "MB", "GB", "KB", "Bytes"):
+            return False
 
         self.general_vars[config_key].set(new_value)
         setattr(self.config, config_key, new_value)
@@ -1452,6 +1464,8 @@ class SettingsMixin:
             self.scaling_method_var.set(new_value)
         if config_key == "cover_fit_mode" and hasattr(self, 'cover_fit_mode_var'):
             self.cover_fit_mode_var.set(new_value)
+        if config_key == "file_size_unit" and hasattr(self, 'refresh_file_size_display'):
+            self.refresh_file_size_display()
         save_config(self.config)
         if config_key == "description_auto_fill_mode" and getattr(self.config, 'notify_on_template_save', False):
             self.show_toast(f"Description template set to: {new_value}", 1800, "success", trigger="template_save")

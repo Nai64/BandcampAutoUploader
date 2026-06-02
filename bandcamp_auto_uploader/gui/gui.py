@@ -1371,6 +1371,25 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return f"{minutes}m {sec:02d}s"
         return f"{sec}s"
 
+    @staticmethod
+    def format_file_size(size_mb, unit="Auto"):
+        """Format file size in MB to the given unit (Auto, MB, GB, KB, Bytes)."""
+        if not size_mb:
+            return ""
+        if unit == "Auto":
+            if size_mb > 1024:
+                return f"{size_mb / 1024:.1f} GB"
+            return f"{size_mb:.1f} MB"
+        elif unit == "GB":
+            return f"{size_mb / 1024:.1f} GB"
+        elif unit == "MB":
+            return f"{size_mb:.1f} MB"
+        elif unit == "KB":
+            return f"{size_mb * 1024:.1f} KB"
+        elif unit == "Bytes":
+            return f"{size_mb * 1024 * 1024:.0f} Bytes"
+        return f"{size_mb:.1f} MB"
+
     def refresh_upload_progress_timing_labels(self):
         """Update live ETA/elapsed labels while upload runs."""
         if (
@@ -3004,12 +3023,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             length = self.get_audio_length(track_path) if track_path else ""
             year, genre, bitrate = self.get_track_metadata(track_path) if track_path else ("", "", "")
-            if file_size > 1024:
-                size_str = f"{file_size / 1024:.1f} GB"
-            elif file_size:
-                size_str = f"{file_size:.1f} MB"
-            else:
-                size_str = ""
+            size_str = self.format_file_size(file_size, getattr(self.config, 'file_size_unit', 'Auto'))
 
             extra_metadata = self.get_extra_track_metadata_columns(track_path) if track_path else ("", "", "", "", "", "", "")
             rows.append([
@@ -3642,6 +3656,29 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             save_config(self.config)
         except:
             pass  # Non-critical if save fails
+
+    def refresh_file_size_display(self):
+        """Re-format the File Size column in the track table with current unit setting."""
+        if not hasattr(self, 'track_table'):
+            return
+        unit = getattr(self.config, 'file_size_unit', 'Auto')
+        for item_id in self.track_table.get_children():
+            values = list(self.track_table.item(item_id).get("values", ()))
+            if len(values) > 12:
+                file_path = str(values[12]).strip()
+                if file_path:
+                    try:
+                        p = Path(file_path)
+                        if p.exists():
+                            size_mb = p.stat().st_size / (1024 ** 2)
+                            values[11] = self.format_file_size(size_mb, unit)
+                        else:
+                            values[11] = ""
+                    except (OSError, ValueError):
+                        values[11] = ""
+                else:
+                    values[11] = ""
+                self.track_table.item(item_id, values=tuple(values))
 
     def get_track_table_column_labels(self):
         """Return user-facing labels for track table columns."""
@@ -4796,10 +4833,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 year, genre, bitrate = self.get_track_metadata(track_path)
                 
                 # Format file size
-                if file_size > 1024:
-                    size_str = f"{file_size / 1024:.1f} GB"
-                else:
-                    size_str = f"{file_size:.1f} MB"
+                size_str = self.format_file_size(file_size, getattr(self.config, 'file_size_unit', 'Auto'))
 
                 extra_metadata = self.get_extra_track_metadata_columns(track_path)
                 values = (
@@ -4817,12 +4851,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     except OSError:
                         file_size = 0
                     extension = skipped_path.suffix if skipped_path.exists() else ""
-                    if file_size > 1024:
-                        size_str = f"{file_size / 1024:.1f} GB"
-                    elif file_size > 0:
-                        size_str = f"{file_size:.1f} MB"
-                    else:
-                        size_str = "0 B"
+                    size_str = self.format_file_size(file_size, getattr(self.config, 'file_size_unit', 'Auto')) or "0 B"
                     values = (
                         track_offset + offset, "", skipped_path.stem,
                         "Unreadable file", "", extension, "", "",
@@ -6298,10 +6327,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             year, genre, bitrate = self.get_track_metadata(file_path)
             
             # Format file size
-            if file_size > 1024:
-                size_str = f"{file_size / 1024:.1f} GB"
-            else:
-                size_str = f"{file_size:.1f} MB"
+            size_str = self.format_file_size(file_size, getattr(self.config, 'file_size_unit', 'Auto'))
             
             # Get current values
             current_values = list(self.track_table.item(item_id)['values'])
@@ -6658,7 +6684,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 return
 
             file_size = file_path.stat().st_size / (1024 ** 2)
-            size_str = f"{file_size / 1024:.1f} GB" if file_size > 1024 else f"{file_size:.1f} MB"
+            size_str = self.format_file_size(file_size, getattr(self.config, 'file_size_unit', 'Auto'))
             year, genre, bitrate = self.get_track_metadata(file_path)
             extra_metadata = self.get_extra_track_metadata_columns(file_path)
 
@@ -7750,10 +7776,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             length = self.get_audio_length(track_path)
             
             # Format file size
-            if file_size > 1024:
-                size_str = f"{file_size / 1024:.1f} GB"
-            else:
-                size_str = f"{file_size:.1f} MB"
+            size_str = self.format_file_size(file_size, getattr(self.config, 'file_size_unit', 'Auto'))
 
             # Placeholder values for manual tracks
             artist = ""

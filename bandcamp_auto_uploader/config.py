@@ -118,6 +118,7 @@ class Config:
     highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
     corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks
     show_total_album_duration: bool = True  # Show total album duration next to Preview title
+    file_size_unit: str = "Auto"  # File size display unit: Auto, MB, GB, KB, Bytes
     remember_last_album: bool = True  # Remember and auto-load the last opened album on startup
     last_opened_album_path: str = ""  # Path of the last opened album folder
     # Context menu settings
