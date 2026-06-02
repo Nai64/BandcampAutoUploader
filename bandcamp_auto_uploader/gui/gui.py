@@ -521,14 +521,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         left_column.pack(side=tk.LEFT, fill=tk.BOTH, padx=(0, 5))
         left_column.pack_propagate(False)  # Maintain fixed width
         
-        details_frame = ttk.LabelFrame(left_column, text="Album Details", padding=8)
+        details_frame = ttk.LabelFrame(left_column, text="Album Details", padding=4)
         details_frame.pack(fill=tk.BOTH, expand=True)
         
         # Album Name
         name_row = ttk.Frame(details_frame)
-        name_row.pack(fill=tk.X, pady=(0, 6))
+        name_row.pack(fill=tk.X, pady=(0, 2))
         
-        ttk.Label(name_row, text="Album Name:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(name_row, text="Album Name:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         
         name_inner = ttk.Frame(name_row)
         name_inner.pack(fill=tk.X)
@@ -548,9 +548,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         
         # Artist
         artist_row = ttk.Frame(details_frame)
-        artist_row.pack(fill=tk.X, pady=(0, 6))
+        artist_row.pack(fill=tk.X, pady=(0, 2))
         
-        ttk.Label(artist_row, text="Artist:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(artist_row, text="Artist:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         
         artist_inner = ttk.Frame(artist_row)
         artist_inner.pack(fill=tk.X)
@@ -570,9 +570,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Release Date
         release_date_row = ttk.Frame(details_frame)
-        release_date_row.pack(fill=tk.X, pady=(0, 6))
+        release_date_row.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(release_date_row, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(release_date_row, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
 
         release_date_inner = ttk.Frame(release_date_row)
         release_date_inner.pack(fill=tk.X)
@@ -590,30 +590,30 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ToolTip(release_date_inner.winfo_children()[-1], "Choose release date from calendar")
 
         # Tags
-        ttk.Label(details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_tags_var = tk.StringVar()
         self.create_tag_input(details_frame)
         
         # Description
-        ttk.Label(details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.desc_text = scrolledtext.ScrolledText(details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
-        self.desc_text.pack(fill=tk.X, pady=(0, 6))
+        self.desc_text.pack(fill=tk.X, pady=(0, 2))
         self.desc_text.insert("1.0", self.album_description_var.get())
         self.desc_text.bind('<KeyRelease>', lambda e: self.album_description_var.set(self.desc_text.get("1.0", "end-1c")))
         # Hide vertical scrollbar
         self.desc_text.vbar.pack_forget()
 
         # Credits
-        ttk.Label(details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.credits_text = scrolledtext.ScrolledText(details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8))
-        self.credits_text.pack(fill=tk.X, pady=(0, 6))
+        self.credits_text.pack(fill=tk.X, pady=(0, 2))
         # Hide vertical scrollbar
         self.credits_text.vbar.pack_forget()
         self.credits_text.insert("1.0", self.album_credits_var.get())
         self.credits_text.bind('<KeyRelease>', lambda e: self.album_credits_var.set(self.credits_text.get("1.0", "end-1c")))
 
         # License
-        ttk.Label(details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_license_combo = ttk.Combobox(
             details_frame,
             textvariable=self.album_license_var,
@@ -630,30 +630,30 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             state="readonly",
             font=("Segoe UI", 8)
         )
-        self.album_license_combo.pack(fill=tk.X, pady=(0, 6))
+        self.album_license_combo.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Download Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Download Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_download_desc_entry = ttk.Entry(details_frame, textvariable=self.album_download_desc_var, font=("Segoe UI", 8))
-        self.album_download_desc_entry.pack(fill=tk.X, pady=(0, 6))
+        self.album_download_desc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Release Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Release Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_release_message_entry = ttk.Entry(details_frame, textvariable=self.album_release_message_var, font=("Segoe UI", 8))
-        self.album_release_message_entry.pack(fill=tk.X, pady=(0, 6))
+        self.album_release_message_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Record Label:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Record Label:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_record_label_entry = ttk.Entry(details_frame, textvariable=self.album_record_label_var, font=("Segoe UI", 8))
-        self.album_record_label_entry.pack(fill=tk.X, pady=(0, 6))
+        self.album_record_label_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="Catalog #:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="Catalog #:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_catalog_number_entry = ttk.Entry(details_frame, textvariable=self.album_catalog_number_var, font=("Segoe UI", 8))
-        self.album_catalog_number_entry.pack(fill=tk.X, pady=(0, 6))
+        self.album_catalog_number_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Label(details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_upc_entry = ttk.Entry(details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
-        self.album_upc_entry.pack(fill=tk.X, pady=(0, 6))
+        self.album_upc_entry.pack(fill=tk.X, pady=(0, 2))
         self.setup_album_session_autosave()
         presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
-        presets_btn.pack(fill=tk.X, pady=(6, 0))
+        presets_btn.pack(fill=tk.X, pady=(2, 0))
         
         # Middle column - Preview
         middle_column = ttk.Frame(middle_section)
