@@ -535,13 +535,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         def _on_left_scroll(event):
             if isinstance(event.widget, tk.Text):
                 return
-            left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
-
-        def _bind_left_scroll(widget):
-            widget.bind("<MouseWheel>", _on_left_scroll, add=True)
-            for child in widget.winfo_children():
-                _bind_left_scroll(child)
-        _bind_left_scroll(left_scroll_frame)
+            widget = event.widget
+            while widget:
+                if widget == left_column:
+                    left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                    return
+                widget = widget.master
+        left_canvas.bind_all("<MouseWheel>", _on_left_scroll, add=True)
         
         details_frame = ttk.LabelFrame(left_scroll_frame, text="Album Details", padding=4)
         details_frame.pack(fill=tk.BOTH, expand=True)
