@@ -420,6 +420,10 @@ class SettingsMixin:
             ("Auto load cookies on startup", "auto_load_cookies", "bool"),
             ("Check for updates on startup", "check_for_updates", "bool"),
             ("Check for updates now", "check_updates_now", "action"),
+            # Track Table display settings
+            ("Auto Fit Columns", "auto_fit_columns", "bool"),
+            ("Locked Track Highlight Color", "locked_track_highlight_color", "color"),
+            ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
         ]
         
         # Create treeview for general settings (no headings)
@@ -448,6 +452,9 @@ class SettingsMixin:
                 display_value = "☑" if var.get() else "☐"
             elif setting_type == "str":
                 var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
+                display_value = var.get()
+            elif setting_type == "color":
+                var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
                 display_value = var.get()
             elif setting_type == "action":
                 var = None
@@ -1232,6 +1239,14 @@ class SettingsMixin:
             elif config_key == "check_for_updates":
                 self.config.check_for_updates = self.general_vars['check_for_updates'].get()
                 save_config(self.config)
+            elif config_key == "auto_fit_columns":
+                self.config.auto_fit_columns = new_value
+                save_config(self.config)
+            elif config_key == "highlight_corrupted_tracks":
+                self.config.highlight_corrupted_tracks = new_value
+                save_config(self.config)
+                if hasattr(self, 'refresh_all_track_row_tags'):
+                    self.refresh_all_track_row_tags()
         elif setting_type == "str":
             if config_key == "description_auto_fill_mode":
                 self.open_description_autofill_dialog(self.general_tree, item_id, 'value',
@@ -1255,7 +1270,17 @@ class SettingsMixin:
                     self.general_vars[config_key].get(),
                     lambda v: self.apply_general_str_setting(config_key, v),
                 )
-
+        elif setting_type == "color":
+            current_color = self.general_vars[config_key].get()
+            new_color = colorchooser.askcolor(color=current_color)[1]
+            if new_color:
+                self.general_vars[config_key].set(new_color)
+                self.general_tree.set(item_id, 'value', new_color)
+                self.config.locked_track_highlight_color = new_color
+                save_config(self.config)
+                if hasattr(self, 'configure_track_table_tags'):
+                    self.configure_track_table_tags()
+    
     def on_general_tree_click(self, event):
         """Handle single-click actions in the General settings tree."""
         item_id = self.general_tree.identify('item', event.x, event.y)
@@ -1539,9 +1564,6 @@ class SettingsMixin:
         """Create Track Table Columns settings section using Treeview"""
         # Column visibility settings
         columns = [
-            ("Always Auto Fit Columns", "auto_fit_columns", "bool"),
-            ("Locked Track Highlight", "locked_track_highlight_color", "color"),
-            ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Track No.", "show_track_no", "bool"),
             ("Artist", "show_artist", "bool"),
             ("Track Name", "show_track_name", "bool"),
@@ -1795,9 +1817,6 @@ class SettingsMixin:
             # Theme setting
             ("Interface Theme (Experimental)", "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark"]),
             # Track Table Columns settings
-            ("Columns: Always Auto Fit Columns", "auto_fit_columns", "bool"),
-            ("Columns: Locked Track Highlight", "locked_track_highlight_color", "color"),
-            ("Columns: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Columns: Track No.", "show_track_no", "bool"),
             ("Columns: Artist", "show_artist", "bool"),
             ("Columns: Track Name", "show_track_name", "bool"),
@@ -1965,13 +1984,12 @@ class SettingsMixin:
         """Apply combined interface settings immediately"""
         # Apply column visibility settings
         column_configs = [
-            "auto_fit_columns",
             "show_track_no", "show_artist", "show_track_name", "show_comment",
             "show_length", "show_extension", "show_price", "show_nyp",
             "show_year", "show_genre", "show_bitrate", "show_file_size",
             "show_sample_rate", "show_channels", "show_bit_depth",
             "show_album_metadata", "show_album_artist_metadata",
-            "show_composer", "show_isrc", "highlight_corrupted_tracks", "locked_track_highlight_color"
+            "show_composer", "show_isrc"
         ]
         
         for config_key in column_configs:
@@ -2049,7 +2067,6 @@ class SettingsMixin:
     def apply_column_settings(self):
         """Apply column visibility settings immediately"""
         column_configs = [
-            "auto_fit_columns",
             "show_track_no", "show_artist", "show_track_name", "show_comment",
             "show_length", "show_extension", "show_price", "show_nyp",
             "show_year", "show_genre", "show_bitrate", "show_file_size",
@@ -2061,16 +2078,8 @@ class SettingsMixin:
         for config_key in column_configs:
             if config_key in self.column_vars:
                 setattr(self.config, config_key, self.column_vars[config_key].get())
-        if "locked_track_highlight_color" in self.column_vars:
-            self.config.locked_track_highlight_color = self.column_vars["locked_track_highlight_color"].get()
-        if "highlight_corrupted_tracks" in self.column_vars:
-            self.config.highlight_corrupted_tracks = self.column_vars["highlight_corrupted_tracks"].get()
         
         save_config(self.config)
-        if hasattr(self, 'configure_track_table_tags'):
-            self.configure_track_table_tags()
-        if hasattr(self, 'refresh_all_track_row_tags'):
-            self.refresh_all_track_row_tags()
         self.apply_column_visibility()
     
     def create_auto_tagging_settings(self, parent):

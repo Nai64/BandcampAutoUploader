@@ -3652,7 +3652,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         tags = ["normal"]
         if self.is_track_item_locked(item_id):
             tags.append("locked")
-        if self.is_track_item_corrupted(item_id):
+        if getattr(self.config, 'highlight_corrupted_tracks', True) and self.is_track_item_corrupted(item_id):
             tags.append("corrupted")
         for tag in extra_tags:
             if tag not in tags:
