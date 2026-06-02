@@ -1541,6 +1541,7 @@ class SettingsMixin:
         columns = [
             ("Always Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Locked Track Highlight", "locked_track_highlight_color", "color"),
+            ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Track No.", "show_track_no", "bool"),
             ("Artist", "show_artist", "bool"),
             ("Track Name", "show_track_name", "bool"),
@@ -1796,6 +1797,7 @@ class SettingsMixin:
             # Track Table Columns settings
             ("Columns: Always Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Columns: Locked Track Highlight", "locked_track_highlight_color", "color"),
+            ("Columns: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Columns: Track No.", "show_track_no", "bool"),
             ("Columns: Artist", "show_artist", "bool"),
             ("Columns: Track Name", "show_track_name", "bool"),
@@ -1969,7 +1971,7 @@ class SettingsMixin:
             "show_year", "show_genre", "show_bitrate", "show_file_size",
             "show_sample_rate", "show_channels", "show_bit_depth",
             "show_album_metadata", "show_album_artist_metadata",
-            "show_composer", "show_isrc", "locked_track_highlight_color"
+            "show_composer", "show_isrc", "highlight_corrupted_tracks", "locked_track_highlight_color"
         ]
         
         for config_key in column_configs:
@@ -2009,6 +2011,8 @@ class SettingsMixin:
             self.setup_logging()
         if hasattr(self, 'configure_track_table_tags'):
             self.configure_track_table_tags()
+        if hasattr(self, 'refresh_all_track_row_tags'):
+            self.refresh_all_track_row_tags()
         self.apply_column_visibility()
     
     def on_column_tree_double_click(self, event):
@@ -2059,10 +2063,14 @@ class SettingsMixin:
                 setattr(self.config, config_key, self.column_vars[config_key].get())
         if "locked_track_highlight_color" in self.column_vars:
             self.config.locked_track_highlight_color = self.column_vars["locked_track_highlight_color"].get()
+        if "highlight_corrupted_tracks" in self.column_vars:
+            self.config.highlight_corrupted_tracks = self.column_vars["highlight_corrupted_tracks"].get()
         
         save_config(self.config)
         if hasattr(self, 'configure_track_table_tags'):
             self.configure_track_table_tags()
+        if hasattr(self, 'refresh_all_track_row_tags'):
+            self.refresh_all_track_row_tags()
         self.apply_column_visibility()
     
     def create_auto_tagging_settings(self, parent):

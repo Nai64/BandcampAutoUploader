@@ -3659,6 +3659,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 tags.append(tag)
         self.track_table.item(item_id, tags=tuple(tags))
 
+    def refresh_all_track_row_tags(self):
+        """Re-apply tags to every row in the track table."""
+        if not hasattr(self, 'track_table'):
+            return
+        for item_id in self.track_table.get_children():
+            self.apply_track_item_tags(item_id)
+
     def get_track_table_editable_columns(self):
         """Columns that can be edited one cell at a time or in bulk."""
         return {
