@@ -651,9 +651,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 2))
         self.album_upc_entry = ttk.Entry(details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 6))
-        presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
-        presets_btn.pack(pady=(0, 6))
         self.setup_album_session_autosave()
+        presets_btn = ttk.Button(details_frame, text="Presets", command=self.open_description_presets_dialog)
+        presets_btn.pack(fill=tk.X, pady=(0, 6))
         
         # Middle column - Preview
         middle_column = ttk.Frame(middle_section)
