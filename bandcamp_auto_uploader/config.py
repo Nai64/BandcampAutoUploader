@@ -117,6 +117,7 @@ class Config:
     locked_track_highlight_color: str = "#fff4ce"  # Track table row highlight for locked tracks
     highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
     corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks
+    show_total_album_duration: bool = True  # Show total album duration next to Preview title
     # Context menu settings
     context_menu_remove_dividers: bool = False  # Hide separator dividers in track context menu
     context_menu_play: bool = True  # Show Play option in track context menu

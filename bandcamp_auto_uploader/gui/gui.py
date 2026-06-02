@@ -1331,6 +1331,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
         if not hasattr(self, 'track_table'):
             return
+        if not getattr(self.config, 'show_total_album_duration', True):
+            self.preview_total_duration_label.configure(text="")
+            return
 
         total_seconds = 0
         has_any = False
