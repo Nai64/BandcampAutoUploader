@@ -2171,6 +2171,7 @@ class SettingsMixin:
         settings = [
             ("Auto-start upload after adding files", "auto_start_upload", "bool"),
             ("Confirm before starting upload", "confirm_before_upload", "bool"),
+            ("Use track name for single release", "use_track_name_for_single_release", "bool"),
             ("Open logs on album upload", "open_logs_on_upload", "bool"),
             ("Open album page after upload", "open_album_page_after_upload", "bool"),
             ("Copy album URL to clipboard after upload", "copy_album_url_after_upload", "bool"),
@@ -2278,6 +2279,7 @@ class SettingsMixin:
         """Apply upload settings immediately"""
         self.config.auto_start_upload = self.upload_vars['auto_start_upload'].get()
         self.config.confirm_before_upload = self.upload_vars['confirm_before_upload'].get()
+        self.config.use_track_name_for_single_release = self.upload_vars['use_track_name_for_single_release'].get()
         self.config.open_logs_on_upload = self.upload_vars['open_logs_on_upload'].get()
         self.config.open_album_page_after_upload = self.upload_vars['open_album_page_after_upload'].get()
         self.config.copy_album_url_after_upload = self.upload_vars['copy_album_url_after_upload'].get()

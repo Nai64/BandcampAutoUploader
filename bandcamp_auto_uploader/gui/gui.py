@@ -6574,7 +6574,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         }
         self.manual_tracks = [track_path]
         self.album_path_var.set("")
-        if not self.album_name_var.get().strip():
+        if getattr(self.config, 'use_track_name_for_single_release', True):
+            self.album_name_var.set(track_path.stem)
+        elif not self.album_name_var.get().strip():
             self.album_name_var.set(track_path.stem)
         self._single_upload_pending = True
         self.show_toast(f"Uploading {track_path.stem} as single...", 2500, "info")

@@ -161,6 +161,7 @@ class Config:
     context_menu_clear_all_metadata: bool = False  # Show Clear All Metadata option
     context_menu_clear_all: bool = False  # Show Clear All Tracks option
     context_menu_upload_as_single: bool = True  # Show Upload as Single option
+    use_track_name_for_single_release: bool = True  # Use track filename as album name for Upload as Single
     # Upload settings
     auto_start_upload: bool = False  # Auto-start upload after adding files
     confirm_before_upload: bool = False  # Confirm before starting upload
