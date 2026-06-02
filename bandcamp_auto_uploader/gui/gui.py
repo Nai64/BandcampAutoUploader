@@ -621,7 +621,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         
         # Description
         ttk.Label(self.details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.desc_text = scrolledtext.ScrolledText(self.details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SUNKEN, borderwidth=2)
+        self.desc_text = scrolledtext.ScrolledText(self.details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SOLID, borderwidth=1)
         self.desc_text.pack(fill=tk.X, pady=(0, 2))
         self.desc_text.insert("1.0", self.album_description_var.get())
         self.desc_text.bind('<KeyRelease>', lambda e: self.album_description_var.set(self.desc_text.get("1.0", "end-1c")))
@@ -630,7 +630,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Credits
         ttk.Label(self.details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.credits_text = scrolledtext.ScrolledText(self.details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SUNKEN, borderwidth=2)
+        self.credits_text = scrolledtext.ScrolledText(self.details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SOLID, borderwidth=1)
         self.credits_text.pack(fill=tk.X, pady=(0, 2))
         # Hide vertical scrollbar
         self.credits_text.vbar.pack_forget()
@@ -715,17 +715,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_tags_entry.pack(fill=tk.X, pady=(0, 2))
 
         ttk.Label(self.track_details_frame, text="Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.td_desc_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SUNKEN, borderwidth=2)
+        self.td_desc_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SOLID, borderwidth=1)
         self.td_desc_text.pack(fill=tk.X, pady=(0, 2))
         self.td_desc_text.vbar.pack_forget()
 
         ttk.Label(self.track_details_frame, text="Lyrics:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.td_lyrics_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SUNKEN, borderwidth=2)
+        self.td_lyrics_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SOLID, borderwidth=1)
         self.td_lyrics_text.pack(fill=tk.X, pady=(0, 2))
         self.td_lyrics_text.vbar.pack_forget()
 
         ttk.Label(self.track_details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.td_credits_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SUNKEN, borderwidth=2)
+        self.td_credits_text = scrolledtext.ScrolledText(self.track_details_frame, height=2, wrap=tk.WORD, font=("Segoe UI", 8), relief=tk.SOLID, borderwidth=1)
         self.td_credits_text.pack(fill=tk.X, pady=(0, 2))
         self.td_credits_text.vbar.pack_forget()
 
