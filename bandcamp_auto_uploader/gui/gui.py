@@ -176,7 +176,7 @@ def show_startup_intro(root, launch_callback):
 
     try:
         splash.attributes("-topmost", True)
-        splash.attributes("-alpha", 0.0)
+        splash.attributes("-alpha", 1.0)
         splash.attributes("-transparentcolor", transparent_color)
     except tk.TclError:
         pass
@@ -224,19 +224,6 @@ def show_startup_intro(root, launch_callback):
     splash.lift()
     splash.update_idletasks()
 
-    def set_alpha(value):
-        try:
-            splash.attributes("-alpha", value)
-        except tk.TclError:
-            pass
-
-    def animate_in(step=0):
-        set_alpha(min(1.0, step / 8))
-        if step < 8:
-            splash.after(18, lambda: animate_in(step + 1))
-        else:
-            splash.after(80, build_app)
-
     def update_progress(fraction, label=None):
         if progress is not None:
             bar_right = 86 + ((width - 172) * max(0, min(1, fraction)))
@@ -245,11 +232,7 @@ def show_startup_intro(root, launch_callback):
             canvas.itemconfigure(status_text, text=label)
         splash.update_idletasks()
 
-    def finish(step=8):
-        set_alpha(max(0.0, step / 8))
-        if step > 0:
-            splash.after(22, lambda: finish(step - 1))
-            return
+    def finish():
         try:
             splash.attributes("-topmost", False)
         except tk.TclError:
@@ -270,7 +253,7 @@ def show_startup_intro(root, launch_callback):
             update_progress(0.82, "Applying theme...")
             root.update_idletasks()
             update_progress(1.0, "Ready")
-            splash.after(260, finish)
+            splash.after(120, finish)
         except Exception as exc:
             try:
                 splash.destroy()
@@ -280,7 +263,7 @@ def show_startup_intro(root, launch_callback):
             messagebox.showerror("Startup Error", f"Failed to start Bandcamp Auto Uploader:\n\n{exc}")
             raise
 
-    animate_in()
+    splash.after(80, build_app)
 
 
 class BandcampUploaderGUI(SettingsMixin, LogsMixin):
