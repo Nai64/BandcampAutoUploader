@@ -3585,16 +3585,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.track_table.tag_configure("normal", font=("Consolas", 8))
         self.track_table.tag_configure("locked", background=getattr(self.config, 'locked_track_highlight_color', '#fff4ce'))
+        self.track_table.tag_configure("corrupted", background=getattr(self.config, 'corrupted_track_highlight_color', '#ffd6d6'))
         self.track_table.tag_configure("drag_target", background="#e8f4fd")
 
     def apply_track_item_tags(self, item_id, *extra_tags):
-        """Restore row tags while preserving locked-row highlighting."""
+        """Restore row tags while preserving locked-row and corrupted-row highlighting."""
         if not self.track_table.exists(item_id):
             return
         tags = ["normal"]
         if self.is_track_item_locked(item_id):
             tags.append("locked")
-        tags.extend(tag for tag in extra_tags if tag not in tags)
+        if self.is_track_item_corrupted(item_id):
+            tags.append("corrupted")
+        for tag in extra_tags:
+            if tag not in tags:
+                tags.append(tag)
         self.track_table.item(item_id, tags=tuple(tags))
 
     def get_track_table_editable_columns(self):
@@ -4700,10 +4705,38 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     size_str = f"{file_size:.1f} MB"
 
                 extra_metadata = self.get_extra_track_metadata_columns(track_path)
-                self.track_table.insert("", tk.END, values=(
+                values = (
                     i, artist, title, comment, length, extension, price, nyp,
                     year, genre, bitrate, size_str, track_path, *extra_metadata
-                ), tags=("normal",))
+                )
+                self.track_table.insert("", tk.END, values=values, tags=self.get_track_row_tags(values))
+
+            skipped_paths = getattr(album, 'skipped_paths', []) or []
+            if skipped_paths:
+                track_offset = len(album.tracks)
+                for offset, skipped_path in enumerate(skipped_paths, 1):
+                    try:
+                        file_size = skipped_path.stat().st_size / (1024**2) if skipped_path.exists() else 0
+                    except OSError:
+                        file_size = 0
+                    extension = skipped_path.suffix if skipped_path.exists() else ""
+                    if file_size > 1024:
+                        size_str = f"{file_size / 1024:.1f} GB"
+                    elif file_size > 0:
+                        size_str = f"{file_size:.1f} MB"
+                    else:
+                        size_str = "0 B"
+                    values = (
+                        track_offset + offset, "", skipped_path.stem,
+                        "Unreadable file", "", extension, "", "",
+                        "", "", "", size_str, str(skipped_path),
+                    )
+                    self.track_table.insert(
+                        "", tk.END, values=values, tags=self.get_track_row_tags(values)
+                    )
+                logger.warning(
+                    f"Skipped {len(skipped_paths)} unreadable file(s) in album folder"
+                )
 
             self.maybe_auto_fit_track_columns()
 
@@ -5670,10 +5703,99 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Return True when the track row is locked."""
         return self.get_track_lock_key(item_id) in getattr(self, 'locked_track_keys', set())
 
-    def insert_track_row(self, values, index=tk.END):
-        """Insert a track row while preserving lock tags."""
+    def is_track_corrupted(self, file_path):
+        """Return True when mutagen cannot parse the audio file.
+
+        Treats missing files, zero-byte files, unsupported formats, files that
+        raise exceptions during parsing, and files whose declared length is wildly
+        larger than their actual on-disk size as corrupted. Returns False when the
+        file parses successfully with a usable length that roughly matches the
+        file size.
+        """
+        if not file_path:
+            return True
+        try:
+            path = Path(str(file_path))
+        except Exception:
+            return True
+        if not path.exists():
+            return True
+        try:
+            actual_size = path.stat().st_size
+        except OSError:
+            return True
+        if actual_size == 0:
+            return True
+        try:
+            import mutagen
+            file_data = mutagen.File(str(path))
+        except Exception:
+            return True
+        if file_data is None:
+            return True
+        info = getattr(file_data, 'info', None)
+        if info is None or not hasattr(info, 'length') or not getattr(info, 'length', None):
+            return True
+        declared_length = info.length
+        if not isinstance(declared_length, (int, float)) or declared_length <= 0:
+            return True
+        if self._is_audio_size_too_small(actual_size, declared_length, info):
+            return True
+        return False
+
+    @staticmethod
+    def _is_audio_size_too_small(actual_size, declared_length, info):
+        """Return True when the file's actual size cannot plausibly hold its declared audio.
+
+        mutagen trusts metadata headers (RIFF, ID3 TLEN, etc.) when reporting length,
+        so a 256-byte truncated file can still claim 1.0 seconds. Cross-check the
+        declared length against the actual size using the format's bitrate / sample
+        size; if the file is more than ten times smaller than the minimum expected
+        payload, treat it as truncated.
+        """
+        bytes_per_second = None
+        bitrate = getattr(info, 'bitrate', None)
+        if isinstance(bitrate, (int, float)) and bitrate > 0:
+            bytes_per_second = bitrate / 8.0
+        else:
+            sample_rate = getattr(info, 'sample_rate', None)
+            channels = getattr(info, 'channels', None)
+            bits_per_sample = getattr(info, 'bits_per_sample', None) or getattr(info, 'bits_per_sample', 16)
+            if sample_rate and channels:
+                bytes_per_second = sample_rate * channels * (bits_per_sample or 16) / 8.0
+        if not bytes_per_second or bytes_per_second <= 0:
+            return False
+        expected_payload = bytes_per_second * declared_length
+        # A small format-specific overhead is allowed (RIFF header ~44 bytes, ID3 ~128 bytes).
+        # If the file is at least an order of magnitude smaller than the declared payload,
+        # the header is lying about the length.
+        return actual_size * 10 < expected_payload
+
+    def is_track_item_corrupted(self, item_id):
+        """Return True when the tree item's underlying file is corrupted."""
+        if not hasattr(self, 'track_table') or not self.track_table.exists(item_id):
+            return False
+        values = self.track_table.item(item_id).get("values", ())
+        file_path = str(values[12]).strip() if len(values) > 12 else ""
+        if not file_path:
+            return False
+        return self.is_track_corrupted(file_path)
+
+    def get_track_row_tags(self, values):
+        """Build the tag tuple for a track row based on lock and corruption state."""
         key = self.get_track_lock_key_from_values(values)
-        tags = ("normal", "locked") if key in getattr(self, 'locked_track_keys', set()) else ("normal",)
+        tags = ["normal"]
+        if key in getattr(self, 'locked_track_keys', set()):
+            tags.append("locked")
+        if getattr(self.config, 'highlight_corrupted_tracks', True) and len(values) > 12:
+            file_path = str(values[12]).strip()
+            if file_path and self.is_track_corrupted(file_path):
+                tags.append("corrupted")
+        return tuple(tags)
+
+    def insert_track_row(self, values, index=tk.END):
+        """Insert a track row while preserving lock and corruption tags."""
+        tags = self.get_track_row_tags(values)
         return self.track_table.insert("", index, values=tuple(values), tags=tags)
 
     def toggle_track_lock(self, item_id):
@@ -7541,10 +7663,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             nyp = ""
 
             extra_metadata = self.get_extra_track_metadata_columns(track_path)
-            self.track_table.insert("", tk.END, values=(
+            values = (
                 i, artist, title, comment, length, extension, price, nyp,
                 year, genre, bitrate, size_str, track_path, *extra_metadata
-            ), tags=("normal",))
+            )
+            self.track_table.insert("", tk.END, values=values, tags=self.get_track_row_tags(values))
 
         self.maybe_auto_fit_track_columns()
     

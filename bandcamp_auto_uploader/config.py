@@ -115,6 +115,8 @@ class Config:
     show_isrc: bool = False
     auto_fit_columns: bool = True  # Automatically fit preview table columns after updates
     locked_track_highlight_color: str = "#fff4ce"  # Track table row highlight for locked tracks
+    highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
+    corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks
     # Context menu settings
     context_menu_remove_dividers: bool = False  # Hide separator dividers in track context menu
     context_menu_play: bool = True  # Show Play option in track context menu

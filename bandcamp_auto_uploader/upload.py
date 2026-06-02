@@ -530,8 +530,12 @@ class Track:
     @classmethod
     def from_file(cls, path: Path, config: Config):
         path = Path(path)
-        
-        file_data = mutagen.File(path)
+
+        try:
+            file_data = mutagen.File(path)
+        except Exception as e:
+            logger.warning(f"Skipping unreadable audio file {path.name}: {e}")
+            return None
         if file_data is None:
             ext = path.suffix.lower()
             if ext in ('.mod', '.xm'):
@@ -875,6 +879,8 @@ class Album:
 
         return walk(response)
 
+    AUDIO_EXTENSIONS = {'.wav', '.flac', '.aiff', '.aif', '.mp3', '.ogg', '.opus', '.m4a', '.aac', '.mod', '.xm'}
+
     @classmethod
     def from_directory(cls, path: Path, config: Config):
         path = Path(path)
@@ -886,11 +892,14 @@ class Album:
             nyp=int(config.name_your_price),
         )
         tracks = []
+        skipped_paths: list[Path] = []
         seen_stems = set()  # Track file stems to avoid MP3/FLAC duplicates
 
         # Process all files in directory in file system order, then prioritize embedded track numbers.
         for file_index, file in enumerate(path.iterdir()):
             if not file.is_file():
+                continue
+            if file.suffix.lower() not in cls.AUDIO_EXTENSIONS:
                 continue
             # Skip if we already have a file with this stem (name without extension)
             file_stem = file.stem
@@ -914,6 +923,8 @@ class Album:
             if track is not None:
                 tracks.append((file_index, track))
                 seen_stems.add(file_stem)
+            else:
+                skipped_paths.append(file)
 
         tracks.sort(
             key=lambda item: (
@@ -933,7 +944,9 @@ class Album:
             if s[-4:] in (".jpg", ".png", ".gif") or s[-5:] == ".jpeg":
                 cover_art = CoverArt(path=file)
                 break
-        return cls(album_data, tracks, cover_art)
+        album = cls(album_data, tracks, cover_art)
+        album.skipped_paths = skipped_paths
+        return album
 
     def _fetch_crumbs(self, session: requests.Session, artist_url: str) -> dict:
         """Fetch fresh CSRF tokens (crumbs) from Bandcamp.
