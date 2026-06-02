@@ -4256,6 +4256,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def on_drag_start(self, event):
         """Start drag operation for track reordering"""
         item = self.track_table.identify('item', event.x, event.y)
+        if not item:
+            self.track_table.selection_remove(self.track_table.selection())
+            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None}
+            return
         if item:
             if self.is_track_item_locked(item):
                 self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None}
