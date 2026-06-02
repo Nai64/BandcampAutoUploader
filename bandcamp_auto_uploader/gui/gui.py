@@ -131,6 +131,24 @@ def get_splash_image_path():
     return None
 
 
+def resize_rgba_without_edge_halo(image, max_size):
+    """Downscale an RGBA image without blending transparent black into edges."""
+    from PIL import Image
+
+    scale = min(max_size[0] / image.width, max_size[1] / image.height, 1.0)
+    if scale >= 1:
+        return image
+
+    size = (max(1, round(image.width * scale)), max(1, round(image.height * scale)))
+    alpha = image.getchannel("A")
+    filled = Image.new("RGBA", image.size, "#67a0aa")
+    filled.alpha_composite(image)
+    resized_rgb = filled.convert("RGB").resize(size, Image.Resampling.LANCZOS)
+    resized_alpha = alpha.resize(size, Image.Resampling.LANCZOS)
+    resized_rgb.putalpha(resized_alpha)
+    return resized_rgb
+
+
 def show_startup_intro(root, launch_callback):
     """Show a short startup intro while the main UI is created."""
     root.withdraw()
@@ -142,7 +160,7 @@ def show_startup_intro(root, launch_callback):
             from PIL import Image, ImageTk
             with Image.open(splash_path) as source:
                 image = source.convert("RGBA")
-                image.thumbnail((560, 340), Image.Resampling.LANCZOS)
+                image = resize_rgba_without_edge_halo(image, (560, 340))
                 splash_photo = ImageTk.PhotoImage(image, master=root)
         except Exception as exc:
             logger.debug(f"Failed to load splash image: {exc}")
