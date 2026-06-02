@@ -372,11 +372,15 @@ class SettingsMixin:
         for frame in self.settings_frames.values():
             frame.pack_forget()
         
-        # If parent item is selected, show first child instead
+        # Parent items (General, Notifications, Interface) show a combined frame
         if item_id not in self.settings_frames:
-            children = self.settings_tree.get_children(item_id)
-            if children:
-                item_id = children[0]
+            combined_key = item_id  # Parent keys match their combined frame key
+            if combined_key in self.settings_frames:
+                item_id = combined_key
+            else:
+                children = self.settings_tree.get_children(item_id)
+                if children:
+                    item_id = children[0]
         
         # Show selected frame
         if item_id in self.settings_frames:
@@ -2394,6 +2398,14 @@ class SettingsMixin:
             ("General: Clear progress on album change", "clear_progress_on_album_change", "bool"),
             ("General: Auto load cookies on startup", "auto_load_cookies", "bool"),
             ("General: Check for updates on startup", "check_for_updates", "bool"),
+            ("General: Check for updates now", "check_updates_now", "action"),
+            ("General: Auto Fit Columns", "auto_fit_columns", "bool"),
+            ("General: Locked Track Highlight Color", "locked_track_highlight_color", "color"),
+            ("General: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
+            ("General: Show Total Album Duration", "show_total_album_duration", "bool"),
+            ("General: Remember Last Opened Album", "remember_last_album", "bool"),
+            ("General: Limit Log Files", "log_file_limit", "int", 1, 99),
+            ("General: File Size Unit", "file_size_unit", "str"),
             # Context Menu settings
             ("Context: Remove Dividers", "context_menu_remove_dividers", "bool"),
             ("Context: Play", "context_menu_play", "bool"),
@@ -2459,9 +2471,12 @@ class SettingsMixin:
         self.general_combined_vars = {}
         self.general_combined_item_mapping = {}
         
-        for setting_name, config_key, setting_type in settings:
+        for setting_data in settings:
+            setting_name = setting_data[0]
+            config_key = setting_data[1]
+            setting_type = setting_data[2]
+            
             if setting_type == "bool":
-                # Use appropriate default based on config
                 if config_key.startswith("auto_tag_"):
                     var = tk.BooleanVar(value=getattr(self.config, config_key, False))
                 else:
@@ -2470,6 +2485,14 @@ class SettingsMixin:
             elif setting_type == "str":
                 var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
                 display_value = var.get()
+            elif setting_type == "int":
+                min_val = setting_data[3]
+                max_val = setting_data[4]
+                var = tk.IntVar(value=getattr(self.config, config_key, min_val))
+                display_value = str(var.get())
+            elif setting_type == "color":
+                var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
+                display_value = var.get()
             elif setting_type == "action":
                 var = None
                 display_value = "Preview..."
@@ -2477,6 +2500,9 @@ class SettingsMixin:
             if var is not None:
                 self.general_combined_vars[config_key] = var
             self.general_combined_vars[f"{config_key}_type"] = setting_type
+            if setting_type == "int":
+                self.general_combined_vars[f"{config_key}_min"] = min_val
+                self.general_combined_vars[f"{config_key}_max"] = max_val
             
             # Add item to treeview
             item_id = self.general_combined_tree.insert('', 'end', values=(setting_name, display_value))
@@ -2571,6 +2597,46 @@ class SettingsMixin:
                     self.general_combined_vars[config_key].get(),
                     lambda v: self.apply_general_combined_str_setting(config_key, v),
                 )
+            elif config_key == "file_size_unit":
+                self.edit_treeview_cell_dropdown(
+                    self.general_combined_tree,
+                    item_id,
+                    'value',
+                    ["Auto", "MB", "GB", "KB", "Bytes"],
+                    self.general_combined_vars[config_key].get(),
+                    lambda v: self.apply_general_combined_str_setting(config_key, v),
+                )
+        elif setting_type == "int":
+            min_val = self.general_combined_vars.get(f"{config_key}_min", 1)
+            max_val = self.general_combined_vars.get(f"{config_key}_max", 99)
+            current_value = str(self.general_combined_vars[config_key].get())
+
+            def validate_and_save(new_value):
+                try:
+                    int_val = int(new_value)
+                    if min_val <= int_val <= max_val:
+                        self.general_combined_vars[config_key].set(int_val)
+                        self.general_combined_tree.set(item_id, 'value', str(int_val))
+                        setattr(self.config, config_key, int_val)
+                        save_config(self.config)
+                        if config_key == "log_file_limit" and hasattr(self, 'cleanup_old_log_files'):
+                            self.cleanup_old_log_files()
+                        return True
+                except ValueError:
+                    pass
+                return False
+
+            self.edit_treeview_cell(self.general_combined_tree, item_id, 'value', current_value, validate_and_save)
+        elif setting_type == "color":
+            current_color = self.general_combined_vars[config_key].get()
+            new_color = colorchooser.askcolor(color=current_color)[1]
+            if new_color:
+                self.general_combined_vars[config_key].set(new_color)
+                self.general_combined_tree.set(item_id, 'value', new_color)
+                self.config.locked_track_highlight_color = new_color
+                save_config(self.config)
+                if hasattr(self, 'configure_track_table_tags'):
+                    self.configure_track_table_tags()
     
     def apply_general_combined_settings(self):
         """Apply combined general settings immediately"""
@@ -2595,6 +2661,13 @@ class SettingsMixin:
         self.config.clear_progress_on_album_change = self.general_combined_vars['clear_progress_on_album_change'].get()
         self.config.auto_load_cookies = self.general_combined_vars['auto_load_cookies'].get()
         self.config.check_for_updates = self.general_combined_vars['check_for_updates'].get()
+        self.config.auto_fit_columns = self.general_combined_vars['auto_fit_columns'].get()
+        self.config.locked_track_highlight_color = self.general_combined_vars['locked_track_highlight_color'].get()
+        self.config.highlight_corrupted_tracks = self.general_combined_vars['highlight_corrupted_tracks'].get()
+        self.config.show_total_album_duration = self.general_combined_vars['show_total_album_duration'].get()
+        self.config.remember_last_album = self.general_combined_vars['remember_last_album'].get()
+        self.config.log_file_limit = self.general_combined_vars['log_file_limit'].get()
+        self.config.file_size_unit = self.general_combined_vars['file_size_unit'].get()
         ToolTip.disabled = self.config.disable_tooltips
         if hasattr(self, 'scale_cover_var'):
             self.scale_cover_var.set(self.config.always_auto_scale_cover)
@@ -2653,6 +2726,16 @@ class SettingsMixin:
         
         save_config(self.config)
         self.refresh_context_menu_icons()
+        if hasattr(self, 'configure_track_table_tags'):
+            self.configure_track_table_tags()
+        if hasattr(self, 'refresh_all_track_row_tags'):
+            self.refresh_all_track_row_tags()
+        if hasattr(self, 'refresh_file_size_display'):
+            self.refresh_file_size_display()
+        if hasattr(self, 'update_preview_total_duration_label'):
+            self.update_preview_total_duration_label()
+        if hasattr(self, 'cleanup_old_log_files'):
+            self.cleanup_old_log_files()
 
     def apply_general_combined_str_setting(self, config_key, new_value):
         """Apply a combined General string/dropdown setting."""
@@ -2662,6 +2745,8 @@ class SettingsMixin:
             return False
         if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
             return False
+        if config_key == "file_size_unit" and new_value not in ("Auto", "MB", "GB", "KB", "Bytes"):
+            return False
 
         self.general_combined_vars[config_key].set(new_value)
         setattr(self.config, config_key, new_value)
@@ -2669,6 +2754,8 @@ class SettingsMixin:
             self.scaling_method_var.set(new_value)
         if config_key == "cover_fit_mode" and hasattr(self, 'cover_fit_mode_var'):
             self.cover_fit_mode_var.set(new_value)
+        if config_key == "file_size_unit" and hasattr(self, 'refresh_file_size_display'):
+            self.refresh_file_size_display()
         save_config(self.config)
         return True
     
