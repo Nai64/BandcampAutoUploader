@@ -614,6 +614,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_release_date_btn.pack(side=tk.LEFT)
         ToolTip(release_date_inner.winfo_children()[-1], "Choose release date from calendar")
 
+        ttk.Label(self.details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        price_inner = ttk.Frame(self.details_frame)
+        price_inner.pack(fill=tk.X, pady=(0, 2))
+        self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, font=("Segoe UI", 8))
+        self.album_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
+        self.album_nyp_check.pack(side=tk.LEFT)
+
         # Tags
         ttk.Label(self.details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_tags_var = tk.StringVar()
@@ -678,14 +686,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(self.details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_upc_entry = ttk.Entry(self.details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 2))
-
-        ttk.Label(self.details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        price_inner = ttk.Frame(self.details_frame)
-        price_inner.pack(fill=tk.X, pady=(0, 2))
-        self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, font=("Segoe UI", 8))
-        self.album_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
-        self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
-        self.album_nyp_check.pack(side=tk.LEFT)
 
         ttk.Label(self.details_frame, text="Subscriber Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_subscriber_entry = ttk.Entry(self.details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
@@ -760,19 +760,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_release_date_btn = ttk.Button(rd_row2, text="Edit", command=self.td_show_calendar, width=5)
         self.td_release_date_btn.pack(side=tk.LEFT)
 
-        ttk.Label(self.track_details_frame, text="ISRC:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.td_isrc_var = tk.StringVar()
-        self.td_isrc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_isrc_var, font=("Segoe UI", 8))
-        self.td_isrc_entry.pack(fill=tk.X, pady=(0, 2))
-
-        self.td_streaming_var = tk.BooleanVar(value=True)
-        self.td_enable_dl_var = tk.BooleanVar(value=True)
-        self.td_featured_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W)
-        self.td_featured_var.trace_add("write", self._on_featured_toggled)
-
         ttk.Label(self.track_details_frame, text="Track Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         td_price_row = ttk.Frame(self.track_details_frame)
         td_price_row.pack(fill=tk.X, pady=(0, 2))
@@ -781,6 +768,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
         self.td_nyp_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(td_price_row, text="Name Your Price", variable=self.td_nyp_var).pack(side=tk.LEFT)
+
+        ttk.Label(self.track_details_frame, text="ISRC:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_isrc_var = tk.StringVar()
+        self.td_isrc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_isrc_var, font=("Segoe UI", 8))
+        self.td_isrc_entry.pack(fill=tk.X, pady=(0, 2))
 
         ttk.Label(self.track_details_frame, text="Video ID (YouTube/Vimeo):", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_video_id_var = tk.StringVar(value="")
@@ -791,6 +783,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_video_caption_var = tk.StringVar(value="")
         self.td_video_caption_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_video_caption_var, font=("Segoe UI", 8))
         self.td_video_caption_entry.pack(fill=tk.X, pady=(0, 2))
+
+        self.td_streaming_var = tk.BooleanVar(value=True)
+        self.td_enable_dl_var = tk.BooleanVar(value=True)
+        self.td_featured_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W)
+        self.td_featured_var.trace_add("write", self._on_featured_toggled)
 
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
         self.track_details_frame.pack_forget()
