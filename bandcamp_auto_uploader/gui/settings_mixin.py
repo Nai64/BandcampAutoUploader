@@ -425,6 +425,7 @@ class SettingsMixin:
             ("Locked Track Highlight Color", "locked_track_highlight_color", "color"),
             ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Show Total Album Duration", "show_total_album_duration", "bool"),
+            ("Remember Last Opened Album", "remember_last_album", "bool"),
         ]
         
         # Create treeview for general settings (no headings)
@@ -1253,6 +1254,9 @@ class SettingsMixin:
                 save_config(self.config)
                 if hasattr(self, 'update_preview_total_duration_label'):
                     self.update_preview_total_duration_label()
+            elif config_key == "remember_last_album":
+                self.config.remember_last_album = new_value
+                save_config(self.config)
         elif setting_type == "str":
             if config_key == "description_auto_fill_mode":
                 self.open_description_autofill_dialog(self.general_tree, item_id, 'value',

@@ -118,6 +118,8 @@ class Config:
     highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
     corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks
     show_total_album_duration: bool = True  # Show total album duration next to Preview title
+    remember_last_album: bool = True  # Remember and auto-load the last opened album on startup
+    last_opened_album_path: str = ""  # Path of the last opened album folder
     # Context menu settings
     context_menu_remove_dividers: bool = False  # Hide separator dividers in track context menu
     context_menu_play: bool = True  # Show Play option in track context menu

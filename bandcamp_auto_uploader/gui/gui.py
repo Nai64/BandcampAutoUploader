@@ -1777,6 +1777,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.load_artists()
                 self.log_queue.put("Application initialized successfully")
 
+                # Auto-load last opened album if enabled
+                last_path = getattr(self.config, 'last_opened_album_path', '')
+                if getattr(self.config, 'remember_last_album', True) and last_path and Path(last_path).is_dir():
+                    self.root.after(500, lambda p=last_path: self._load_last_opened_album(p))
+
                 self.update_status("Ready", 100)
             except Exception as e:
                 exc_info = sys.exc_info()
@@ -3187,9 +3192,29 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             # Add to recent albums
             self.add_to_recent_albums(directory)
             
+            # Remember last opened album
+            self.config.last_opened_album_path = directory
+            save_config(self.config)
+            
             # Auto-start upload if enabled
             if self.config.auto_start_upload and self.selected_artist_url:
                 self.root.after(500, self.start_upload)
+
+    def _load_last_opened_album(self, path):
+        """Load the last opened album folder on startup."""
+        if not path or not Path(path).is_dir():
+            return
+        self.album_path_var.set(path)
+        self.upload_btn['state'] = tk.NORMAL if self.selected_artist_url else tk.DISABLED
+        self.on_album_selection_changed()
+        self.clear_album_load_fields()
+        self.preview_album()
+        self.auto_detect_cover_art(path)
+        self.auto_extract_cover_art_if_missing(path)
+        self.apply_album_load_preferences(path)
+        self.load_or_create_album_session_file(path)
+        self.add_to_recent_albums(path)
+        self.show_toast(f"Loaded last album: {Path(path).name}", 2500, "info", trigger="album_load")
 
     def reload_album(self):
         """Reload the currently selected album folder."""
@@ -3237,6 +3262,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.apply_album_load_preferences(path)
         self.load_or_create_album_session_file(path)
         self.add_to_recent_albums(str(path))
+        self.config.last_opened_album_path = str(path)
+        save_config(self.config)
         self.upload_btn['state'] = tk.NORMAL if self.selected_artist_url else tk.DISABLED
         self.show_toast("Album reloaded", 1800, "success", trigger="file_add")
     
