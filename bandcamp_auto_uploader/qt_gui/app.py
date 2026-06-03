@@ -12,15 +12,16 @@ from bandcamp_auto_uploader.qt_gui.formatting import (
     normalize_price,
     normalize_release_date,
 )
-from bandcamp_auto_uploader.upload import Album
+from bandcamp_auto_uploader.upload import Album, CoverArt
 
 try:
     from PySide6.QtCore import Qt
-    from PySide6.QtGui import QAction
+    from PySide6.QtGui import QAction, QPixmap
     from PySide6.QtWidgets import (
         QApplication,
         QAbstractItemView,
         QCheckBox,
+        QComboBox,
         QFileDialog,
         QFormLayout,
         QFrame,
@@ -31,7 +32,9 @@ try:
         QLineEdit,
         QMainWindow,
         QMessageBox,
+        QPlainTextEdit,
         QPushButton,
+        QScrollArea,
         QSplitter,
         QTableWidget,
         QTableWidgetItem,
@@ -67,6 +70,35 @@ COL_PRICE = 6
 COL_NYP = 7
 COL_PATH = 8
 EDITABLE_COLUMNS = {COL_ARTIST, COL_TITLE, COL_COMMENT, COL_PRICE, COL_NYP}
+LICENSE_OPTIONS = (
+    "All Rights Reserved",
+    "CC Attribution",
+    "CC Attribution-ShareAlike",
+    "CC Attribution-NoDerivatives",
+    "CC Attribution-NonCommercial",
+    "CC Attribution-NonCommercial-ShareAlike",
+    "CC Attribution-NonCommercial-NoDerivatives",
+    "Public Domain",
+)
+COVER_NAMES = (
+    "cover.jpg",
+    "cover.png",
+    "cover.jpeg",
+    "cover.gif",
+    "folder.jpg",
+    "folder.png",
+    "folder.jpeg",
+    "front.jpg",
+    "front.png",
+    "front.jpeg",
+    "album.jpg",
+    "album.png",
+    "album.jpeg",
+    "artwork.jpg",
+    "artwork.png",
+    "artwork.jpeg",
+)
+COVER_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 
 class QtUploaderWindow(QMainWindow):
@@ -78,10 +110,13 @@ class QtUploaderWindow(QMainWindow):
         self.current_album: Album | None = None
         self._loading_table = False
         self._loading_details = False
+        self._loading_album_details = False
+        self.cover_path: Path | None = None
 
         self.setWindowTitle(f"Bandcamp Auto Uploader Qt Preview {__version__}")
         self.resize(1180, 760)
         self.setMinimumSize(960, 620)
+        self.setAcceptDrops(True)
         self._build_ui()
 
     def _build_ui(self):
@@ -98,12 +133,16 @@ class QtUploaderWindow(QMainWindow):
 
         splitter.addWidget(self._build_sidebar())
         splitter.addWidget(self._build_content())
-        splitter.setSizes([330, 850])
+        splitter.setSizes([360, 820])
 
         self.setCentralWidget(central)
         self.statusBar().showMessage("Qt migration preview ready")
 
     def _build_sidebar(self):
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+
         sidebar = QFrame()
         sidebar.setObjectName("sidebar")
         layout = QVBoxLayout(sidebar)
@@ -118,9 +157,14 @@ class QtUploaderWindow(QMainWindow):
         self.album_path_edit.setPlaceholderText("Album folder")
         layout.addWidget(self.album_path_edit)
 
+        path_buttons = QHBoxLayout()
         browse_button = QPushButton("Browse")
         browse_button.clicked.connect(self.browse_album)
-        layout.addWidget(browse_button)
+        path_buttons.addWidget(browse_button)
+        preview_button = QPushButton("Preview")
+        preview_button.clicked.connect(self.preview_album)
+        path_buttons.addWidget(preview_button)
+        layout.addLayout(path_buttons)
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
@@ -135,24 +179,111 @@ class QtUploaderWindow(QMainWindow):
         self.album_nyp_check.setChecked(True)
         self.album_public_check = QCheckBox("Public")
         self.album_public_check.setChecked(True)
+        self.require_email_check = QCheckBox("Require email")
+        self.pro_check = QCheckBox("Registered with collection society")
+        self.tags_edit = QLineEdit()
+        self.tags_edit.setPlaceholderText("tags, comma separated")
+        self.license_combo = QComboBox()
+        self.license_combo.addItems(LICENSE_OPTIONS)
+        self.download_desc_edit = QLineEdit()
+        self.release_message_edit = QLineEdit()
+        self.record_label_edit = QLineEdit()
+        self.catalog_number_edit = QLineEdit()
+        self.upc_edit = QLineEdit()
+        self.subscriber_message_edit = QLineEdit()
+        self.composer_edit = QLineEdit()
+        self.publisher_edit = QLineEdit()
 
         form.addRow("Name", self.album_name_edit)
         form.addRow("Artist", self.artist_edit)
         form.addRow("Release Date", self.release_date_edit)
         form.addRow("Price", self.album_price_edit)
+        form.addRow("Tags", self.tags_edit)
+        form.addRow("License", self.license_combo)
+        form.addRow("Download Desc", self.download_desc_edit)
+        form.addRow("Release Msg", self.release_message_edit)
+        form.addRow("Record Label", self.record_label_edit)
+        form.addRow("Catalog #", self.catalog_number_edit)
+        form.addRow("UPC/EAN", self.upc_edit)
+        form.addRow("Subscriber Msg", self.subscriber_message_edit)
+        form.addRow("Composer", self.composer_edit)
+        form.addRow("Publisher", self.publisher_edit)
         form.addRow("", self.album_nyp_check)
         form.addRow("", self.album_public_check)
+        form.addRow("", self.require_email_check)
+        form.addRow("", self.pro_check)
         layout.addLayout(form)
 
-        preview_button = QPushButton("Preview Album")
-        preview_button.clicked.connect(self.preview_album)
-        layout.addWidget(preview_button)
+        self.description_edit = QPlainTextEdit()
+        self.description_edit.setPlaceholderText("Description")
+        self.description_edit.setMaximumHeight(90)
+        layout.addWidget(QLabel("Description"))
+        layout.addWidget(self.description_edit)
+
+        self.credits_edit = QPlainTextEdit()
+        self.credits_edit.setPlaceholderText("Credits")
+        self.credits_edit.setMaximumHeight(80)
+        layout.addWidget(QLabel("Credits"))
+        layout.addWidget(self.credits_edit)
+
+        cover_group = QGroupBox("Cover Art")
+        cover_layout = QVBoxLayout(cover_group)
+        self.cover_preview = QLabel("No cover art")
+        self.cover_preview.setObjectName("coverPreview")
+        self.cover_preview.setAlignment(Qt.AlignCenter)
+        self.cover_preview.setMinimumSize(180, 180)
+        self.cover_preview.setMaximumHeight(220)
+        cover_layout.addWidget(self.cover_preview)
+        self.cover_path_edit = QLineEdit()
+        self.cover_path_edit.setPlaceholderText("Cover image path")
+        self.cover_path_edit.editingFinished.connect(self.resolve_cover_path_edit)
+        cover_layout.addWidget(self.cover_path_edit)
+        cover_buttons = QHBoxLayout()
+        browse_cover_button = QPushButton("Browse")
+        browse_cover_button.clicked.connect(self.browse_cover)
+        cover_buttons.addWidget(browse_cover_button)
+        detect_cover_button = QPushButton("Auto")
+        detect_cover_button.clicked.connect(self.auto_detect_cover)
+        cover_buttons.addWidget(detect_cover_button)
+        clear_cover_button = QPushButton("Clear")
+        clear_cover_button.clicked.connect(self.clear_cover)
+        cover_buttons.addWidget(clear_cover_button)
+        cover_layout.addLayout(cover_buttons)
+        layout.addWidget(cover_group)
 
         layout.addStretch(1)
 
         self.album_price_edit.editingFinished.connect(lambda: self.sanitize_price_edit(self.album_price_edit, "0"))
         self.release_date_edit.editingFinished.connect(lambda: self.sanitize_date_edit(self.release_date_edit))
-        return sidebar
+        for widget in (
+            self.album_name_edit,
+            self.artist_edit,
+            self.release_date_edit,
+            self.album_price_edit,
+            self.tags_edit,
+            self.download_desc_edit,
+            self.release_message_edit,
+            self.record_label_edit,
+            self.catalog_number_edit,
+            self.upc_edit,
+            self.subscriber_message_edit,
+            self.composer_edit,
+            self.publisher_edit,
+        ):
+            widget.editingFinished.connect(self.apply_album_details_to_model)
+        self.description_edit.textChanged.connect(self.apply_album_details_to_model)
+        self.credits_edit.textChanged.connect(self.apply_album_details_to_model)
+        self.license_combo.currentTextChanged.connect(lambda _text: self.apply_album_details_to_model())
+        for checkbox in (
+            self.album_nyp_check,
+            self.album_public_check,
+            self.require_email_check,
+            self.pro_check,
+        ):
+            checkbox.toggled.connect(lambda _checked: self.apply_album_details_to_model())
+
+        scroll.setWidget(sidebar)
+        return scroll
 
     def _build_content(self):
         content = QWidget()
@@ -255,13 +386,147 @@ class QtUploaderWindow(QMainWindow):
             return
 
         self.current_album = album
-        self.album_name_edit.setText(album.album_data.title or album_path.name)
-        self.artist_edit.setText(album.album_data.artist or "")
-        self.album_price_edit.setText(format_price(album.album_data.price, default="0"))
-        self.album_nyp_check.setChecked(bool(album.album_data.nyp))
-        self.album_public_check.setChecked(True)
+        self.load_album_details(album, album_path)
         self.populate_track_table(album)
         self.statusBar().showMessage(f"Loaded {len(album.tracks)} track(s)")
+
+    def load_album_details(self, album: Album, album_path: Path):
+        data = album.album_data
+        self._loading_album_details = True
+        try:
+            self.album_name_edit.setText(data.title or album_path.name)
+            self.artist_edit.setText(data.artist or "")
+            self.release_date_edit.setText(normalize_release_date(data.release_date))
+            self.album_price_edit.setText(format_price(data.price, default="0"))
+            self.album_nyp_check.setChecked(bool(data.nyp))
+            self.album_public_check.setChecked(True)
+            self.require_email_check.setChecked(bool(data.require_email))
+            self.pro_check.setChecked(bool(data.pro))
+            self.tags_edit.setText(data.tags or "")
+            self.download_desc_edit.setText(data.download_desc or "")
+            self.release_message_edit.setText(data.tralbum_release_message or "")
+            self.record_label_edit.setText(data.label_name or "")
+            self.catalog_number_edit.setText(data.cat_number or "")
+            self.upc_edit.setText(data.upc or "")
+            self.subscriber_message_edit.setText(data.subscriber_only_message or "")
+            self.composer_edit.setText(data.composer or "")
+            self.publisher_edit.setText(data.publisher or "")
+            self.description_edit.setPlainText(data.about or "")
+            self.credits_edit.setPlainText(data.credits or "")
+            self.cover_path = album.cover_art.path if album.cover_art and album.cover_art.path else None
+            self.cover_path_edit.setText(str(self.cover_path) if self.cover_path else "")
+            self.update_cover_preview()
+        finally:
+            self._loading_album_details = False
+
+    def apply_album_details_to_model(self):
+        if self._loading_album_details or self.current_album is None:
+            return
+
+        data = self.current_album.album_data
+        data.title = self.album_name_edit.text().strip()
+        data.artist = self.artist_edit.text().strip()
+        data.release_date = normalize_release_date(self.release_date_edit.text())
+        data.price = normalize_price(self.album_price_edit.text(), default="0")
+        data.nyp = int(self.album_nyp_check.isChecked())
+        data.public = 0 if self.album_public_check.isChecked() else 1
+        data.require_email = int(self.require_email_check.isChecked())
+        data.pro = int(self.pro_check.isChecked())
+        data.tags = self.tags_edit.text().strip()
+        data.download_desc = self.download_desc_edit.text().strip()
+        data.tralbum_release_message = self.release_message_edit.text().strip()
+        data.label_name = self.record_label_edit.text().strip()
+        data.cat_number = self.catalog_number_edit.text().strip()
+        data.upc = self.upc_edit.text().strip()
+        data.subscriber_only_message = self.subscriber_message_edit.text().strip()
+        data.composer = self.composer_edit.text().strip()
+        data.publisher = self.publisher_edit.text().strip()
+        data.about = self.description_edit.toPlainText().strip()
+        data.credits = self.credits_edit.toPlainText().strip()
+        self.current_album.cover_art = CoverArt(path=self.cover_path) if self.cover_path else None
+
+    def browse_cover(self):
+        filename, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Select Cover Art",
+            self.cover_path_edit.text(),
+            "Image files (*.jpg *.jpeg *.png *.gif *.webp);;All files (*.*)",
+        )
+        if filename:
+            self.set_cover_path(Path(filename))
+
+    def clear_cover(self):
+        self.set_cover_path(None)
+
+    def resolve_cover_path_edit(self):
+        text = self.cover_path_edit.text().strip()
+        if not text:
+            self.set_cover_path(None)
+            return
+        self.set_cover_path(Path(text))
+
+    def set_cover_path(self, path: Path | None):
+        self.cover_path = path if path and path.exists() else None
+        self.cover_path_edit.setText(str(self.cover_path) if self.cover_path else "")
+        self.update_cover_preview()
+        self.apply_album_details_to_model()
+
+    def auto_detect_cover(self):
+        album_path = Path(self.album_path_edit.text().strip())
+        cover = self.find_cover_art(album_path)
+        if cover:
+            self.set_cover_path(cover)
+            self.statusBar().showMessage(f"Detected cover art: {cover.name}")
+        else:
+            self.statusBar().showMessage("No cover art found")
+
+    def find_cover_art(self, album_path: Path) -> Path | None:
+        if not album_path.is_dir():
+            return None
+        for cover_name in COVER_NAMES:
+            candidate = album_path / cover_name
+            if candidate.exists():
+                return candidate
+        for file in album_path.iterdir():
+            if file.is_file() and file.suffix.lower() in COVER_SUFFIXES:
+                return file
+        return None
+
+    def update_cover_preview(self):
+        if not self.cover_path:
+            self.cover_preview.setPixmap(QPixmap())
+            self.cover_preview.setText("No cover art")
+            return
+        if not self.cover_path.exists():
+            self.cover_preview.setPixmap(QPixmap())
+            self.cover_preview.setText("Cover not found")
+            return
+        pixmap = QPixmap(str(self.cover_path))
+        if pixmap.isNull():
+            self.cover_preview.setText("Could not load cover")
+            return
+        scaled = pixmap.scaled(210, 210, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.cover_preview.setPixmap(scaled)
+        self.cover_preview.setText("")
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        if not urls:
+            return
+        path = Path(urls[0].toLocalFile())
+        if path.is_dir():
+            self.album_path_edit.setText(str(path))
+            self.preview_album()
+            return
+        if path.is_file() and path.suffix.lower() in COVER_SUFFIXES:
+            self.set_cover_path(path)
+            return
 
     def populate_track_table(self, album: Album):
         self._loading_table = True
@@ -508,7 +773,13 @@ def apply_preview_style(app: QApplication):
             left: 8px;
             padding: 0 4px;
         }
-        QLineEdit, QTableWidget {
+        QLabel#coverPreview {
+            background: #ffffff;
+            border: 1px solid #cfd7df;
+            border-radius: 4px;
+            color: #6b7280;
+        }
+        QLineEdit, QPlainTextEdit, QTableWidget {
             background: #ffffff;
             border: 1px solid #cfd7df;
             border-radius: 4px;
