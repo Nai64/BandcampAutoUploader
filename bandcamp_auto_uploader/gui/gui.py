@@ -5210,7 +5210,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 track_path = paths_by_string.get(file_path)
                 if track_path is not None:
                     reordered_manual_tracks.append(track_path)
-            if len(reordered_manual_tracks) == len(self.manual_tracks):
+            if reordered_manual_tracks or not self.track_table.get_children():
                 self.manual_tracks = reordered_manual_tracks
 
         if not hasattr(self, 'current_album') or not self.current_album:
@@ -5241,7 +5241,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 track.track_data.download_desc = values[3]
             reordered_tracks.append(track)
 
-        if reordered_tracks and len(reordered_tracks) == len(self.current_album.tracks):
+        if reordered_tracks or not items:
             self.current_album.tracks = reordered_tracks
         self.queue_album_session_save()
 
@@ -7832,6 +7832,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
 
         self.sync_track_table_to_current_album()
+        if (
+            hasattr(self, 'current_album')
+            and self.current_album is not None
+            and not getattr(self.current_album, 'tracks', None)
+        ):
+            messagebox.showerror("Error", "No tracks left to upload")
+            return
         upload_description_text = self.get_album_description_text()
 
         # Confirm upload if setting is enabled
