@@ -4464,6 +4464,56 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         except ValueError:
             return None
 
+    def get_track_editor_key_for_table_column(self, column_id):
+        """Return the Track Details data key mirrored by an editable table column."""
+        return {
+            "artist": "artist",
+            "track_name": "name",
+            "comment": "download_desc",
+            "price": "price",
+            "nyp": "nyp",
+            "isrc": "isrc",
+        }.get(column_id)
+
+    def normalize_track_table_editor_value(self, key, value):
+        text = str(value).strip()
+        if key == "price":
+            return text[1:].strip() if text.startswith("$") else text
+        if key == "nyp":
+            return text.lower() in {"1", "true", "yes", "y", "on"}
+        return text
+
+    def sync_track_editor_data_from_table_cell(self, row_id, column_id, value):
+        """Keep Track Details state from overwriting inline table edits later."""
+        key = self.get_track_editor_key_for_table_column(column_id)
+        if not key or not self.track_table.exists(row_id):
+            return
+
+        values = self.track_table.item(row_id).get("values", ())
+        file_path = str(values[12]) if len(values) > 12 else ""
+        if not file_path:
+            return
+
+        editor_value = self.normalize_track_table_editor_value(key, value)
+        data = self.track_editor_data.setdefault(file_path, {})
+        data[key] = editor_value
+
+        if file_path != getattr(self, "_track_details_path", None):
+            return
+
+        if key == "name":
+            self.td_name_var.set(editor_value)
+        elif key == "artist":
+            self.td_artist_var.set(editor_value)
+        elif key == "download_desc":
+            self.td_download_desc_var.set(editor_value)
+        elif key == "price":
+            self.td_price_var.set(editor_value)
+        elif key == "nyp":
+            self.td_nyp_var.set(editor_value)
+        elif key == "isrc":
+            self.td_isrc_var.set(editor_value)
+
     def get_track_table_column_id_from_event_column(self, event_column):
         """Map a Treeview event column like #2 to the underlying column id."""
         if not event_column or not str(event_column).startswith("#"):
@@ -4586,6 +4636,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 continue
             values[column_index] = new_value.strip()
             self.track_table.item(row_id, values=tuple(values))
+            self.sync_track_editor_data_from_table_cell(row_id, column_id, values[column_index])
             changed += 1
 
         self.maybe_auto_fit_track_columns()
@@ -4635,6 +4686,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 new_values = list(current_values)
                 new_values[col_index] = new_value
                 self.track_table.item(item, values=tuple(new_values))
+                self.sync_track_editor_data_from_table_cell(item, column_id, new_value)
                 self.maybe_auto_fit_track_columns()
                 self.sync_track_table_to_current_album()
             entry.destroy()
