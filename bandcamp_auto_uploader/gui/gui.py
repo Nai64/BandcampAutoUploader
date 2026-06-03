@@ -151,8 +151,6 @@ def resize_rgba_without_edge_halo(image, max_size):
 
 def show_startup_intro(root, launch_callback):
     """Show a short startup intro while the main UI is created."""
-    from bandcamp_auto_uploader.gui.common import set_window_redraw
-
     root.withdraw()
 
     splash_path = get_splash_image_path()
@@ -225,8 +223,6 @@ def show_startup_intro(root, launch_callback):
     splash.deiconify()
     splash.lift()
     splash.update_idletasks()
-    splash_started_at = time.monotonic()
-    startup_state = {"ready": False, "error": None}
 
     def update_progress(fraction, label=None):
         if progress is not None:
@@ -244,57 +240,31 @@ def show_startup_intro(root, launch_callback):
         except tk.TclError:
             pass
 
-    def settle_hidden_app():
-        root.withdraw()
-        for _ in range(3):
-            root.update_idletasks()
+    def dismiss_splash():
+        try:
+            splash.attributes("-topmost", False)
+        except tk.TclError:
+            pass
+        splash.destroy()
+        root.after(10, build_app)
 
-    def finish_startup():
-        if startup_state["error"] is not None:
+    def build_app():
+        try:
+            app = launch_callback()
+            root._bandcamp_uploader_app = app
+            root.update_idletasks()
+            reveal_app()
+        except Exception as exc:
             try:
                 if splash.winfo_exists():
                     splash.destroy()
             except tk.TclError:
                 pass
             root.deiconify()
-            messagebox.showerror(
-                "Startup Error",
-                f"Failed to start Bandcamp Auto Uploader:\n\n{startup_state['error']}"
-            )
-            raise startup_state["error"]
+            messagebox.showerror("Startup Error", f"Failed to start Bandcamp Auto Uploader:\n\n{exc}")
+            raise
 
-        try:
-            splash.attributes("-topmost", False)
-        except tk.TclError:
-            pass
-        splash.destroy()
-        root.after(10, reveal_app)
-
-    def dismiss_splash():
-        if not startup_state["ready"] and startup_state["error"] is None:
-            splash.after(25, dismiss_splash)
-            return
-        finish_startup()
-
-    def build_app_in_background():
-        try:
-            update_progress(0.35, "Building interface...")
-            root.withdraw()
-            set_window_redraw(root, False)
-            app = launch_callback()
-            root._bandcamp_uploader_app = app
-            update_progress(0.82, "Applying theme...")
-            settle_hidden_app()
-            startup_state["ready"] = True
-        except Exception as exc:
-            startup_state["error"] = exc
-        finally:
-            set_window_redraw(root, True)
-            root.withdraw()
-            elapsed_ms = int((time.monotonic() - splash_started_at) * 1000)
-            splash.after(max(0, 650 - elapsed_ms), dismiss_splash)
-
-    splash.after(50, build_app_in_background)
+    splash.after(650, dismiss_splash)
 
 
 class BandcampUploaderGUI(SettingsMixin, LogsMixin):
