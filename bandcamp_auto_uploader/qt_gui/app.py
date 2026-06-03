@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from bandcamp_auto_uploader import __version__
-from bandcamp_auto_uploader.config import Config, load_config
+from bandcamp_auto_uploader.config import Config, load_config, save_config
 from bandcamp_auto_uploader.qt_gui.formatting import (
     format_price,
     normalize_price,
@@ -15,8 +15,8 @@ from bandcamp_auto_uploader.qt_gui.formatting import (
 from bandcamp_auto_uploader.upload import Album, CoverArt
 
 try:
-    from PySide6.QtCore import Qt
-    from PySide6.QtGui import QAction, QPixmap
+    from PySide6.QtCore import Qt, QUrl
+    from PySide6.QtGui import QAction, QDesktopServices, QPixmap
     from PySide6.QtWidgets import (
         QApplication,
         QAbstractItemView,
@@ -33,6 +33,7 @@ try:
         QMainWindow,
         QMessageBox,
         QPlainTextEdit,
+        QProgressBar,
         QPushButton,
         QScrollArea,
         QSplitter,
@@ -125,46 +126,107 @@ class QtUploaderWindow(QMainWindow):
         self.menuBar().addMenu("File").addAction(open_action)
 
         central = QWidget()
-        root_layout = QHBoxLayout(central)
-        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout = QVBoxLayout(central)
+        root_layout.setContentsMargins(10, 10, 10, 10)
+        root_layout.setSpacing(8)
+
+        root_layout.addWidget(self._build_top_bar())
 
         splitter = QSplitter(Qt.Horizontal)
-        root_layout.addWidget(splitter)
+        root_layout.addWidget(splitter, 1)
 
-        splitter.addWidget(self._build_sidebar())
-        splitter.addWidget(self._build_content())
-        splitter.setSizes([360, 820])
+        splitter.addWidget(self._build_details_panel())
+        splitter.addWidget(self._build_album_preview_panel())
+        splitter.addWidget(self._build_right_panel())
+        splitter.setSizes([320, 610, 300])
+
+        root_layout.addWidget(self._build_bottom_bar())
 
         self.setCentralWidget(central)
         self.statusBar().showMessage("Qt migration preview ready")
 
-    def _build_sidebar(self):
+    def _build_top_bar(self):
+        top_bar = QWidget()
+        top_bar.setObjectName("topBar")
+        layout = QHBoxLayout(top_bar)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+
+        artist_group = QGroupBox("Artist / Band")
+        artist_layout = QVBoxLayout(artist_group)
+        self.artist_combo = QComboBox()
+        self.artist_combo.setEditable(False)
+        self.artist_combo.addItem("No artist selected")
+        artist_layout.addWidget(self.artist_combo)
+        artist_buttons = QHBoxLayout()
+
+        self.load_cookies_button = QPushButton("Load Cookies")
+        self.load_cookies_button.clicked.connect(self.load_cookies_file)
+        self.refresh_artists_button = QPushButton("Refresh Artists")
+        self.refresh_artists_button.clicked.connect(self.show_artist_placeholder)
+        artist_buttons.addWidget(self.refresh_artists_button)
+        artist_buttons.addWidget(self.load_cookies_button)
+        artist_layout.addLayout(artist_buttons)
+        layout.addWidget(artist_group, 1)
+
+        album_group = QGroupBox("Album Folder")
+        album_layout = QVBoxLayout(album_group)
+
+        self.album_path_edit = QLineEdit()
+        self.album_path_edit.setPlaceholderText("Album directory")
+        album_layout.addWidget(self.album_path_edit)
+
+        album_buttons = QHBoxLayout()
+        browse_button = QPushButton("Browse")
+        browse_button.clicked.connect(self.browse_album)
+        album_buttons.addWidget(browse_button)
+        open_folder_button = QPushButton("Open Folder")
+        open_folder_button.clicked.connect(self.open_album_folder)
+        album_buttons.addWidget(open_folder_button)
+        preview_button = QPushButton("Reload Album")
+        preview_button.clicked.connect(self.preview_album)
+        album_buttons.addWidget(preview_button)
+        album_layout.addLayout(album_buttons)
+        layout.addWidget(album_group, 1)
+        return top_bar
+
+    def _build_bottom_bar(self):
+        bottom_bar = QWidget()
+        bottom_bar.setObjectName("bottomBar")
+        layout = QHBoxLayout(bottom_bar)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        preferences_button = QPushButton("Preferences")
+        preferences_button.clicked.connect(self.show_preferences_placeholder)
+        layout.addWidget(preferences_button)
+
+        self.upload_button = QPushButton("UPLOAD ALBUM")
+        self.upload_button.setObjectName("primaryButton")
+        self.upload_button.setEnabled(False)
+        self.upload_button.clicked.connect(self.show_upload_placeholder)
+        layout.addWidget(self.upload_button, 1)
+
+        self.cancel_upload_button = QPushButton("Cancel Upload")
+        self.cancel_upload_button.setEnabled(False)
+        self.cancel_upload_button.clicked.connect(self.show_cancel_placeholder)
+        layout.addWidget(self.cancel_upload_button, 1)
+        return bottom_bar
+
+    def _build_details_panel(self):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.NoFrame)
 
-        sidebar = QFrame()
-        sidebar.setObjectName("sidebar")
-        layout = QVBoxLayout(sidebar)
+        panel = QFrame()
+        panel.setObjectName("detailsPanel")
+        layout = QVBoxLayout(panel)
         layout.setContentsMargins(14, 14, 14, 14)
         layout.setSpacing(10)
 
-        title = QLabel("Album Details")
+        title = QLabel("Album / Track Details")
         title.setObjectName("sectionTitle")
         layout.addWidget(title)
-
-        self.album_path_edit = QLineEdit()
-        self.album_path_edit.setPlaceholderText("Album folder")
-        layout.addWidget(self.album_path_edit)
-
-        path_buttons = QHBoxLayout()
-        browse_button = QPushButton("Browse")
-        browse_button.clicked.connect(self.browse_album)
-        path_buttons.addWidget(browse_button)
-        preview_button = QPushButton("Preview")
-        preview_button.clicked.connect(self.preview_album)
-        path_buttons.addWidget(preview_button)
-        layout.addLayout(path_buttons)
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
@@ -226,31 +288,7 @@ class QtUploaderWindow(QMainWindow):
         layout.addWidget(QLabel("Credits"))
         layout.addWidget(self.credits_edit)
 
-        cover_group = QGroupBox("Cover Art")
-        cover_layout = QVBoxLayout(cover_group)
-        self.cover_preview = QLabel("No cover art")
-        self.cover_preview.setObjectName("coverPreview")
-        self.cover_preview.setAlignment(Qt.AlignCenter)
-        self.cover_preview.setMinimumSize(180, 180)
-        self.cover_preview.setMaximumHeight(220)
-        cover_layout.addWidget(self.cover_preview)
-        self.cover_path_edit = QLineEdit()
-        self.cover_path_edit.setPlaceholderText("Cover image path")
-        self.cover_path_edit.editingFinished.connect(self.resolve_cover_path_edit)
-        cover_layout.addWidget(self.cover_path_edit)
-        cover_buttons = QHBoxLayout()
-        browse_cover_button = QPushButton("Browse")
-        browse_cover_button.clicked.connect(self.browse_cover)
-        cover_buttons.addWidget(browse_cover_button)
-        detect_cover_button = QPushButton("Auto")
-        detect_cover_button.clicked.connect(self.auto_detect_cover)
-        cover_buttons.addWidget(detect_cover_button)
-        clear_cover_button = QPushButton("Clear")
-        clear_cover_button.clicked.connect(self.clear_cover)
-        cover_buttons.addWidget(clear_cover_button)
-        cover_layout.addLayout(cover_buttons)
-        layout.addWidget(cover_group)
-
+        layout.addWidget(self._build_track_details())
         layout.addStretch(1)
 
         self.album_price_edit.editingFinished.connect(lambda: self.sanitize_price_edit(self.album_price_edit, "0"))
@@ -282,17 +320,17 @@ class QtUploaderWindow(QMainWindow):
         ):
             checkbox.toggled.connect(lambda _checked: self.apply_album_details_to_model())
 
-        scroll.setWidget(sidebar)
+        scroll.setWidget(panel)
         return scroll
 
-    def _build_content(self):
+    def _build_album_preview_panel(self):
         content = QWidget()
         layout = QVBoxLayout(content)
-        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
 
         header_row = QHBoxLayout()
-        title = QLabel("Tracks")
+        title = QLabel("Album Preview")
         title.setObjectName("sectionTitle")
         header_row.addWidget(title)
         header_row.addStretch(1)
@@ -319,9 +357,59 @@ class QtUploaderWindow(QMainWindow):
         self.track_table.itemSelectionChanged.connect(self.load_selected_track_details)
         layout.addWidget(self.track_table, 1)
 
-        details = self._build_track_details()
-        layout.addWidget(details)
         return content
+
+    def _build_right_panel(self):
+        right_panel = QWidget()
+        layout = QVBoxLayout(right_panel)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        layout.addWidget(self._build_cover_panel())
+        layout.addWidget(self._build_progress_panel(), 1)
+        return right_panel
+
+    def _build_cover_panel(self):
+        cover_group = QGroupBox("Cover Art")
+        cover_layout = QVBoxLayout(cover_group)
+        self.cover_preview = QLabel("No cover art")
+        self.cover_preview.setObjectName("coverPreview")
+        self.cover_preview.setAlignment(Qt.AlignCenter)
+        self.cover_preview.setMinimumSize(220, 220)
+        self.cover_preview.setMaximumHeight(260)
+        cover_layout.addWidget(self.cover_preview)
+        self.cover_path_edit = QLineEdit()
+        self.cover_path_edit.setPlaceholderText("Cover image path")
+        self.cover_path_edit.editingFinished.connect(self.resolve_cover_path_edit)
+        cover_layout.addWidget(self.cover_path_edit)
+        cover_buttons = QHBoxLayout()
+        browse_cover_button = QPushButton("Browse")
+        browse_cover_button.clicked.connect(self.browse_cover)
+        cover_buttons.addWidget(browse_cover_button)
+        detect_cover_button = QPushButton("Auto")
+        detect_cover_button.clicked.connect(self.auto_detect_cover)
+        cover_buttons.addWidget(detect_cover_button)
+        clear_cover_button = QPushButton("Clear")
+        clear_cover_button.clicked.connect(self.clear_cover)
+        cover_buttons.addWidget(clear_cover_button)
+        cover_layout.addLayout(cover_buttons)
+        return cover_group
+
+    def _build_progress_panel(self):
+        progress_group = QGroupBox("Progress")
+        layout = QVBoxLayout(progress_group)
+        self.progress_rows: list[tuple[QLabel, QLabel, QProgressBar]] = []
+        self.progress_placeholder = QLabel("No upload in progress")
+        self.progress_placeholder.setObjectName("mutedLabel")
+        self.progress_placeholder.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.progress_placeholder)
+        self.progress_list = QWidget()
+        self.progress_list_layout = QVBoxLayout(self.progress_list)
+        self.progress_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.progress_list_layout.setSpacing(6)
+        layout.addWidget(self.progress_list)
+        layout.addStretch(1)
+        return progress_group
 
     def _build_track_details(self):
         group = QGroupBox("Details")
@@ -368,6 +456,55 @@ class QtUploaderWindow(QMainWindow):
         self.album_path_edit.setText(folder)
         self.preview_album()
 
+    def load_cookies_file(self):
+        filename, _selected_filter = QFileDialog.getOpenFileName(
+            self,
+            "Load Cookies File",
+            "",
+            "Cookie files (*.txt);;All files (*.*)",
+        )
+        if not filename:
+            return
+        self.config.cookies_file = filename
+        save_config(self.config)
+        self.artist_combo.clear()
+        self.artist_combo.addItem("Refresh artists to load from cookies")
+        self.statusBar().showMessage(f"Cookies file selected: {Path(filename).name}")
+
+    def show_artist_placeholder(self):
+        if self.config.cookies_file:
+            self.artist_combo.clear()
+            self.artist_combo.addItem("Artist loading pending migration")
+        QMessageBox.information(
+            self,
+            "Artists",
+            "Artist loading will be migrated after the preview/edit workflow is stable.",
+        )
+
+    def show_preferences_placeholder(self):
+        QMessageBox.information(
+            self,
+            "Preferences",
+            "Preferences will be migrated after the upload preview surface is stable.",
+        )
+
+    def show_upload_placeholder(self):
+        QMessageBox.information(
+            self,
+            "Upload Album",
+            "Album upload is still handled by the Tkinter app while the Qt migration catches up.",
+        )
+
+    def show_cancel_placeholder(self):
+        self.statusBar().showMessage("No Qt upload is running")
+
+    def open_album_folder(self):
+        album_path = Path(self.album_path_edit.text().strip())
+        if not album_path.is_dir():
+            QMessageBox.warning(self, "Album Folder", "Choose a valid album folder first.")
+            return
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(album_path)))
+
     def preview_album(self):
         path_text = self.album_path_edit.text().strip()
         if not path_text:
@@ -388,6 +525,7 @@ class QtUploaderWindow(QMainWindow):
         self.current_album = album
         self.load_album_details(album, album_path)
         self.populate_track_table(album)
+        self.prepare_progress_from_album(album)
         self.statusBar().showMessage(f"Loaded {len(album.tracks)} track(s)")
 
     def load_album_details(self, album: Album, album_path: Path):
@@ -509,6 +647,46 @@ class QtUploaderWindow(QMainWindow):
         self.cover_preview.setPixmap(scaled)
         self.cover_preview.setText("")
 
+    def prepare_progress_from_album(self, album: Album):
+        self.clear_progress_rows()
+        if not album.tracks:
+            self.progress_placeholder.setText("No tracks queued")
+            self.progress_placeholder.show()
+            return
+        self.progress_placeholder.hide()
+        for index, track in enumerate(album.tracks, 1):
+            self.add_progress_row(f"{index}. {track.track_data.title or track.path.name}", "Queued", 0)
+
+    def clear_progress_rows(self):
+        while self.progress_list_layout.count():
+            item = self.progress_list_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        self.progress_rows = []
+        self.progress_placeholder.setText("No upload in progress")
+        self.progress_placeholder.show()
+
+    def add_progress_row(self, title: str, status: str, value: int):
+        row = QWidget()
+        layout = QVBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(2)
+        header = QHBoxLayout()
+        title_label = QLabel(title)
+        title_label.setObjectName("progressTitle")
+        status_label = QLabel(status)
+        status_label.setObjectName("mutedLabel")
+        header.addWidget(title_label, 1)
+        header.addWidget(status_label)
+        layout.addLayout(header)
+        progress = QProgressBar()
+        progress.setRange(0, 100)
+        progress.setValue(max(0, min(100, value)))
+        layout.addWidget(progress)
+        self.progress_list_layout.addWidget(row)
+        self.progress_rows.append((title_label, status_label, progress))
+
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
@@ -618,6 +796,7 @@ class QtUploaderWindow(QMainWindow):
             tracks.append(track)
         self.current_album.tracks = tracks
         self.renumber_table()
+        self.prepare_progress_from_album(self.current_album)
         self.statusBar().showMessage(f"{len(tracks)} track(s) in preview")
 
     def renumber_table(self):
@@ -753,13 +932,23 @@ def apply_preview_style(app: QApplication):
             font-family: Segoe UI;
             font-size: 9pt;
         }
-        QFrame#sidebar {
+        QWidget#topBar, QWidget#bottomBar {
+            background: #f6f7f8;
+        }
+        QFrame#detailsPanel {
             background: #ffffff;
-            border-right: 1px solid #d8dee6;
+            border: 1px solid #d8dee6;
+            border-radius: 4px;
         }
         QLabel#sectionTitle {
             font-weight: 600;
             font-size: 11pt;
+        }
+        QLabel#mutedLabel {
+            color: #6b7280;
+        }
+        QLabel#progressTitle {
+            font-weight: 600;
         }
         QGroupBox {
             border: 1px solid #d8dee6;
@@ -795,12 +984,39 @@ def apply_preview_style(app: QApplication):
             background: #eef5ff;
             border-color: #6aa3e8;
         }
+        QPushButton:disabled {
+            background: #eef1f4;
+            border-color: #d4dbe3;
+            color: #8a95a3;
+        }
+        QPushButton#primaryButton {
+            background: #1f6feb;
+            border-color: #1f6feb;
+            color: #ffffff;
+            font-weight: 700;
+        }
+        QPushButton#primaryButton:disabled {
+            background: #a9bfdc;
+            border-color: #a9bfdc;
+            color: #f5f7fb;
+        }
         QHeaderView::section {
             background: #eef1f4;
             border: 0;
             border-right: 1px solid #d4dbe3;
             padding: 5px;
             font-weight: 600;
+        }
+        QProgressBar {
+            background: #edf1f5;
+            border: 1px solid #d4dbe3;
+            border-radius: 4px;
+            height: 12px;
+            text-align: center;
+        }
+        QProgressBar::chunk {
+            background: #2680eb;
+            border-radius: 3px;
         }
         """
     )
