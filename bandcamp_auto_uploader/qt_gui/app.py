@@ -328,8 +328,8 @@ class QtUploaderWindow(QMainWindow):
         panel = QFrame()
         panel.setObjectName("detailsPanel")
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(3)
 
         title = QLabel("Album / Track Details")
         title.setObjectName("sectionTitle")
@@ -350,13 +350,13 @@ class QtUploaderWindow(QMainWindow):
     def _build_album_details(self):
         group = QGroupBox("Album Details")
         outer_layout = QVBoxLayout(group)
-        outer_layout.setContentsMargins(6, 10, 6, 6)
-        outer_layout.setSpacing(4)
+        outer_layout.setContentsMargins(4, 8, 4, 4)
+        outer_layout.setSpacing(2)
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        form.setHorizontalSpacing(6)
-        form.setVerticalSpacing(3)
+        form.setHorizontalSpacing(4)
+        form.setVerticalSpacing(2)
 
         name_row = QWidget()
         name_layout = QHBoxLayout(name_row)
@@ -494,13 +494,13 @@ class QtUploaderWindow(QMainWindow):
     def _build_track_details(self):
         group = QGroupBox("Track Details")
         outer_layout = QVBoxLayout(group)
-        outer_layout.setContentsMargins(6, 10, 6, 6)
-        outer_layout.setSpacing(4)
+        outer_layout.setContentsMargins(4, 8, 4, 4)
+        outer_layout.setSpacing(2)
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        form.setHorizontalSpacing(6)
-        form.setVerticalSpacing(3)
+        form.setHorizontalSpacing(4)
+        form.setVerticalSpacing(2)
 
         td_name_row = QWidget()
         td_name_layout = QHBoxLayout(td_name_row)
@@ -734,7 +734,7 @@ class QtUploaderWindow(QMainWindow):
 
     def _build_cover_panel(self):
         group = QGroupBox("Cover Art")
-        rl = QHBoxLayout(group); rl.setContentsMargins(6, 10, 6, 6); rl.setSpacing(7)
+        rl = QHBoxLayout(group); rl.setContentsMargins(0, 0, 0, 0); rl.setSpacing(0)
         self.cover_preview = QLabel("No cover art\n\nClick Browse")
         self.cover_preview.setObjectName("coverPreview")
         self.cover_preview.setAlignment(Qt.AlignCenter)
@@ -742,13 +742,12 @@ class QtUploaderWindow(QMainWindow):
         self.cover_preview.setContextMenuPolicy(Qt.CustomContextMenu)
         self.cover_preview.customContextMenuRequested.connect(self._show_cover_context_menu)
         rl.addWidget(self.cover_preview)
-        c = QWidget(); cl = QVBoxLayout(c); cl.setContentsMargins(0, 0, 0, 0); cl.setSpacing(3)
+        c = QWidget(); cl = QVBoxLayout(c); cl.setContentsMargins(0, 0, 0, 0); cl.setSpacing(0)
         self.cover_path_edit = QLineEdit()
         self.cover_path_edit.setPlaceholderText("Cover image path")
         self.cover_path_edit.editingFinished.connect(self.resolve_cover_path_edit)
         cl.addWidget(self.cover_path_edit)
-        bf = QWidget(); bg = QGridLayout(bf); bg.setSpacing(3)
-        bg.setColumnStretch(0, 1); bg.setColumnStretch(1, 1)
+        bf = QWidget(); bg = QGridLayout(bf); bg.setContentsMargins(0, 0, 0, 0); bg.setSpacing(0)
         for i, (t, m) in enumerate([("Browse", self.browse_cover), ("View", self.view_cover_art),
                                      ("Library", self.manage_cover_art_library), ("Detect", self.detect_cover_from_tracks)]):
             b = QPushButton(t); b.clicked.connect(m)
@@ -758,7 +757,7 @@ class QtUploaderWindow(QMainWindow):
         self.scale_cover_check.setChecked(getattr(self.config, "always_auto_scale_cover", True))
         self.scale_cover_check.toggled.connect(self._on_scale_cover_changed)
         cl.addWidget(self.scale_cover_check)
-        sr = QHBoxLayout(); sr.setSpacing(4)
+        sr = QHBoxLayout(); sr.setSpacing(0); sr.setContentsMargins(0, 0, 0, 0)
         sr.addWidget(QLabel("Size:"))
         self.scale_size_combo = QComboBox()
         self.scale_size_combo.addItems(["1400x1400", "2000x2000", "3000x3000"])
@@ -1341,7 +1340,7 @@ class QtUploaderWindow(QMainWindow):
         scroll.setFrameShape(QFrame.NoFrame)
         inner = QWidget()
         il = QVBoxLayout(inner)
-        il.setSpacing(2)
+        il.setSpacing(4)
         for label, attr, default in items:
             cb = QCheckBox(label)
             cb.setChecked(getattr(self.config, attr, default))
@@ -3518,14 +3517,14 @@ def apply_preview_style(app: QApplication):
         }
         QGroupBox {
             border: 1px solid #45475a;
-            border-radius: 4px;
-            margin-top: 7px;
-            padding: 6px;
+            border-radius: 3px;
+            margin-top: 5px;
+            padding: 2px;
             font-weight: 600;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
-            left: 7px;
+            left: 5px;
             padding: 0 3px;
         }
         QLabel#coverPreview {
