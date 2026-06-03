@@ -7990,7 +7990,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
                 album.album_data.nyp = int(self.album_nyp_var.get())
                 album.album_data.require_email = int(self.album_require_email_var.get())
-                album.album_data.public = int(self.album_public_var.get())
+                # Bandcamp's edit payload uses inverted visibility semantics here.
+                album.album_data.public = 0 if self.album_public_var.get() else 1
                 album.album_data.pro = int(self.album_pro_var.get())
 
                 composer = self.album_composer_var.get().strip()
