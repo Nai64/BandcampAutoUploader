@@ -34,6 +34,18 @@
 
 ---
 
+## PySide Migration Preview
+
+This branch includes an experimental PySide6 shell that can be launched separately from the stable Tkinter GUI:
+
+```bash
+python -m bandcamp_auto_uploader.qt_gui
+```
+
+It currently previews album folders and track metadata using the existing upload model. The Tkinter GUI remains the production app while features move across gradually.
+
+---
+
 ## What You Can Do
 
 | Feature | What it means for you |
