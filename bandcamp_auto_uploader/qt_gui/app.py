@@ -675,6 +675,8 @@ class QtUploaderWindow(QMainWindow):
         self.track_table.verticalHeader().setVisible(False)
         self.track_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.track_table.horizontalHeader().setStretchLastSection(True)
+        self.track_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.track_table.customContextMenuRequested.connect(self._show_track_context_menu)
         self.track_table.cellChanged.connect(self.on_track_cell_changed)
         self.track_table.itemSelectionChanged.connect(self.on_track_select)
         layout.addWidget(self.track_table, 1)
@@ -2440,6 +2442,251 @@ class QtUploaderWindow(QMainWindow):
     def _show_cover_context_menu(self, pos):
         m = QMenu(self); m.addAction("Clear Cover Art", lambda: self.set_cover_path(None))
         m.addAction("View Cover Art", self.view_cover_art); m.exec(self.cover_preview.mapToGlobal(pos))
+
+    def _show_track_context_menu(self, pos):
+        row = self.track_table.indexAt(pos).row()
+        if row >= 0:
+            self.track_table.selectRow(row)
+
+        menu = QMenu(self)
+
+        def a(label, callback, enabled=True, icon=None):
+            action = QAction(label, self)
+            if icon:
+                action.setIcon(QIcon(icon))
+            action.setEnabled(enabled)
+            action.triggered.connect(callback)
+            return action
+
+        sep = False
+
+        if row >= 0:
+            if self.config.context_menu_play:
+                menu.addAction(a("Play", self._play_selected_track))
+                sep = True
+
+            if getattr(self.config, 'context_menu_lock_unlock', True):
+                if sep:
+                    menu.addSeparator()
+                menu.addAction(a("Lock/Unlock", self._lock_unlock_track))
+                sep = False
+
+            if self.config.context_menu_remove_track:
+                if not sep:
+                    menu.addSeparator()
+                    sep = False
+                menu.addAction(a("Remove Track", self.remove_selected_track))
+
+            moves = []
+            if self.config.context_menu_move_up:
+                moves.append(("Move Up", self.move_selected_track_up))
+            if self.config.context_menu_move_down:
+                moves.append(("Move Down", self.move_selected_track_down))
+            if getattr(self.config, 'context_menu_move_to_top', True):
+                moves.append(("Move to Top", self._move_selected_to_top))
+            if getattr(self.config, 'context_menu_move_to_bottom', True):
+                moves.append(("Move to Bottom", self._move_selected_to_bottom))
+            if moves:
+                if not getattr(self.config, 'context_menu_remove_dividers', False):
+                    menu.addSeparator()
+                for label, cb in moves:
+                    menu.addAction(a(label, cb))
+
+            file_ops = []
+            if self.config.context_menu_open_file:
+                file_ops.append(("Open File Location", self._open_track_file_location))
+            if self.config.context_menu_replace_file:
+                file_ops.append(("Replace File", self._replace_track_file))
+            if getattr(self.config, 'context_menu_extract_cover_art', True):
+                file_ops.append(("Extract Cover Art", self._extract_cover_from_track))
+            if getattr(self.config, 'context_menu_set_track_cover_as_album_cover', True):
+                file_ops.append(("Set Track Cover as Album Cover", self._set_track_cover_as_album_cover))
+            if getattr(self.config, 'context_menu_extract_track_info', True):
+                file_ops.append(("Extract Track Information", self._extract_track_information))
+            if file_ops:
+                if not getattr(self.config, 'context_menu_remove_dividers', False):
+                    menu.addSeparator()
+                for label, cb in file_ops:
+                    menu.addAction(a(label, cb))
+
+            meta_ops = []
+            if self.config.context_menu_copy_metadata:
+                meta_ops.append(("Copy Metadata", self._copy_track_metadata))
+            if self.config.context_menu_paste_metadata:
+                meta_ops.append(("Paste Metadata", self._paste_track_metadata))
+            if getattr(self.config, 'context_menu_revert_to_original', True):
+                meta_ops.append(("Revert to Original", self._revert_track_to_original))
+            if getattr(self.config, 'context_menu_clear_metadata', True):
+                meta_ops.append(("Clear Metadata", self._clear_track_metadata))
+            if meta_ops:
+                if not getattr(self.config, 'context_menu_remove_dividers', False):
+                    menu.addSeparator()
+                for label, cb in meta_ops:
+                    menu.addAction(a(label, cb))
+
+            if getattr(self.config, 'context_menu_upload_as_single', True):
+                if not getattr(self.config, 'context_menu_remove_dividers', False):
+                    menu.addSeparator()
+                menu.addAction(a("Upload as Single", self._upload_selected_as_single))
+
+        session_ops = []
+        if getattr(self.config, 'context_menu_extract_tracklist', True):
+            session_ops.append(("Extract Tracklist", self._extract_tracklist))
+        if getattr(self.config, 'context_menu_open_session', True):
+            session_ops.append(("Open session.txt", self._open_session_file))
+        if getattr(self.config, 'context_menu_undo', True):
+            session_ops.append(("Undo", self._undo_track_action))
+        if getattr(self.config, 'context_menu_redo', True):
+            session_ops.append(("Redo", self._redo_track_action))
+        if session_ops:
+            if not getattr(self.config, 'context_menu_remove_dividers', False):
+                menu.addSeparator()
+            for label, cb in session_ops:
+                menu.addAction(a(label, cb))
+
+        global_ops = []
+        if self.config.context_menu_randomize:
+            global_ops.append(("Randomize", self._shuffle_tracks))
+        if getattr(self.config, 'context_menu_smart_randomize', True):
+            global_ops.append(("Smart Randomize", self._smart_randomize_tracks))
+        if global_ops:
+            if not getattr(self.config, 'context_menu_remove_dividers', False):
+                menu.addSeparator()
+            for label, cb in global_ops:
+                menu.addAction(a(label, cb))
+
+        if getattr(self.config, 'context_menu_sort_by', True) and self.track_table.rowCount() > 0:
+            if not getattr(self.config, 'context_menu_remove_dividers', False):
+                menu.addSeparator()
+            sort_menu = QMenu("Sort By...", self)
+            for sort_label, sort_attr in [
+                ("File Size", "sort_by_file_size"),
+                ("Length", "sort_by_length"),
+                ("Alphabetically", "sort_by_alphabetically"),
+                ("Artist Name", "sort_by_artist"),
+                ("Track Number", "sort_by_track_number"),
+                ("Metadata Track #", "sort_by_metadata_track_number"),
+                ("Extension", "sort_by_extension"),
+                ("Price", "sort_by_price"),
+                ("Year", "sort_by_year"),
+                ("Genre", "sort_by_genre"),
+                ("Bitrate", "sort_by_bitrate"),
+                ("Sample Rate", "sort_by_sample_rate"),
+                ("Channels", "sort_by_channels"),
+                ("Bit Depth", "sort_by_bit_depth"),
+                ("Album Metadata", "sort_by_album"),
+                ("Album Artist Metadata", "sort_by_album_artist"),
+                ("Composer", "sort_by_composer"),
+                ("ISRC", "sort_by_isrc"),
+            ]:
+                if getattr(self.config, sort_attr, True):
+                    sort_menu.addAction(a(sort_label, lambda a=sort_attr: self._sort_tracks_by(a)))
+            if sort_menu.actions():
+                menu.addMenu(sort_menu)
+
+        clear_ops = []
+        if getattr(self.config, 'context_menu_clear_all_metadata', True):
+            clear_ops.append(("Clear All Metadata", self._clear_all_track_metadata))
+        if self.config.context_menu_clear_all:
+            clear_ops.append(("Clear All Tracks", self._clear_all_tracks))
+        if clear_ops:
+            if not getattr(self.config, 'context_menu_remove_dividers', False):
+                menu.addSeparator()
+            for label, cb in clear_ops:
+                menu.addAction(a(label, cb))
+
+        if menu.actions():
+            menu.exec(self.track_table.viewport().mapToGlobal(pos))
+
+    # ── Track context menu action stubs ──
+
+    def _play_selected_track(self):
+        QMessageBox.information(self, "Play", "Audio playback not yet implemented in Qt preview.")
+
+    def _lock_unlock_track(self):
+        QMessageBox.information(self, "Lock/Unlock", "Track locking not yet implemented in Qt preview.")
+
+    def _move_selected_to_top(self):
+        row = self.selected_row()
+        if row <= 0:
+            return
+        for _ in range(row):
+            self.swap_rows(row, row - 1)
+            row -= 1
+        self.track_table.selectRow(0)
+        self.sync_table_to_album()
+
+    def _move_selected_to_bottom(self):
+        row = self.selected_row()
+        last = self.track_table.rowCount() - 1
+        if row < 0 or row >= last:
+            return
+        for _ in range(last - row):
+            self.swap_rows(row, row + 1)
+            row += 1
+        self.track_table.selectRow(last)
+        self.sync_table_to_album()
+
+    def _open_track_file_location(self):
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(path)))
+
+    def _replace_track_file(self):
+        QMessageBox.information(self, "Replace File", "File replacement not yet implemented in Qt preview.")
+
+    def _extract_cover_from_track(self):
+        QMessageBox.information(self, "Extract Cover", "Cover extraction not yet implemented in Qt preview.")
+
+    def _set_track_cover_as_album_cover(self):
+        QMessageBox.information(self, "Set Cover", "Setting track cover as album cover not yet implemented in Qt preview.")
+
+    def _extract_track_information(self):
+        QMessageBox.information(self, "Track Info", "Track info extraction not yet implemented in Qt preview.")
+
+    def _copy_track_metadata(self):
+        QMessageBox.information(self, "Copy Metadata", "Metadata copy not yet implemented in Qt preview.")
+
+    def _paste_track_metadata(self):
+        QMessageBox.information(self, "Paste Metadata", "Metadata paste not yet implemented in Qt preview.")
+
+    def _revert_track_to_original(self):
+        QMessageBox.information(self, "Revert", "Revert to original not yet implemented in Qt preview.")
+
+    def _clear_track_metadata(self):
+        QMessageBox.information(self, "Clear Metadata", "Clear metadata not yet implemented in Qt preview.")
+
+    def _upload_selected_as_single(self):
+        QMessageBox.information(self, "Upload as Single", "Upload as single not yet implemented in Qt preview.")
+
+    def _extract_tracklist(self):
+        QMessageBox.information(self, "Tracklist", "Tracklist extraction not yet implemented in Qt preview.")
+
+    def _open_session_file(self):
+        QMessageBox.information(self, "Session", "Session file not yet implemented in Qt preview.")
+
+    def _undo_track_action(self):
+        QMessageBox.information(self, "Undo", "Undo not yet implemented in Qt preview.")
+
+    def _redo_track_action(self):
+        QMessageBox.information(self, "Redo", "Redo not yet implemented in Qt preview.")
+
+    def _shuffle_tracks(self):
+        QMessageBox.information(self, "Shuffle", "Shuffle not yet implemented in Qt preview.")
+
+    def _smart_randomize_tracks(self):
+        QMessageBox.information(self, "Smart Randomize", "Smart randomize not yet implemented in Qt preview.")
+
+    def _sort_tracks_by(self, sort_attr):
+        QMessageBox.information(self, "Sort", f"Sort by {sort_attr} not yet implemented in Qt preview.")
+
+    def _clear_all_track_metadata(self):
+        QMessageBox.information(self, "Clear All Metadata", "Clear all metadata not yet implemented in Qt preview.")
+
+    def _clear_all_tracks(self):
+        QMessageBox.information(self, "Clear All", "Clear all tracks not yet implemented in Qt preview.")
 
     def view_cover_art(self):
         if not self.cover_path or not self.cover_path.exists():
