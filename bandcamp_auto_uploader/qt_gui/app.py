@@ -200,6 +200,10 @@ class QtUploaderWindow(QMainWindow):
         self.toast_queue: queue.Queue = queue.Queue()
         self.upload_thread: threading.Thread | None = None
         self.upload_cancel_event = threading.Event()
+        self.locked_track_keys: set = set()
+        self._clipboard_track_data: dict | None = None
+        self._undo_stack: list[tuple[str, list, list]] = []
+        self._redo_stack: list[tuple[str, list, list]] = []
 
         self.progress_signal.connect(self.handle_upload_progress_event)
 
@@ -2598,18 +2602,52 @@ class QtUploaderWindow(QMainWindow):
         if menu.actions():
             menu.exec(self.track_table.viewport().mapToGlobal(pos))
 
-    # ── Track context menu action stubs ──
+    # ── Track context menu actions ──
+
+    def _push_undo(self, label: str):
+        rows = []
+        for r in range(self.track_table.rowCount()):
+            rows.append([self.table_text(r, c) for c in range(self.track_table.columnCount())])
+        self._undo_stack.append((label, rows, dict(self.track_editor_data)))
+        self._redo_stack.clear()
 
     def _play_selected_track(self):
-        QMessageBox.information(self, "Play", "Audio playback not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        if path and os.path.exists(path):
+            os.startfile(path)
 
     def _lock_unlock_track(self):
-        QMessageBox.information(self, "Lock/Unlock", "Track locking not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        if path in self.locked_track_keys:
+            self.locked_track_keys.discard(path)
+        else:
+            self._push_undo("Lock/Unlock")
+            self.locked_track_keys.add(path)
+        self._refresh_track_row_style(row)
+
+    def _refresh_track_row_style(self, row: int):
+        path = self.table_text(row, COL_PATH)
+        color = self.config.locked_track_highlight_color if path in self.locked_track_keys else ""
+        for col in range(self.track_table.columnCount()):
+            item = self.track_table.item(row, col)
+            if item:
+                item.setBackground(QColor(color) if color else QColor())
+
+    def _refresh_all_row_styles(self):
+        for row in range(self.track_table.rowCount()):
+            self._refresh_track_row_style(row)
 
     def _move_selected_to_top(self):
         row = self.selected_row()
         if row <= 0:
             return
+        self._push_undo("Move to Top")
         for _ in range(row):
             self.swap_rows(row, row - 1)
             row -= 1
@@ -2621,6 +2659,7 @@ class QtUploaderWindow(QMainWindow):
         last = self.track_table.rowCount() - 1
         if row < 0 or row >= last:
             return
+        self._push_undo("Move to Bottom")
         for _ in range(last - row):
             self.swap_rows(row, row + 1)
             row += 1
@@ -2635,58 +2674,367 @@ class QtUploaderWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(path)))
 
     def _replace_track_file(self):
-        QMessageBox.information(self, "Replace File", "File replacement not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        old_path = self.table_text(row, COL_PATH)
+        new_path, _ = QFileDialog.getOpenFileName(
+            self, "Replace Track File", os.path.dirname(old_path) if os.path.exists(old_path) else "",
+            "Audio Files (*.mp3 *.flac *.wav *.aiff *.ogg *.opus *.m4a *.wma);;All Files (*)"
+        )
+        if not new_path:
+            return
+        self._push_undo("Replace File")
+        self.set_table_text(row, COL_PATH, new_path)
+        try:
+            new_track = Track.from_file(Path(new_path), self.config)
+            data = new_track.track_data
+            self.set_table_text(row, COL_ARTIST, data.artist or "")
+            self.set_table_text(row, COL_TITLE, data.title or "")
+            self.set_table_text(row, COL_FORMAT, Path(new_path).suffix)
+        except Exception:
+            pass
+        if old_path in self.track_editor_data:
+            del self.track_editor_data[old_path]
+        self.sync_table_to_album()
 
     def _extract_cover_from_track(self):
-        QMessageBox.information(self, "Extract Cover", "Cover extraction not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        if not os.path.exists(path):
+            return
+        import mutagen
+        fd = mutagen.File(path)
+        if not fd:
+            QMessageBox.warning(self, "Extract Cover", "Could not read audio file.")
+            return
+        cd, mime = self._extract_cover_data(fd)
+        if not cd:
+            QMessageBox.information(self, "Extract Cover", "No embedded cover art found in this track.")
+            return
+        ext = ".png" if mime == "image/png" else ".jpg"
+        dest = Path(path).parent / f"cover{ext}"
+        dest.write_bytes(cd)
+        self.set_cover_path(dest)
 
     def _set_track_cover_as_album_cover(self):
-        QMessageBox.information(self, "Set Cover", "Setting track cover as album cover not yet implemented in Qt preview.")
+        self._extract_cover_from_track()
 
     def _extract_track_information(self):
-        QMessageBox.information(self, "Track Info", "Track info extraction not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        if not os.path.exists(path):
+            return
+        import mutagen
+        fd = mutagen.File(path)
+        if not fd:
+            QMessageBox.warning(self, "Track Info", "Could not read audio file.")
+            return
+        info = []
+        for key in sorted(fd.info.__dict__.keys()) if hasattr(fd.info, "__dict__") else []:
+            info.append(f"{key}: {getattr(fd.info, key)}")
+        tags = fd.tags if hasattr(fd, "tags") and fd.tags else {}
+        for key in sorted(tags.keys()):
+            info.append(f"{key}: {tags[key]}")
+        QMessageBox.information(self, f"Track Info — {Path(path).name}", "\n".join(info) if info else "No metadata found.")
 
     def _copy_track_metadata(self):
-        QMessageBox.information(self, "Copy Metadata", "Metadata copy not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        editor = self.track_editor_data.get(path, {})
+        self._clipboard_track_data = {
+            "artist": self.table_text(row, COL_ARTIST),
+            "title": self.table_text(row, COL_TITLE),
+            "comment": self.table_text(row, COL_COMMENT),
+            "price": self.table_text(row, COL_PRICE),
+            "nyp": self.table_text(row, COL_NYP),
+            **editor,
+        }
 
     def _paste_track_metadata(self):
-        QMessageBox.information(self, "Paste Metadata", "Metadata paste not yet implemented in Qt preview.")
+        if not self._clipboard_track_data:
+            QMessageBox.information(self, "Paste Metadata", "No metadata copied yet.")
+            return
+        row = self.selected_row()
+        if row < 0:
+            return
+        self._push_undo("Paste Metadata")
+        d = self._clipboard_track_data
+        if "artist" in d:
+            self.set_table_text(row, COL_ARTIST, d["artist"])
+        if "title" in d:
+            self.set_table_text(row, COL_TITLE, d["title"])
+        if "comment" in d:
+            self.set_table_text(row, COL_COMMENT, d["comment"])
+        if "price" in d:
+            self.set_table_text(row, COL_PRICE, d["price"])
+        if "nyp" in d:
+            self.set_table_text(row, COL_NYP, d["nyp"])
+        self.sync_table_to_album()
 
     def _revert_track_to_original(self):
-        QMessageBox.information(self, "Revert", "Revert to original not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        if path in self.track_editor_data:
+            self._push_undo("Revert to Original")
+            del self.track_editor_data[path]
+        if os.path.exists(path):
+            try:
+                new_track = Track.from_file(Path(path), self.config)
+                data = new_track.track_data
+                self.set_table_text(row, COL_ARTIST, data.artist or "")
+                self.set_table_text(row, COL_TITLE, data.title or "")
+                self.set_table_text(row, COL_LENGTH, "")
+                self.set_table_text(row, COL_PRICE, "0.00")
+                self.set_table_text(row, COL_NYP, "No")
+            except Exception:
+                pass
+        self._save_current_track_details()
+        self.sync_table_to_album()
 
     def _clear_track_metadata(self):
-        QMessageBox.information(self, "Clear Metadata", "Clear metadata not yet implemented in Qt preview.")
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        self._push_undo("Clear Metadata")
+        for col in EDITABLE_COLUMNS:
+            self.set_table_text(row, col, "")
+        if path in self.track_editor_data:
+            del self.track_editor_data[path]
+        self.sync_table_to_album()
 
     def _upload_selected_as_single(self):
-        QMessageBox.information(self, "Upload as Single", "Upload as single not yet implemented in Qt preview.")
+        if self.session is None:
+            self.setup_session()
+            if self.session is None:
+                QMessageBox.warning(self, "Session Required", "Set up a session first.")
+                return
+        row = self.selected_row()
+        if row < 0:
+            return
+        path = self.table_text(row, COL_PATH)
+        if self.current_album is None:
+            return
+        track = self.track_for_row(row)
+        if track is None:
+            return
+        from bandcamp_auto_uploader.upload import BandcampAlbumData
+        single_data = BandcampAlbumData()
+        single_data.title = self.table_text(row, COL_TITLE) or Path(path).stem
+        single_data.artist = self.table_text(row, COL_ARTIST) or ""
+        original_album = self.current_album
+        original_url = self.selected_artist_url
+        self.current_album = Album(single_data, [track])
+        self.start_upload()
+        self.current_album = original_album
+        self.selected_artist_url = original_url
 
     def _extract_tracklist(self):
-        QMessageBox.information(self, "Tracklist", "Tracklist extraction not yet implemented in Qt preview.")
+        if self.current_album is None:
+            return
+        lines = []
+        for row in range(self.track_table.rowCount()):
+            no = self.table_text(row, COL_NO)
+            title = self.table_text(row, COL_TITLE)
+            artist = self.table_text(row, COL_ARTIST)
+            length = self.table_text(row, COL_LENGTH)
+            parts = [f"{no}. {title}" if no else title]
+            if artist:
+                parts.append(f" — {artist}")
+            if length:
+                parts.append(f" ({length})")
+            lines.append("".join(parts))
+        text = "\n".join(lines)
+        path_str, _ = QFileDialog.getSaveFileName(self, "Save Tracklist", "tracklist.txt", "Text Files (*.txt)")
+        if path_str:
+            Path(path_str).write_text(text, encoding="utf-8")
 
     def _open_session_file(self):
-        QMessageBox.information(self, "Session", "Session file not yet implemented in Qt preview.")
+        if self._album_path_for_session and self._album_path_for_session.exists():
+            session_file = self._album_path_for_session / "session.txt"
+            if session_file.exists():
+                os.startfile(str(session_file))
+                return
+        QMessageBox.information(self, "Session", "No session file found for current album.")
 
     def _undo_track_action(self):
-        QMessageBox.information(self, "Undo", "Undo not yet implemented in Qt preview.")
+        if not self._undo_stack:
+            return
+        label, rows, editor = self._undo_stack.pop()
+        current_rows = []
+        for r in range(self.track_table.rowCount()):
+            current_rows.append([self.table_text(r, c) for c in range(self.track_table.columnCount())])
+        self._redo_stack.append((label, current_rows, dict(self.track_editor_data)))
+        self._loading_table = True
+        try:
+            self.track_table.setRowCount(0)
+            for row_data in rows:
+                r = self.track_table.rowCount()
+                self.track_table.insertRow(r)
+                for c, val in enumerate(row_data):
+                    item = QTableWidgetItem(val)
+                    if c not in EDITABLE_COLUMNS:
+                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    self.track_table.setItem(r, c, item)
+        finally:
+            self._loading_table = False
+        self.track_editor_data.clear()
+        self.track_editor_data.update(editor)
+        self.sync_table_to_album()
 
     def _redo_track_action(self):
-        QMessageBox.information(self, "Redo", "Redo not yet implemented in Qt preview.")
+        if not self._redo_stack:
+            return
+        label, rows, editor = self._redo_stack.pop()
+        current_rows = []
+        for r in range(self.track_table.rowCount()):
+            current_rows.append([self.table_text(r, c) for c in range(self.track_table.columnCount())])
+        self._undo_stack.append((label, current_rows, dict(self.track_editor_data)))
+        self._loading_table = True
+        try:
+            self.track_table.setRowCount(0)
+            for row_data in rows:
+                r = self.track_table.rowCount()
+                self.track_table.insertRow(r)
+                for c, val in enumerate(row_data):
+                    item = QTableWidgetItem(val)
+                    if c not in EDITABLE_COLUMNS:
+                        item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                    self.track_table.setItem(r, c, item)
+        finally:
+            self._loading_table = False
+        self.track_editor_data.clear()
+        self.track_editor_data.update(editor)
+        self.sync_table_to_album()
 
     def _shuffle_tracks(self):
-        QMessageBox.information(self, "Shuffle", "Shuffle not yet implemented in Qt preview.")
+        if self.track_table.rowCount() < 2:
+            return
+        self._push_undo("Shuffle")
+        import random
+        rows_data = []
+        for r in range(self.track_table.rowCount()):
+            rows_data.append([self.table_text(r, c) for c in range(self.track_table.columnCount())])
+        random.shuffle(rows_data)
+        self._loading_table = True
+        try:
+            for r, row_data in enumerate(rows_data):
+                for c, val in enumerate(row_data):
+                    self.set_table_text(r, c, val)
+        finally:
+            self._loading_table = False
+        self.sync_table_to_album()
 
     def _smart_randomize_tracks(self):
-        QMessageBox.information(self, "Smart Randomize", "Smart randomize not yet implemented in Qt preview.")
+        if self.track_table.rowCount() < 2:
+            return
+        self._push_undo("Smart Randomize")
+        import random
+        rows_data = []
+        for r in range(self.track_table.rowCount()):
+            rows_data.append([self.table_text(r, c) for c in range(self.track_table.columnCount())])
+        rows_data.sort(key=lambda rd: rd[COL_ARTIST] if rd[COL_ARTIST] else rd[COL_TITLE])
+        n = len(rows_data)
+        half = n // 2
+        first = rows_data[:half]
+        second = rows_data[half:]
+        random.shuffle(first)
+        random.shuffle(second)
+        result = []
+        i = j = 0
+        while i < len(first) and j < len(second):
+            result.append(first[i]); i += 1
+            result.append(second[j]); j += 1
+        result.extend(first[i:])
+        result.extend(second[j:])
+        self._loading_table = True
+        try:
+            for r, row_data in enumerate(result):
+                for c, val in enumerate(row_data):
+                    self.set_table_text(r, c, val)
+        finally:
+            self._loading_table = False
+        self.sync_table_to_album()
 
-    def _sort_tracks_by(self, sort_attr):
-        QMessageBox.information(self, "Sort", f"Sort by {sort_attr} not yet implemented in Qt preview.")
+    def _sort_tracks_by(self, sort_attr: str):
+        col_map = {
+            "sort_by_file_size": (COL_PATH, lambda p: os.path.getsize(p) if os.path.exists(p) else 0),
+            "sort_by_length": (COL_LENGTH, lambda v: v),
+            "sort_by_alphabetically": (COL_TITLE, lambda v: v.lower()),
+            "sort_by_artist": (COL_ARTIST, lambda v: v.lower()),
+            "sort_by_track_number": (COL_NO, lambda v: int(v) if v.isdigit() else 0),
+            "sort_by_metadata_track_number": (COL_NO, lambda v: int(v) if v.isdigit() else 0),
+            "sort_by_extension": (COL_FORMAT, lambda v: v.lower()),
+            "sort_by_price": (COL_PRICE, lambda v: float(v) if v.replace(".", "").isdigit() else 0),
+            "sort_by_year": (COL_COMMENT, lambda v: v),
+            "sort_by_genre": (COL_COMMENT, lambda v: v.lower()),
+            "sort_by_bitrate": (COL_COMMENT, lambda v: v),
+            "sort_by_sample_rate": (COL_COMMENT, lambda v: v),
+            "sort_by_channels": (COL_COMMENT, lambda v: v),
+            "sort_by_bit_depth": (COL_COMMENT, lambda v: v),
+            "sort_by_album": (COL_TITLE, lambda v: v.lower()),
+            "sort_by_album_artist": (COL_ARTIST, lambda v: v.lower()),
+            "sort_by_composer": (COL_ARTIST, lambda v: v.lower()),
+            "sort_by_isrc": (COL_COMMENT, lambda v: v.lower()),
+        }
+        if sort_attr not in col_map:
+            return
+        col_idx, key_fn = col_map[sort_attr]
+        self._push_undo(f"Sort by {sort_attr}")
+        rows_data = []
+        for r in range(self.track_table.rowCount()):
+            rows_data.append([self.table_text(r, c) for c in range(self.track_table.columnCount())])
+        if sort_attr in ("sort_by_file_size",):
+            rows_data.sort(key=lambda rd: key_fn(rd[col_idx]))
+        else:
+            rows_data.sort(key=lambda rd: key_fn(rd[col_idx]))
+        self._loading_table = True
+        try:
+            for r, row_data in enumerate(rows_data):
+                for c, val in enumerate(row_data):
+                    self.set_table_text(r, c, val)
+        finally:
+            self._loading_table = False
+        self.sync_table_to_album()
 
     def _clear_all_track_metadata(self):
-        QMessageBox.information(self, "Clear All Metadata", "Clear all metadata not yet implemented in Qt preview.")
+        if self.track_table.rowCount() == 0:
+            return
+        reply = QMessageBox.question(self, "Clear All Metadata",
+            "Clear metadata for all tracks? This cannot be undone.",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            return
+        self._push_undo("Clear All Metadata")
+        self.track_editor_data.clear()
+        for row in range(self.track_table.rowCount()):
+            for col in EDITABLE_COLUMNS:
+                self.set_table_text(row, col, "")
+        self.sync_table_to_album()
 
     def _clear_all_tracks(self):
-        QMessageBox.information(self, "Clear All", "Clear all tracks not yet implemented in Qt preview.")
+        if self.track_table.rowCount() == 0:
+            return
+        reply = QMessageBox.question(self, "Clear All Tracks",
+            "Remove all tracks from the preview?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply != QMessageBox.Yes:
+            return
+        self._push_undo("Clear All Tracks")
+        self.track_editor_data.clear()
+        self.track_table.setRowCount(0)
+        if self.current_album:
+            self.current_album.tracks.clear()
+        self.sync_table_to_album()
 
     def view_cover_art(self):
         if not self.cover_path or not self.cover_path.exists():
