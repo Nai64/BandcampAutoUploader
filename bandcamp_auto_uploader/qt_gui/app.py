@@ -332,8 +332,8 @@ class QtUploaderWindow(QMainWindow):
         panel = QFrame()
         panel.setObjectName("detailsPanel")
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(3)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
 
         title = QLabel("Album / Track Details")
         title.setObjectName("sectionTitle")
@@ -354,13 +354,13 @@ class QtUploaderWindow(QMainWindow):
     def _build_album_details(self):
         group = QGroupBox("Album Details")
         outer_layout = QVBoxLayout(group)
-        outer_layout.setContentsMargins(4, 8, 4, 4)
-        outer_layout.setSpacing(2)
+        outer_layout.setContentsMargins(6, 10, 6, 6)
+        outer_layout.setSpacing(4)
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        form.setHorizontalSpacing(4)
-        form.setVerticalSpacing(2)
+        form.setHorizontalSpacing(6)
+        form.setVerticalSpacing(3)
 
         name_row = QWidget()
         name_layout = QHBoxLayout(name_row)
@@ -498,13 +498,13 @@ class QtUploaderWindow(QMainWindow):
     def _build_track_details(self):
         group = QGroupBox("Track Details")
         outer_layout = QVBoxLayout(group)
-        outer_layout.setContentsMargins(4, 8, 4, 4)
-        outer_layout.setSpacing(2)
+        outer_layout.setContentsMargins(6, 10, 6, 6)
+        outer_layout.setSpacing(4)
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        form.setHorizontalSpacing(4)
-        form.setVerticalSpacing(2)
+        form.setHorizontalSpacing(6)
+        form.setVerticalSpacing(3)
 
         td_name_row = QWidget()
         td_name_layout = QHBoxLayout(td_name_row)
@@ -741,7 +741,7 @@ class QtUploaderWindow(QMainWindow):
 
     def _build_cover_panel(self):
         group = QGroupBox("Cover Art")
-        rl = QHBoxLayout(group); rl.setContentsMargins(0, 0, 0, 0); rl.setSpacing(0)
+        rl = QHBoxLayout(group); rl.setContentsMargins(6, 10, 6, 6); rl.setSpacing(7)
         self.cover_preview = QLabel("No cover art\n\nClick Browse")
         self.cover_preview.setObjectName("coverPreview")
         self.cover_preview.setAlignment(Qt.AlignCenter)
@@ -749,12 +749,13 @@ class QtUploaderWindow(QMainWindow):
         self.cover_preview.setContextMenuPolicy(Qt.CustomContextMenu)
         self.cover_preview.customContextMenuRequested.connect(self._show_cover_context_menu)
         rl.addWidget(self.cover_preview)
-        c = QWidget(); cl = QVBoxLayout(c); cl.setContentsMargins(0, 0, 0, 0); cl.setSpacing(0)
+        c = QWidget(); cl = QVBoxLayout(c); cl.setContentsMargins(0, 0, 0, 0); cl.setSpacing(3)
         self.cover_path_edit = QLineEdit()
         self.cover_path_edit.setPlaceholderText("Cover image path")
         self.cover_path_edit.editingFinished.connect(self.resolve_cover_path_edit)
         cl.addWidget(self.cover_path_edit)
-        bf = QWidget(); bg = QGridLayout(bf); bg.setContentsMargins(0, 0, 0, 0); bg.setSpacing(0)
+        bf = QWidget(); bg = QGridLayout(bf); bg.setSpacing(3)
+        bg.setColumnStretch(0, 1); bg.setColumnStretch(1, 1)
         for i, (t, m) in enumerate([("Browse", self.browse_cover), ("View", self.view_cover_art),
                                      ("Library", self.manage_cover_art_library), ("Detect", self.detect_cover_from_tracks)]):
             b = QPushButton(t); b.clicked.connect(m)
@@ -764,7 +765,7 @@ class QtUploaderWindow(QMainWindow):
         self.scale_cover_check.setChecked(getattr(self.config, "always_auto_scale_cover", True))
         self.scale_cover_check.toggled.connect(self._on_scale_cover_changed)
         cl.addWidget(self.scale_cover_check)
-        sr = QHBoxLayout(); sr.setSpacing(0); sr.setContentsMargins(0, 0, 0, 0)
+        sr = QHBoxLayout(); sr.setSpacing(4)
         sr.addWidget(QLabel("Size:"))
         self.scale_size_combo = QComboBox()
         self.scale_size_combo.addItems(["1400x1400", "2000x2000", "3000x3000"])
@@ -775,6 +776,19 @@ class QtUploaderWindow(QMainWindow):
         self.cover_fit_mode_combo.setCurrentText(getattr(self.config, "cover_fit_mode", "Crop (fill)"))
         self.cover_fit_mode_combo.currentTextChanged.connect(self._on_fit_mode_changed)
         sr.addWidget(self.cover_fit_mode_combo)
+        sr.addSpacing(4)
+        sr.addWidget(QLabel("Method:"))
+        self.cover_scaling_combo = QComboBox()
+        self.cover_scaling_combo.addItems([
+            "Nearest", "Box", "Bilinear", "Hamming", "Bicubic", "Lanczos",
+            "Area", "Mitchell", "Catmull-Rom", "Sinc", "Gaussian", "Pixelate",
+            "Hermite", "Blackman", "Kaiser", "Welch", "Parzen", "Bartlett",
+            "Cubic", "Quadratic", "Average", "Max", "Min", "Median", "Sharpen",
+            "Edge-Enhanced", "B-Spline", "Rational",
+        ])
+        self.cover_scaling_combo.setCurrentText(getattr(self.config, "cover_scaling_method", "Lanczos"))
+        self.cover_scaling_combo.currentTextChanged.connect(self._on_scaling_method_changed)
+        sr.addWidget(self.cover_scaling_combo)
         cl.addLayout(sr)
         rl.addWidget(c, 1)
         return group
@@ -2189,6 +2203,14 @@ class QtUploaderWindow(QMainWindow):
                 if album.cover_art and album.cover_art.path
                 else None
             )
+            if not self.cover_path:
+                found = self.find_cover_art(album_path)
+                if found:
+                    self.cover_path = found
+                elif getattr(self.config, "extract_track_cover_if_missing", True):
+                    extracted = self._extract_embedded_cover_to_temp(album.tracks)
+                    if extracted:
+                        self.cover_path = extracted
             self.cover_path_edit.setText(
                 str(self.cover_path) if self.cover_path else ""
             )
@@ -2415,6 +2437,30 @@ class QtUploaderWindow(QMainWindow):
         b = io.BytesIO(); img.save(b, format="PNG")
         p = QPixmap(); p.loadFromData(b.getvalue(), "PNG"); return p
 
+    def _get_resampling_method(self):
+        from PIL import Image
+        method = getattr(self.config, "cover_scaling_method", "Lanczos")
+        pil_methods = {
+            "Nearest": Image.Resampling.NEAREST,
+            "Box": Image.Resampling.BOX,
+            "Bilinear": Image.Resampling.BILINEAR,
+            "Hamming": Image.Resampling.HAMMING,
+            "Bicubic": Image.Resampling.BICUBIC,
+            "Lanczos": Image.Resampling.LANCZOS,
+        }
+        return pil_methods.get(method)
+
+    def _scale_image(self, img, size):
+        method = getattr(self.config, "cover_scaling_method", "Lanczos")
+        pil_resample = self._get_resampling_method()
+        if pil_resample is not None:
+            return img.resize((size, size), pil_resample)
+        from bandcamp_auto_uploader.gui.image_scaling import apply_custom_scaling
+        class _Var:
+            def get(self):
+                return method
+        return apply_custom_scaling(img, size, _Var())
+
     def _cover_fit(self, img, sz):
         from PIL import Image
         fm = self.cover_fit_mode_combo.currentText() if hasattr(self, "cover_fit_mode_combo") else "Crop (fill)"
@@ -2424,12 +2470,12 @@ class QtUploaderWindow(QMainWindow):
         elif fm == "Fit (contain)":
             w, h = img.size; sc = min(sz / w, sz / h); nw, nh = int(w * sc), int(h * sc)
             sq = Image.new("RGB", (sz, sz), (0, 0, 0))
-            sq.paste(img.resize((nw, nh), Image.Resampling.LANCZOS), ((sz - nw) // 2, (sz - nh) // 2))
+            sq.paste(self._scale_image(img.resize((nw, nh)), sz), ((sz - nw) // 2, (sz - nh) // 2))
             return sq
-        return img.resize((sz, sz), Image.Resampling.LANCZOS)
+        return self._scale_image(img, sz)
 
     def _cover_preview_img(self, path, sz):
-        return self._cover_fit(self._pil_image(path), sz).resize((sz, sz), Image.Resampling.LANCZOS)
+        return self._cover_fit(self._pil_image(path), sz)
 
     def update_cover_preview(self):
         if not self.cover_path or not self.cover_path.exists():
@@ -3045,7 +3091,7 @@ class QtUploaderWindow(QMainWindow):
             if w > md or h > md: s = md / max(w, h); dw, dh = int(w * s), int(h * s)
             else: dw, dh = w, h
             d = QDialog(self); d.setWindowTitle(f"Cover Art ({w}x{h})"); d.resize(dw, dh)
-            l = QLabel(); l.setPixmap(self._pil_to_pixmap(img.resize((dw, dh), Image.Resampling.LANCZOS)))
+            dl = min(dw, dh); l = QLabel(); l.setPixmap(self._pil_to_pixmap(self._scale_image(img, dl)))
             l.setAlignment(Qt.AlignCenter); l.setStyleSheet("background: black;")
             vl = QVBoxLayout(d); vl.setContentsMargins(0, 0, 0, 0); vl.addWidget(l)
             d.setAttribute(Qt.WA_DeleteOnClose); d.exec()
@@ -3059,7 +3105,7 @@ class QtUploaderWindow(QMainWindow):
         for path, label in items:
             if not Path(path).exists(): continue
             try:
-                im = Image.open(path); im.thumbnail((120, 120), Image.Resampling.LANCZOS)
+                im = self._pil_image(path); im.thumbnail((120, 120))
                 px = self._pil_to_pixmap(im.convert("RGB"))
                 b = QPushButton(label); b.setIcon(QIcon(px)); b.setIconSize(px.size())
                 b.setFixedSize(*btn_size); b.setToolTip(path)
@@ -3080,6 +3126,32 @@ class QtUploaderWindow(QMainWindow):
         if p not in self.config.cover_art_library:
             self.config.cover_art_library.insert(0, p)
             self.config.cover_art_library = self.config.cover_art_library[:20]; save_config(self.config)
+
+    def _extract_embedded_cover_to_temp(self, tracks):
+        import tempfile, os, mutagen
+        for track in tracks:
+            if not track.path or not track.path.exists():
+                continue
+            try:
+                fd = mutagen.File(track.path)
+                if fd is None:
+                    continue
+                cd, mime = self._extract_cover_data(fd)
+                if not cd:
+                    continue
+                ext = ".png" if mime == "image/png" else ".jpg"
+                tf, tn = tempfile.mkstemp(suffix=ext)
+                with os.fdopen(tf, "wb") as f:
+                    f.write(cd)
+                from PIL import Image
+                with Image.open(tn) as img:
+                    img.verify()
+                cover_path = Path(tn)
+                self.add_to_cover_library(str(cover_path))
+                return cover_path
+            except Exception:
+                continue
+        return None
 
     def _extract_cover_data(self, fd):
         cd = mime = None
@@ -3122,6 +3194,9 @@ class QtUploaderWindow(QMainWindow):
 
     def _on_fit_mode_changed(self, t):
         self.config.cover_fit_mode = t; save_config(self.config); self.update_cover_preview()
+
+    def _on_scaling_method_changed(self, t):
+        self.config.cover_scaling_method = t; save_config(self.config); self.update_cover_preview()
 
     def prepare_progress_from_album(self, album: Album):
         self.clear_progress_rows()
@@ -4152,7 +4227,7 @@ class QtUploaderWindow(QMainWindow):
 def apply_preview_style(app: QApplication):
     app.setStyleSheet(
         """
-        QMainWindow, QWidget {
+        QMainWindow {
             background: #1e1e2e;
             color: #cdd6f4;
             font-family: Segoe UI;
@@ -4162,7 +4237,7 @@ def apply_preview_style(app: QApplication):
             background: #181825;
         }
         QFrame#detailsPanel {
-            background: #313244;
+            background: #1e1e2e;
             border: 1px solid #45475a;
             border-radius: 4px;
         }
@@ -4177,11 +4252,15 @@ def apply_preview_style(app: QApplication):
             font-weight: 600;
         }
         QGroupBox {
+            background: #1e1e2e;
             border: 1px solid #45475a;
             border-radius: 3px;
             margin-top: 5px;
             padding: 2px;
             font-weight: 600;
+        }
+        QGroupBox > QWidget {
+            background: transparent;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
