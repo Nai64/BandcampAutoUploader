@@ -4251,7 +4251,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_editor_data[path] = data
 
         item = self._track_details_item
-        if item:
+        if item and self.track_table.exists(item):
             values = list(self.track_table.item(item).get("values", ()))
             if len(values) > 2:
                 values[2] = data['name']
@@ -4264,6 +4264,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if len(values) > 19:
                 values[19] = data['isrc']
             self.track_table.item(item, values=tuple(values))
+        elif item:
+            self._track_details_item = None
 
     def apply_track_editor_data_to_album(self, album):
         """Apply stored track editor data to all tracks in the album."""
