@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from bandcamp_auto_uploader.qt_gui.formatting import (
     normalize_price,
     normalize_release_date,
 )
-from bandcamp_auto_uploader.upload import Album, CoverArt
+from bandcamp_auto_uploader.upload import Album, BandcampAlbumData, CoverArt, Track
 
 try:
     from PySide6.QtCore import Qt, QUrl
@@ -100,6 +101,15 @@ COVER_NAMES = (
     "artwork.jpeg",
 )
 COVER_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+AUDIO_FILTER = "Audio files (*.wav *.flac *.aiff *.aif *.mp3 *.ogg *.opus *.m4a *.aac *.mod *.xm);;All files (*.*)"
+FILENAME_PATTERNS = (
+    (r"^(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
+    (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
+    (r"^(\d+)\s*[.\-)_\s]+\s*(.+)", 1, None, 2),
+    (r"^Track\s*(\d+)\s*[.\-)_\s]+\s*(.+)", 1, None, 2),
+    (r"^(\d+)\s*(.+)", 1, None, 2),
+    (r"^(.+?)\s*-\s*(.+)", None, 1, 2),
+)
 
 
 class QtUploaderWindow(QMainWindow):
@@ -115,8 +125,8 @@ class QtUploaderWindow(QMainWindow):
         self.cover_path: Path | None = None
 
         self.setWindowTitle(f"Bandcamp Auto Uploader Qt Preview {__version__}")
-        self.resize(1180, 760)
-        self.setMinimumSize(960, 620)
+        self.resize(1060, 660)
+        self.setMinimumSize(900, 560)
         self.setAcceptDrops(True)
         self._build_ui()
 
@@ -127,8 +137,8 @@ class QtUploaderWindow(QMainWindow):
 
         central = QWidget()
         root_layout = QVBoxLayout(central)
-        root_layout.setContentsMargins(10, 10, 10, 10)
-        root_layout.setSpacing(8)
+        root_layout.setContentsMargins(8, 8, 8, 8)
+        root_layout.setSpacing(6)
 
         root_layout.addWidget(self._build_top_bar())
 
@@ -138,7 +148,7 @@ class QtUploaderWindow(QMainWindow):
         splitter.addWidget(self._build_details_panel())
         splitter.addWidget(self._build_album_preview_panel())
         splitter.addWidget(self._build_right_panel())
-        splitter.setSizes([320, 610, 300])
+        splitter.setSizes([285, 595, 240])
 
         root_layout.addWidget(self._build_bottom_bar())
 
@@ -150,10 +160,12 @@ class QtUploaderWindow(QMainWindow):
         top_bar.setObjectName("topBar")
         layout = QHBoxLayout(top_bar)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(12)
+        layout.setSpacing(8)
 
         artist_group = QGroupBox("Artist / Band")
         artist_layout = QVBoxLayout(artist_group)
+        artist_layout.setContentsMargins(6, 10, 6, 6)
+        artist_layout.setSpacing(4)
         self.artist_combo = QComboBox()
         self.artist_combo.setEditable(False)
         self.artist_combo.addItem("No artist selected")
@@ -171,6 +183,8 @@ class QtUploaderWindow(QMainWindow):
 
         album_group = QGroupBox("Album Folder")
         album_layout = QVBoxLayout(album_group)
+        album_layout.setContentsMargins(6, 10, 6, 6)
+        album_layout.setSpacing(4)
 
         self.album_path_edit = QLineEdit()
         self.album_path_edit.setPlaceholderText("Album directory")
@@ -221,8 +235,8 @@ class QtUploaderWindow(QMainWindow):
         panel = QFrame()
         panel.setObjectName("detailsPanel")
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
 
         title = QLabel("Album / Track Details")
         title.setObjectName("sectionTitle")
@@ -230,6 +244,8 @@ class QtUploaderWindow(QMainWindow):
 
         form = QFormLayout()
         form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        form.setHorizontalSpacing(6)
+        form.setVerticalSpacing(3)
         self.album_name_edit = QLineEdit()
         self.album_name_edit.setPlaceholderText("Album name")
         self.artist_edit = QLineEdit()
@@ -278,13 +294,13 @@ class QtUploaderWindow(QMainWindow):
 
         self.description_edit = QPlainTextEdit()
         self.description_edit.setPlaceholderText("Description")
-        self.description_edit.setMaximumHeight(90)
+        self.description_edit.setMaximumHeight(62)
         layout.addWidget(QLabel("Description"))
         layout.addWidget(self.description_edit)
 
         self.credits_edit = QPlainTextEdit()
         self.credits_edit.setPlaceholderText("Credits")
-        self.credits_edit.setMaximumHeight(80)
+        self.credits_edit.setMaximumHeight(54)
         layout.addWidget(QLabel("Credits"))
         layout.addWidget(self.credits_edit)
 
@@ -327,9 +343,10 @@ class QtUploaderWindow(QMainWindow):
         content = QWidget()
         layout = QVBoxLayout(content)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(6)
 
         header_row = QHBoxLayout()
+        header_row.setSpacing(6)
         title = QLabel("Album Preview")
         title.setObjectName("sectionTitle")
         header_row.addWidget(title)
@@ -345,11 +362,15 @@ class QtUploaderWindow(QMainWindow):
             header_row.addWidget(button)
         layout.addLayout(header_row)
 
+        layout.addWidget(self._build_preview_controls())
+
         self.track_table = QTableWidget(0, len(TRACK_COLUMNS))
         self.track_table.setHorizontalHeaderLabels(TRACK_COLUMNS)
         self.track_table.setAlternatingRowColors(True)
         self.track_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.track_table.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.track_table.setWordWrap(False)
+        self.track_table.verticalHeader().setDefaultSectionSize(24)
         self.track_table.verticalHeader().setVisible(False)
         self.track_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.track_table.horizontalHeader().setStretchLastSection(True)
@@ -359,11 +380,47 @@ class QtUploaderWindow(QMainWindow):
 
         return content
 
+    def _build_preview_controls(self):
+        controls = QWidget()
+        layout = QHBoxLayout(controls)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(8)
+
+        self.ignore_artist_check = QCheckBox("Ignore artist")
+        self.ignore_artist_check.setChecked(bool(getattr(self.config, "ignore_artist_name", False)))
+        self.ignore_artist_check.toggled.connect(self.on_preview_option_changed)
+        layout.addWidget(self.ignore_artist_check)
+
+        self.filename_as_title_check = QCheckBox("Filename as title")
+        self.filename_as_title_check.setChecked(bool(getattr(self.config, "use_filename_as_title", False)))
+        self.filename_as_title_check.toggled.connect(self.on_preview_option_changed)
+        layout.addWidget(self.filename_as_title_check)
+
+        self.ignore_metadata_check = QCheckBox("Ignore metadata")
+        self.ignore_metadata_check.setChecked(bool(getattr(self.config, "ignore_all_metadata", False)))
+        self.ignore_metadata_check.toggled.connect(self.on_preview_option_changed)
+        layout.addWidget(self.ignore_metadata_check)
+
+        layout.addStretch(1)
+
+        add_track_button = QPushButton("Add Track")
+        add_track_button.clicked.connect(self.add_tracks)
+        layout.addWidget(add_track_button)
+
+        extract_button = QPushButton("Extract from Filename")
+        extract_button.clicked.connect(self.apply_extract_from_filename)
+        layout.addWidget(extract_button)
+
+        guess_case_button = QPushButton("Guess Case")
+        guess_case_button.clicked.connect(self.apply_guess_case_to_track_titles)
+        layout.addWidget(guess_case_button)
+        return controls
+
     def _build_right_panel(self):
         right_panel = QWidget()
         layout = QVBoxLayout(right_panel)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
+        layout.setSpacing(6)
 
         layout.addWidget(self._build_cover_panel())
         layout.addWidget(self._build_progress_panel(), 1)
@@ -372,11 +429,13 @@ class QtUploaderWindow(QMainWindow):
     def _build_cover_panel(self):
         cover_group = QGroupBox("Cover Art")
         cover_layout = QVBoxLayout(cover_group)
+        cover_layout.setContentsMargins(6, 10, 6, 6)
+        cover_layout.setSpacing(4)
         self.cover_preview = QLabel("No cover art")
         self.cover_preview.setObjectName("coverPreview")
         self.cover_preview.setAlignment(Qt.AlignCenter)
-        self.cover_preview.setMinimumSize(220, 220)
-        self.cover_preview.setMaximumHeight(260)
+        self.cover_preview.setMinimumSize(154, 154)
+        self.cover_preview.setMaximumHeight(170)
         cover_layout.addWidget(self.cover_preview)
         self.cover_path_edit = QLineEdit()
         self.cover_path_edit.setPlaceholderText("Cover image path")
@@ -398,6 +457,8 @@ class QtUploaderWindow(QMainWindow):
     def _build_progress_panel(self):
         progress_group = QGroupBox("Progress")
         layout = QVBoxLayout(progress_group)
+        layout.setContentsMargins(6, 10, 6, 6)
+        layout.setSpacing(4)
         self.progress_rows: list[tuple[QLabel, QLabel, QProgressBar]] = []
         self.progress_placeholder = QLabel("No upload in progress")
         self.progress_placeholder.setObjectName("mutedLabel")
@@ -415,6 +476,8 @@ class QtUploaderWindow(QMainWindow):
         group = QGroupBox("Details")
         layout = QFormLayout(group)
         layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+        layout.setHorizontalSpacing(6)
+        layout.setVerticalSpacing(3)
 
         self.track_name_edit = QLineEdit()
         self.track_artist_edit = QLineEdit()
@@ -527,6 +590,92 @@ class QtUploaderWindow(QMainWindow):
         self.populate_track_table(album)
         self.prepare_progress_from_album(album)
         self.statusBar().showMessage(f"Loaded {len(album.tracks)} track(s)")
+
+    def on_preview_option_changed(self):
+        self.config.ignore_artist_name = self.ignore_artist_check.isChecked()
+        self.config.use_filename_as_title = self.filename_as_title_check.isChecked()
+        self.config.ignore_all_metadata = self.ignore_metadata_check.isChecked()
+        save_config(self.config)
+        album_path = Path(self.album_path_edit.text().strip())
+        if album_path.is_dir():
+            self.preview_album()
+        elif self.current_album is not None:
+            paths = [track.path for track in self.current_album.tracks]
+            self.reload_tracks_from_paths(paths, keep_album_details=True)
+
+    def add_tracks(self):
+        filenames, _selected_filter = QFileDialog.getOpenFileNames(
+            self,
+            "Select Track Files",
+            "",
+            AUDIO_FILTER,
+        )
+        if not filenames:
+            return
+
+        existing_paths = set()
+        if self.current_album is not None:
+            existing_paths = {Path(track.path).resolve() for track in self.current_album.tracks}
+
+        tracks = []
+        skipped = []
+        for filename in filenames:
+            path = Path(filename)
+            try:
+                resolved = path.resolve()
+            except OSError:
+                resolved = path
+            if resolved in existing_paths:
+                continue
+            try:
+                track = Track.from_file(path, self.config)
+            except Exception:
+                track = None
+            if track is None:
+                skipped.append(path.name)
+                continue
+            tracks.append(track)
+            existing_paths.add(resolved)
+
+        if not tracks:
+            message = "No supported audio tracks were added."
+            if skipped:
+                message += "\n\nSkipped:\n" + "\n".join(skipped[:8])
+            QMessageBox.warning(self, "Add Track", message)
+            return
+
+        if self.current_album is None:
+            first_parent = tracks[0].path.parent
+            album_data = BandcampAlbumData(
+                title=first_parent.name or "Manual Album",
+                price=str(getattr(self.config, "album_price", "0")),
+                nyp=int(getattr(self.config, "name_your_price", True)),
+            )
+            self.current_album = Album(album_data=album_data, tracks=[], cover_art=None)
+            self.album_path_edit.setText("")
+            self.load_album_details(self.current_album, first_parent)
+
+        self.current_album.tracks.extend(tracks)
+        self.populate_track_table(self.current_album)
+        self.sync_table_to_album()
+        if skipped:
+            self.statusBar().showMessage(f"Added {len(tracks)} track(s), skipped {len(skipped)} unsupported file(s)")
+        else:
+            self.statusBar().showMessage(f"Added {len(tracks)} track(s)")
+
+    def reload_tracks_from_paths(self, paths: list[Path], keep_album_details: bool):
+        tracks = []
+        for path in paths:
+            track = Track.from_file(path, self.config)
+            if track is not None:
+                tracks.append(track)
+        if self.current_album is None:
+            return
+        self.current_album.tracks = tracks
+        if not keep_album_details and paths:
+            self.load_album_details(self.current_album, paths[0].parent)
+        self.populate_track_table(self.current_album)
+        self.prepare_progress_from_album(self.current_album)
 
     def load_album_details(self, album: Album, album_path: Path):
         data = album.album_data
@@ -643,7 +792,7 @@ class QtUploaderWindow(QMainWindow):
         if pixmap.isNull():
             self.cover_preview.setText("Could not load cover")
             return
-        scaled = pixmap.scaled(210, 210, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        scaled = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         self.cover_preview.setPixmap(scaled)
         self.cover_preview.setText("")
 
@@ -807,6 +956,144 @@ class QtUploaderWindow(QMainWindow):
         finally:
             self._loading_table = False
 
+    def guess_track_title_case(self, title: str) -> str:
+        small_words = {
+            "a", "an", "and", "as", "at", "but", "by", "for", "from", "in",
+            "into", "nor", "of", "on", "onto", "or", "over", "per", "so",
+            "the", "to", "up", "via", "vs", "with", "yet",
+        }
+        preserve_upper = {
+            "AI", "CD", "DJ", "EP", "LP", "MC", "TV", "UK", "US", "USA",
+            "USB", "VIP", "VR", "III", "IV", "VI", "VII", "VIII", "IX", "XI",
+            "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX",
+        }
+
+        cleaned = re.sub(r"[_\s]+", " ", str(title).strip())
+        if not cleaned:
+            return ""
+
+        tokens = re.findall(r"[A-Za-z0-9]+(?:'[A-Za-z0-9]+)?|[^A-Za-z0-9]+", cleaned)
+        word_indexes = [index for index, token in enumerate(tokens) if re.match(r"[A-Za-z0-9]", token)]
+        if not word_indexes:
+            return cleaned
+        first_word = word_indexes[0]
+        last_word = word_indexes[-1]
+
+        def format_word(word: str, token_index: int) -> str:
+            upper_word = word.upper()
+            lower_word = word.lower()
+            if upper_word in preserve_upper:
+                return upper_word
+            if token_index not in (first_word, last_word) and lower_word in small_words:
+                return lower_word
+            parts = lower_word.split("'")
+            cased = "'".join(part[:1].upper() + part[1:] if part else part for part in parts)
+            cased = re.sub(r"'(M|S|T|Re|Ve|Ll|D)\b", lambda match: "'" + match.group(1).lower(), cased)
+            return re.sub(r"\bMc([a-z])", lambda match: "Mc" + match.group(1).upper(), cased)
+
+        result = []
+        force_cap_next = True
+        for index, token in enumerate(tokens):
+            if re.match(r"[A-Za-z0-9]", token):
+                token_index = first_word if force_cap_next and token.lower() in small_words else index
+                result.append(format_word(token, token_index))
+                force_cap_next = False
+            else:
+                result.append(token)
+                if any(mark in token for mark in (":", "?", "!", ".", "-", "(", "[", "{", "/", "\\")):
+                    force_cap_next = True
+        return "".join(result)
+
+    def apply_guess_case_to_track_titles(self):
+        if self.track_table.rowCount() == 0:
+            self.statusBar().showMessage("No tracks to update")
+            return
+        changed = 0
+        self._loading_table = True
+        try:
+            for row in range(self.track_table.rowCount()):
+                old_title = self.table_text(row, COL_TITLE)
+                new_title = self.guess_track_title_case(old_title)
+                if new_title and new_title != old_title:
+                    self.set_table_text(row, COL_TITLE, new_title)
+                    changed += 1
+        finally:
+            self._loading_table = False
+        self.sync_table_to_album()
+        self.statusBar().showMessage(
+            f"Guess Case applied to {changed} track title(s)" if changed else "Track titles already look good"
+        )
+
+    def parse_track_from_filename(self, stem: str):
+        for pattern, track_group, artist_group, title_group in FILENAME_PATTERNS:
+            match = re.match(pattern, stem, re.IGNORECASE)
+            if not match:
+                continue
+            track_no = None
+            artist = None
+            title = None
+            if track_group is not None:
+                try:
+                    track_no = int(match.group(track_group))
+                except (IndexError, ValueError):
+                    pass
+            if artist_group is not None:
+                try:
+                    artist = re.sub(r"[_\s]+", " ", match.group(artist_group)).strip()
+                except IndexError:
+                    pass
+            if title_group is not None:
+                try:
+                    title = re.sub(r"[_\s]+", " ", match.group(title_group)).strip()
+                except IndexError:
+                    pass
+            return track_no, artist, title
+        return None, None, None
+
+    def apply_extract_from_filename(self):
+        if self.track_table.rowCount() == 0:
+            self.statusBar().showMessage("No tracks to update")
+            return
+
+        changed = 0
+        parsed_numbers = {}
+        self._loading_table = True
+        try:
+            for row in range(self.track_table.rowCount()):
+                path = self.table_text(row, COL_PATH)
+                if not path:
+                    continue
+                old_artist = self.table_text(row, COL_ARTIST)
+                old_title = self.table_text(row, COL_TITLE)
+                parsed_no, parsed_artist, parsed_title = self.parse_track_from_filename(Path(path).stem)
+                if parsed_no is not None:
+                    parsed_numbers[row] = parsed_no
+                    self.set_table_text(row, COL_NO, str(parsed_no))
+                if parsed_artist:
+                    self.set_table_text(row, COL_ARTIST, parsed_artist)
+                if parsed_title:
+                    self.set_table_text(row, COL_TITLE, parsed_title)
+                if old_artist != self.table_text(row, COL_ARTIST) or old_title != self.table_text(row, COL_TITLE):
+                    changed += 1
+            if parsed_numbers:
+                self.sort_table_by_display_numbers(parsed_numbers)
+        finally:
+            self._loading_table = False
+        self.sync_table_to_album()
+        self.statusBar().showMessage(
+            f"Extracted filename data from {changed} track(s)" if changed else "No filename changes needed"
+        )
+
+    def sort_table_by_display_numbers(self, parsed_numbers: dict[int, int]):
+        rows = []
+        for row in range(self.track_table.rowCount()):
+            values = [self.table_text(row, column) for column in range(self.track_table.columnCount())]
+            rows.append((parsed_numbers.get(row, row + 1), row, values))
+        rows.sort(key=lambda item: (item[0], item[1]))
+        for row_index, (_parsed_no, _old_row, values) in enumerate(rows):
+            for column, value in enumerate(values):
+                self.set_table_text(row_index, column, value)
+
     def remove_selected_track(self):
         row = self.selected_row()
         if row < 0:
@@ -930,7 +1217,7 @@ def apply_preview_style(app: QApplication):
             background: #f6f7f8;
             color: #1f2933;
             font-family: Segoe UI;
-            font-size: 9pt;
+            font-size: 8.5pt;
         }
         QWidget#topBar, QWidget#bottomBar {
             background: #f6f7f8;
@@ -942,7 +1229,7 @@ def apply_preview_style(app: QApplication):
         }
         QLabel#sectionTitle {
             font-weight: 600;
-            font-size: 11pt;
+            font-size: 10pt;
         }
         QLabel#mutedLabel {
             color: #6b7280;
@@ -953,14 +1240,14 @@ def apply_preview_style(app: QApplication):
         QGroupBox {
             border: 1px solid #d8dee6;
             border-radius: 4px;
-            margin-top: 8px;
-            padding: 8px;
+            margin-top: 7px;
+            padding: 6px;
             font-weight: 600;
         }
         QGroupBox::title {
             subcontrol-origin: margin;
-            left: 8px;
-            padding: 0 4px;
+            left: 7px;
+            padding: 0 3px;
         }
         QLabel#coverPreview {
             background: #ffffff;
@@ -972,13 +1259,13 @@ def apply_preview_style(app: QApplication):
             background: #ffffff;
             border: 1px solid #cfd7df;
             border-radius: 4px;
-            padding: 5px;
+            padding: 3px;
         }
         QPushButton {
             background: #ffffff;
             border: 1px solid #b7c1cc;
             border-radius: 4px;
-            padding: 6px 10px;
+            padding: 4px 8px;
         }
         QPushButton:hover {
             background: #eef5ff;
@@ -1004,14 +1291,14 @@ def apply_preview_style(app: QApplication):
             background: #eef1f4;
             border: 0;
             border-right: 1px solid #d4dbe3;
-            padding: 5px;
+            padding: 3px;
             font-weight: 600;
         }
         QProgressBar {
             background: #edf1f5;
             border: 1px solid #d4dbe3;
             border-radius: 4px;
-            height: 12px;
+            height: 10px;
             text-align: center;
         }
         QProgressBar::chunk {
