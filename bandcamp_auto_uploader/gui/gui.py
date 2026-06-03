@@ -327,7 +327,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_record_label_var = tk.StringVar()
         self.album_download_desc_var = tk.StringVar()
         self.album_release_message_var = tk.StringVar()
-        self.album_price_var = tk.StringVar(value="0.00")
+        self.album_price_var = tk.StringVar(value="0")
         self.album_nyp_var = tk.BooleanVar(value=True)
         self.album_subscriber_message_var = tk.StringVar()
         self.album_require_email_var = tk.BooleanVar(value=False)
@@ -792,8 +792,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         release_date_inner = ttk.Frame(release_date_row)
         release_date_inner.pack(fill=tk.X)
 
-        self.album_release_date_entry = ttk.Entry(release_date_inner, textvariable=self.album_publish_date_var, font=("Segoe UI", 8))
+        release_date_vcmd = (self.root.register(self.validate_release_date_change), "%P")
+        self.album_release_date_entry = ttk.Entry(
+            release_date_inner,
+            textvariable=self.album_publish_date_var,
+            font=("Segoe UI", 8),
+            validate="key",
+            validatecommand=release_date_vcmd,
+        )
         self.album_release_date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
+        self.album_release_date_entry.bind(
+            "<FocusOut>",
+            lambda _event: self.sanitize_release_date_var(self.album_publish_date_var, show_warning=True)
+        )
 
         self.album_release_date_btn = ttk.Button(
             release_date_inner,
@@ -807,8 +818,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(self.details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         price_inner = ttk.Frame(self.details_frame)
         price_inner.pack(fill=tk.X, pady=(0, 2))
-        self.album_price_entry = ttk.Entry(price_inner, textvariable=self.album_price_var, font=("Segoe UI", 8))
+        price_vcmd = (self.root.register(self.validate_integer_price_change), "%P")
+        self.album_price_entry = ttk.Entry(
+            price_inner,
+            textvariable=self.album_price_var,
+            font=("Segoe UI", 8),
+            validate="key",
+            validatecommand=price_vcmd,
+        )
         self.album_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        self.album_price_entry.bind(
+            "<FocusOut>",
+            lambda _event: self.sanitize_price_var(self.album_price_var, default="0", show_warning=True)
+        )
         self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
         self.album_nyp_check.pack(side=tk.LEFT)
 
@@ -930,8 +952,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         rd_row2 = ttk.Frame(self.track_details_frame)
         rd_row2.pack(fill=tk.X, pady=(0, 2))
         self.td_release_date_var = tk.StringVar()
-        self.td_release_date_entry = ttk.Entry(rd_row2, textvariable=self.td_release_date_var, font=("Segoe UI", 8))
+        self.td_release_date_entry = ttk.Entry(
+            rd_row2,
+            textvariable=self.td_release_date_var,
+            font=("Segoe UI", 8),
+            validate="key",
+            validatecommand=release_date_vcmd,
+        )
         self.td_release_date_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
+        self.td_release_date_entry.bind(
+            "<FocusOut>",
+            lambda _event: self.sanitize_release_date_var(self.td_release_date_var, show_warning=True)
+        )
         self.td_release_date_btn = ttk.Button(rd_row2, text="Edit", command=self.td_show_calendar, width=5)
         self.td_release_date_btn.pack(side=tk.LEFT)
 
@@ -940,8 +972,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         td_price_row = ttk.Frame(self.track_details_frame)
         td_price_row.pack(fill=tk.X, pady=(0, 2))
         self.td_price_var = tk.StringVar(value="")
-        self.td_price_entry = ttk.Entry(td_price_row, textvariable=self.td_price_var, font=("Segoe UI", 8))
+        self.td_price_entry = ttk.Entry(
+            td_price_row,
+            textvariable=self.td_price_var,
+            font=("Segoe UI", 8),
+            validate="key",
+            validatecommand=price_vcmd,
+        )
         self.td_price_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
+        self.td_price_entry.bind(
+            "<FocusOut>",
+            lambda _event: self.sanitize_price_var(self.td_price_var, default="", show_warning=True)
+        )
         self.td_nyp_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(td_price_row, text="Name Your Price", variable=self.td_nyp_var).pack(side=tk.LEFT)
 
@@ -2700,7 +2742,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_upc_var.set("")
         self.album_download_desc_var.set("")
         self.album_release_message_var.set("")
-        self.album_price_var.set("0.00")
+        self.album_price_var.set("0")
         self.album_nyp_var.set(True)
         self.album_subscriber_message_var.set("")
         self.album_require_email_var.set(False)
@@ -2796,14 +2838,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         return {
             "album_name": self.album_name_var.get(),
             "artist": self.album_artist_var.get(),
-            "release_date": self.album_publish_date_var.get(),
+            "release_date": self.normalize_release_date_value(self.album_publish_date_var.get()),
             "tags": self.album_tags_var.get(),
             "description": self.get_album_description_text(),
             "credits": credits,
             "license": self.album_license_var.get(),
             "download_description": self.album_download_desc_var.get(),
             "release_message": self.album_release_message_var.get(),
-            "album_price": self.album_price_var.get(),
+            "album_price": self.normalize_integer_price(self.album_price_var.get(), default="0"),
             "album_nyp": self.album_nyp_var.get(),
             "subscriber_message": self.album_subscriber_message_var.get(),
             "record_label": self.album_record_label_var.get(),
@@ -2943,7 +2985,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Restore album-detail fields from the session file."""
         self.album_name_var.set(details.get("album_name", ""))
         self.album_artist_var.set(details.get("artist", ""))
-        self.album_publish_date_var.set(details.get("release_date", ""))
+        self.album_publish_date_var.set(self.normalize_release_date_value(details.get("release_date", "")))
         self.album_tags_var.set(details.get("tags", ""))
         if hasattr(self, 'tag_entry'):
             self.tag_entry.delete(0, tk.END)
@@ -2959,7 +3001,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.album_license_var.set(details.get("license", "All Rights Reserved"))
         self.album_download_desc_var.set(details.get("download_description", ""))
         self.album_release_message_var.set(details.get("release_message", ""))
-        self.album_price_var.set(details.get("album_price", "0.00"))
+        self.album_price_var.set(self.normalize_integer_price(details.get("album_price", "0"), default="0"))
         self.album_nyp_var.set(details.get("album_nyp", True))
         self.album_subscriber_message_var.set(details.get("subscriber_message", ""))
         self.album_record_label_var.set(details.get("record_label", ""))
@@ -4078,7 +4120,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.album_upc_var.set("")
             self.album_download_desc_var.set("")
             self.album_release_message_var.set("")
-            self.album_price_var.set("0.00")
+            self.album_price_var.set("0")
             self.album_nyp_var.set(True)
             self.album_subscriber_message_var.set("")
             self.album_require_email_var.set(False)
@@ -4133,6 +4175,74 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.show_release_date_calendar()
         finally:
             self._calendar_target_var = None
+
+    def validate_integer_price_change(self, proposed):
+        return proposed == "" or proposed.isdigit()
+
+    def validate_track_table_price_change(self, proposed):
+        if proposed == "":
+            return True
+        return re.fullmatch(r"\$?\d*", proposed) is not None
+
+    def normalize_integer_price(self, value, default=""):
+        text = str(value).strip()
+        if text.startswith("$"):
+            text = text[1:].strip()
+        if text.isdigit():
+            return str(int(text))
+        if re.fullmatch(r"\d+\.0+", text):
+            return str(int(float(text)))
+        return default
+
+    def format_track_table_price(self, value):
+        price = self.normalize_integer_price(value, default="")
+        return f"${price}" if price else ""
+
+    def normalize_track_table_cell_edit_value(self, column_id, value):
+        if column_id == "price":
+            text = str(value).strip()
+            price = self.normalize_integer_price(text, default="")
+            if text and not price:
+                return None
+            return self.format_track_table_price(price)
+        return str(value).strip()
+
+    def sanitize_price_var(self, var, default="", show_warning=False):
+        original = var.get()
+        normalized = self.normalize_integer_price(original, default=default)
+        if original != normalized:
+            var.set(normalized)
+            if show_warning:
+                self.show_toast("Price must be a whole number", 1800, "warning")
+        return normalized
+
+    def validate_release_date_change(self, proposed):
+        if proposed == "":
+            return True
+        return re.fullmatch(r"\d{0,4}(-\d{0,2}(-\d{0,2})?)?", proposed) is not None
+
+    def normalize_release_date_value(self, value):
+        from datetime import datetime
+
+        text = str(value).strip()
+        if not text:
+            return ""
+        if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+            return ""
+        try:
+            datetime.strptime(text, "%Y-%m-%d")
+        except ValueError:
+            return ""
+        return text
+
+    def sanitize_release_date_var(self, var, show_warning=False):
+        original = var.get()
+        normalized = self.normalize_release_date_value(original)
+        if original != normalized:
+            var.set(normalized)
+            if show_warning:
+                self.show_toast("Release date must be YYYY-MM-DD", 2000, "warning")
+        return normalized
 
     def on_track_select(self, event):
         sel = self.track_table.selection()
@@ -4222,6 +4332,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
         was_featured = self.track_editor_data.get(path, {}).get('featured', False)
         now_featured = self.td_featured_var.get()
+        release_date = self.sanitize_release_date_var(self.td_release_date_var)
+        price = self.sanitize_price_var(self.td_price_var, default="")
         data = {
             'name': self.td_name_var.get(),
             'artist': self.td_artist_var.get(),
@@ -4231,14 +4343,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             'credits': self.td_credits_text.get("1.0", "end-1c"),
             'license': self.td_license_var.get(),
             'download_desc': self.td_download_desc_var.get(),
-            'release_date': self.td_release_date_var.get(),
+            'release_date': release_date,
             'isrc': self.td_isrc_var.get(),
             'iswc': self.td_iswc_var.get(),
             'streaming': self.td_streaming_var.get(),
             'enable_download': self.td_enable_dl_var.get(),
             'private': self.td_private_var.get(),
             'featured': now_featured,
-            'price': self.td_price_var.get(),
+            'price': price,
             'nyp': self.td_nyp_var.get(),
             'video_id': self.td_video_id_var.get(),
             'video_caption': self.td_video_caption_var.get(),
@@ -4263,6 +4375,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 values[9] = data['tags']
             if len(values) > 19:
                 values[19] = data['isrc']
+            if len(values) > 6:
+                values[6] = self.format_track_table_price(data['price'])
+            if len(values) > 7:
+                values[7] = "Yes" if data['nyp'] else "No"
             self.track_table.item(item, values=tuple(values))
         elif item:
             self._track_details_item = None
@@ -4291,8 +4407,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 track.track_data.license_type = license_map[data['license']]
             if data.get('download_desc'):
                 track.track_data.download_desc = data['download_desc']
-            if data.get('release_date'):
-                track.track_data.release_date = data['release_date']
+            release_date = self.normalize_release_date_value(data.get('release_date', ""))
+            if release_date:
+                track.track_data.release_date = release_date
             if data.get('isrc'):
                 track.track_data.isrc = data['isrc']
             if data.get('iswc'):
@@ -4301,8 +4418,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             track.track_data.enable_download = int(data.get('enable_download', True))
             track.track_data.private = int(data.get('private', False))
             track.track_data.featured = int(data.get('featured', False))
-            if data.get('price'):
-                track.track_data.price = data['price']
+            price = self.normalize_integer_price(data.get('price', ""), default="")
+            if price:
+                track.track_data.price = price
             if 'nyp' in data:
                 track.track_data.nyp = int(data['nyp'])
             if data.get('video_id'):
@@ -4478,7 +4596,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def normalize_track_table_editor_value(self, key, value):
         text = str(value).strip()
         if key == "price":
-            return text[1:].strip() if text.startswith("$") else text
+            return self.normalize_integer_price(text, default="")
         if key == "nyp":
             return text.lower() in {"1", "true", "yes", "y", "on"}
         return text
@@ -4625,6 +4743,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         if new_value is None:
             return
+        new_value = self.normalize_track_table_cell_edit_value(column_id, new_value)
+        if new_value is None:
+            self.show_toast("Price must be a whole number", 1800, "warning")
+            return
 
         self.push_undo_state(f"Update {label}")
         changed = 0
@@ -4671,6 +4793,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Create entry widget for editing
         edit_var = tk.StringVar(value=current_value)
         entry = ttk.Entry(self.track_table, textvariable=edit_var, font=("Consolas", 8))
+        if column_id == "price":
+            entry.configure(
+                validate="key",
+                validatecommand=(self.root.register(self.validate_track_table_price_change), "%P")
+            )
         entry.place(x=x, y=y, width=width, height=height)
         entry.focus_set()
         entry.select_range(0, tk.END)
@@ -4679,7 +4806,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         original_value = current_value
 
         def save_edit(event=None):
-            new_value = edit_var.get().strip()
+            new_value = self.normalize_track_table_cell_edit_value(column_id, edit_var.get())
+            if new_value is None:
+                self.show_toast("Price must be a whole number", 1800, "warning")
+                entry.focus_set()
+                entry.select_range(0, tk.END)
+                return
             if new_value != original_value:
                 self.push_undo_state(f"Edit {self.get_track_table_column_labels().get(column_id, column_id)}")
                 # Update the value in the table
@@ -7794,7 +7926,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     logger.info(f"Using tags: {tags}")
 
                 # Update publishing details
-                publish_date = self.album_publish_date_var.get().strip()
+                publish_date = self.sanitize_release_date_var(self.album_publish_date_var)
                 if publish_date:
                     album.album_data.release_date = publish_date
                     logger.info(f"Using release date: {publish_date}")
@@ -7824,11 +7956,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     album.album_data.tralbum_release_message = release_message
                     logger.info(f"Using release message: {release_message}")
 
-                album_price = self.album_price_var.get().strip()
-                try:
-                    album.album_data.price = str(float(album_price))
-                except (ValueError, TypeError):
-                    album.album_data.price = str(self.config.album_price)
+                album_price = self.sanitize_price_var(self.album_price_var, default="0")
+                album.album_data.price = album_price
 
                 album.album_data.nyp = int(self.album_nyp_var.get())
                 album.album_data.require_email = int(self.album_require_email_var.get())
