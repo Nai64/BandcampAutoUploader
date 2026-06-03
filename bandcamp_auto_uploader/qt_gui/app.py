@@ -666,6 +666,7 @@ class QtUploaderWindow(QMainWindow):
 
         self.track_table = QTableWidget(0, len(TRACK_COLUMNS))
         self.track_table.setHorizontalHeaderLabels(TRACK_COLUMNS)
+        self.track_table.setShowGrid(False)
         self.track_table.setAlternatingRowColors(True)
         self.track_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.track_table.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -1283,23 +1284,31 @@ class QtUploaderWindow(QMainWindow):
 
         dialog.exec()
 
+    def _apply_setting(self, attr: str):
+        handler = getattr(self, f"_apply_{attr}", None)
+        if handler:
+            handler()
+
     def _on_pref_check_toggled(self, cb: QCheckBox):
         attr = cb.property("prefAttr")
         if attr:
             setattr(self.config, attr, cb.isChecked())
             save_config(self.config)
+            self._apply_setting(attr)
 
     def _on_pref_spin_changed(self, spin: QSpinBox, value: int):
         attr = spin.property("prefAttr")
         if attr:
             setattr(self.config, attr, value)
             save_config(self.config)
+            self._apply_setting(attr)
 
     def _on_pref_combo_changed(self, combo: QComboBox):
         attr = combo.property("prefAttr")
         if attr:
             setattr(self.config, attr, combo.currentText())
             save_config(self.config)
+            self._apply_setting(attr)
 
     def _on_pref_color_changed(self, attr: str, swatch: QLabel):
         color = QColorDialog.getColor(QColor(getattr(self.config, attr, "#000000")))
@@ -1308,6 +1317,7 @@ class QtUploaderWindow(QMainWindow):
             setattr(self.config, attr, hex_color)
             save_config(self.config)
             swatch.setStyleSheet(f"background-color: {hex_color}; border: 1px solid #888;")
+            self._apply_setting(attr)
 
     def _pref_color_widget(self, attr: str, default: str):
         w = QWidget()
@@ -1799,6 +1809,56 @@ class QtUploaderWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             save_config(Config())
             QMessageBox.information(self, "Reset Complete", "Settings reset. Restart the application.")
+
+    # ── Immediate-apply handlers for preferences ──
+
+    def _apply_show_track_no(self):
+        self.track_table.setColumnHidden(0, not self.config.show_track_no)
+    def _apply_show_artist(self):
+        self.track_table.setColumnHidden(1, not self.config.show_artist)
+    def _apply_show_track_name(self):
+        self.track_table.setColumnHidden(2, not self.config.show_track_name)
+    def _apply_show_comment(self):
+        self.track_table.setColumnHidden(3, not self.config.show_comment)
+    def _apply_show_length(self):
+        self.track_table.setColumnHidden(4, not self.config.show_length)
+    def _apply_show_extension(self):
+        self.track_table.setColumnHidden(5, not self.config.show_extension)
+    def _apply_show_price(self):
+        self.track_table.setColumnHidden(6, not self.config.show_price)
+    def _apply_show_nyp(self):
+        self.track_table.setColumnHidden(7, not self.config.show_nyp)
+    def _apply_auto_fit_columns(self):
+        mode = QHeaderView.ResizeToContents if self.config.auto_fit_columns else QHeaderView.Interactive
+        self.track_table.horizontalHeader().setSectionResizeMode(mode)
+
+    def _apply_log_auto_scroll(self):
+        pass  # handled in log polling loop
+    def _apply_log_max_lines(self):
+        doc = self.log_text.document()
+        doc.setMaximumBlockCount(self.config.log_max_lines if self.config.log_max_lines > 0 else -1)
+    def _apply_log_font_family(self):
+        f = self.log_text.font(); f.setFamily(self.config.log_font_family); self.log_text.setFont(f)
+    def _apply_log_font_size(self):
+        f = self.log_text.font(); f.setPointSize(self.config.log_font_size); self.log_text.setFont(f)
+    def _apply_log_font_bold(self):
+        f = self.log_text.font(); f.setBold(self.config.log_font_bold); self.log_text.setFont(f)
+    def _apply_log_text_color(self):
+        self.log_text.setStyleSheet(self._log_stylesheet())
+    def _apply_log_bg_color(self):
+        self.log_text.setStyleSheet(self._log_stylesheet())
+
+    def _log_stylesheet(self):
+        c = self.config
+        return (
+            f"QTextEdit#logText {{"
+            f"  background: {c.log_bg_color};"
+            f"  color: {c.log_text_color};"
+            f"  border: 1px solid #3c3c3c;"
+            f"  font-family: {c.log_font_family};"
+            f"  font-size: {c.log_font_size}pt;"
+            f"}}"
+        )
 
     def start_upload(self):
         if self.is_upload_in_progress():
@@ -2563,6 +2623,12 @@ class QtUploaderWindow(QMainWindow):
             self.track_table.selectRow(0)
         else:
             self.on_track_select()
+        for attr in ("show_track_no", "show_artist", "show_track_name",
+                      "show_comment", "show_length", "show_extension",
+                      "show_price", "show_nyp"):
+            handler = getattr(self, f"_apply_{attr}", None)
+            if handler:
+                handler()
 
     def selected_row(self) -> int:
         ranges = self.track_table.selectedRanges()
