@@ -2083,7 +2083,6 @@ class SettingsMixin:
         dialog.transient(self.root)
         dialog.resizable(False, False)
         dialog.configure(padx=16, pady=12)
-        self.center_dialog(dialog, width=340, height=200)
 
         result = {"value": None}
 
@@ -2136,6 +2135,9 @@ class SettingsMixin:
         dialog.bind('<Key>', on_key)
         captured_label.focus_set()
         dialog.grab_set()
+        # Let Tk compute natural size, then center.
+        self.root.update_idletasks()
+        self.center_dialog(dialog)
         dialog.wait_window()
         return result["value"]
 
@@ -2150,11 +2152,10 @@ class SettingsMixin:
             return None
 
         parts = []
-        # State bit masks (cross-platform)
+        # State bit masks (cross-platform). Alt is intentionally ignored
+        # because it is often held while the user navigates menus.
         if event.state & 0x4:
             parts.append('Ctrl')
-        if event.state & 0x8:
-            parts.append('Alt')
         if event.state & 0x1:
             parts.append('Shift')
         if event.state & 0x40:
