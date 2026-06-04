@@ -1261,7 +1261,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             try:
                 style = ttk.Style()
                 if 'TrackSearch.icon' not in style.element_names():
-                    style.element_create('TrackSearch.icon', 'image', search_icon, sticky='w', width=22)
+                    style.element_create('TrackSearch.icon', 'image', search_icon, padding=(0, 0, 4, 0), sticky='w')
                 style.layout('TrackSearch.TEntry', [
                     ('Entry.field', {'sticky': 'nswe', 'children': [
                         ('Entry.background', {'sticky': 'nswe', 'children': [
@@ -1272,7 +1272,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         ]})
                     ]})
                 ])
-                style.configure('TrackSearch.TEntry', padding=(2, 0, 0, 0))
                 self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, style='TrackSearch.TEntry', width=28)
             except Exception:
                 self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
