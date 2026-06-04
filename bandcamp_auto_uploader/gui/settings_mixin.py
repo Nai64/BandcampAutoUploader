@@ -64,8 +64,19 @@ class SettingsMixin:
         search_frame.pack(fill=tk.X, pady=(0, 8))
         self.settings_search_frame = search_frame
         self.settings_search_var = tk.StringVar()
-        self.settings_search_entry = ttk.Entry(search_frame, textvariable=self.settings_search_var)
-        self.settings_search_entry.pack(fill=tk.X)
+        search_icon = getattr(self, 'icon_images', {}).get('Search')
+        if search_icon:
+            style = ttk.Style()
+            style.configure('PrefSearch.TEntry', padding=(28, 0, 0, 0))
+            self.settings_search_entry = ttk.Entry(search_frame, textvariable=self.settings_search_var, style='PrefSearch.TEntry')
+            self.settings_search_entry.pack(fill=tk.X)
+            icon_canvas = tk.Canvas(self.settings_search_entry, width=24, height=20, highlightthickness=0, bd=0, bg='SystemWindow')
+            icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
+            icon_canvas.place(x=2, rely=0.5, anchor='w')
+            icon_canvas.bind('<Button-1>', lambda e: self.settings_search_entry.focus_set())
+        else:
+            self.settings_search_entry = ttk.Entry(search_frame, textvariable=self.settings_search_var)
+            self.settings_search_entry.pack(fill=tk.X)
         self.settings_search_var.trace_add('write', lambda *_args: self.update_settings_search_results())
 
         self.settings_search_results = ttk.Treeview(
