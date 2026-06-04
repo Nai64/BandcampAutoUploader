@@ -116,6 +116,8 @@ class Config:
     auto_fit_columns: bool = True  # Automatically fit preview table columns after updates
     lock_column_sizes: bool = True  # Prevent the user from resizing preview table columns
     highlight_search_matches: bool = False  # When on, search highlights matches; otherwise non-matching rows are hidden
+    undo_hotkey: str = "Ctrl+Z"  # Hotkey for the Undo action on the track table
+    redo_hotkey: str = "Ctrl+Y"  # Hotkey for the Redo action on the track table
     locked_track_highlight_color: str = "#fff4ce"  # Track table row highlight for locked tracks
     highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
     corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks

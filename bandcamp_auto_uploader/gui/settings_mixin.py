@@ -115,7 +115,10 @@ class SettingsMixin:
         interface_id = self.settings_tree.insert('', 'end', 'Interface', text='Interface')
         self.settings_tree.insert(interface_id, 'end', 'columns', text='Track Table Columns')
         self.settings_tree.insert(interface_id, 'end', 'logs', text='Logs')
-        
+
+        # Hotkeys (top-level section, customizable key bindings)
+        self.settings_tree.insert('', 'end', 'hotkeys', text='Hotkeys')
+
         self.settings_tree.insert('', 'end', 'Advanced', text='Advanced')
         self.settings_tree.insert('', 'end', 'About', text='About')
         
@@ -203,6 +206,11 @@ class SettingsMixin:
         self.create_context_menu_settings(context_menu_frame)
         self.settings_frames["context_menu"] = context_menu_frame
 
+        # Hotkeys frame
+        hotkeys_frame = ttk.Frame(content_frame)
+        self.create_hotkey_settings(hotkeys_frame)
+        self.settings_frames["hotkeys"] = hotkeys_frame
+
         # Sort Methods frame
         sort_methods_frame = ttk.Frame(content_frame)
         self.create_sort_method_settings(sort_methods_frame)
@@ -261,6 +269,7 @@ class SettingsMixin:
             ("Track Table Columns", "columns", "column_tree"),
             ("Logs", "logs", "logs_tree"),
             ("Advanced", "Advanced", "advanced_tree"),
+            ("Hotkeys", "hotkeys", "hotkey_tree"),
         ]
 
         self.settings_search_index = []
@@ -1980,7 +1989,317 @@ class SettingsMixin:
 
         # Note: Line spacing and timestamp formats require log message format changes
         # These will be applied in the log formatting logic
-    
+
+    def create_hotkey_settings(self, parent):
+        """Create Hotkeys settings section (customizable key bindings)."""
+        # Default values for reset
+        defaults = {
+            "undo_hotkey": "Ctrl+Z",
+            "redo_hotkey": "Ctrl+Y",
+        }
+        settings = [
+            ("Undo", "undo_hotkey", "hotkey", defaults["undo_hotkey"]),
+            ("Redo", "redo_hotkey", "hotkey", defaults["redo_hotkey"]),
+        ]
+
+        self.hotkey_tree = ttk.Treeview(
+            parent,
+            columns=('setting', 'value'),
+            show='tree',
+            selectmode='browse',
+        )
+        self.hotkey_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.hotkey_tree.column('#0', width=0, stretch=False)
+        self.hotkey_tree.column('setting', width=250, anchor=tk.W)
+        self.hotkey_tree.column('value', width=200, anchor=tk.W)
+
+        self.hotkey_vars = {}
+        self.hotkey_item_mapping = {}
+        self._hotkey_defaults = defaults
+
+        for setting_data in settings:
+            setting_name = setting_data[0]
+            config_key = setting_data[1]
+            setting_type = setting_data[2]
+            default_value = setting_data[3]
+
+            current_value = getattr(self.config, config_key, default_value) or default_value
+            var = tk.StringVar(value=current_value)
+            self.hotkey_vars[config_key] = var
+            self.hotkey_vars[f"{config_key}_type"] = setting_type
+            self.hotkey_vars[f"{config_key}_default"] = default_value
+
+            item_id = self.hotkey_tree.insert('', 'end', values=(setting_name, current_value))
+            self.hotkey_item_mapping[item_id] = config_key
+
+        # Hint label below the tree
+        hint = ttk.Label(
+            parent,
+            text="Double-click a hotkey to record a new key combination.\nClick 'Reset to default' to restore the original binding.",
+            font=("Segoe UI", 9),
+            foreground="#64748b",
+            justify=tk.LEFT,
+        )
+        hint.pack(side=tk.LEFT, padx=5, pady=(0, 5), anchor=tk.W)
+
+        # Reset button
+        reset_btn = ttk.Button(
+            parent,
+            text="Reset to default",
+            command=self._reset_hotkey_defaults,
+            style="Subtle.TButton",
+        )
+        reset_btn.pack(side=tk.RIGHT, padx=5, pady=(0, 5))
+
+        self.hotkey_tree.bind('<Double-Button-1>', self._on_hotkey_tree_double_click)
+
+    def _on_hotkey_tree_double_click(self, event):
+        """Handle double-click on a hotkey row: open the key capture dialog."""
+        item_id = self.hotkey_tree.identify('item', event.x, event.y)
+        if not item_id:
+            return
+        config_key = self.hotkey_item_mapping.get(item_id)
+        if not config_key:
+            return
+        current = self.hotkey_vars[config_key].get()
+        new_value = self._capture_hotkey_dialog(current)
+        if new_value is None:
+            return
+        if not new_value:
+            # Treat empty string as "unbound"
+            new_value = ""
+        self.hotkey_vars[config_key].set(new_value)
+        self.hotkey_tree.set(item_id, 'value', new_value or "(unbound)")
+        setattr(self.config, config_key, new_value)
+        try:
+            from bandcamp_auto_uploader.config import save_config
+            save_config(self.config)
+        except Exception as e:
+            logger.debug(f"Failed to save hotkey config: {e}")
+        if hasattr(self, 'apply_hotkey_bindings'):
+            self.apply_hotkey_bindings()
+        if hasattr(self, 'show_toast'):
+            label = "Unbound" if not new_value else f"Hotkey set to {new_value}"
+            self.show_toast(label, 1500, "success")
+
+    def _capture_hotkey_dialog(self, current_value=""):
+        """Show a borderless modal that captures a key combination.
+
+        Returns the captured hotkey as a string like 'Ctrl+Shift+Z', an empty
+        string if the user explicitly unbound the key, or None if cancelled.
+        Any key press commits (Enter/Return confirms, Escape cancels, Backspace
+        unbinds). The dialog has no buttons and no title bar.
+        """
+        BG = "#0f172a"
+        FG = "#f8fafc"
+        MUTED = "#94a3b8"
+        ACCENT = "#38bdf8"
+        SURFACE = "#1e293b"
+        BORDER = "#334155"
+
+        dialog = tk.Toplevel(self.root)
+        dialog.overrideredirect(True)
+        dialog.transient(self.root)
+        dialog.configure(bg=BG, highlightthickness=1, highlightbackground=BORDER)
+        self.center_dialog(dialog, width=360, height=170)
+
+        result = {"value": None}
+
+        # Custom title strip
+        header = tk.Frame(dialog, bg=BG, height=28)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+        tk.Label(
+            header,
+            text="●  Record hotkey",
+            bg=BG, fg=MUTED,
+            font=("Segoe UI", 9, "bold"),
+        ).pack(side=tk.LEFT, padx=10, pady=6)
+        close_btn = tk.Label(
+            header, text="✕", bg=BG, fg=MUTED,
+            font=("Segoe UI", 10), cursor="hand2", padx=10,
+        )
+        close_btn.pack(side=tk.RIGHT)
+        close_btn.bind("<Button-1>", lambda e: cancel())
+        close_btn.bind("<Enter>", lambda e: close_btn.configure(fg=FG))
+        close_btn.bind("<Leave>", lambda e: close_btn.configure(fg=MUTED))
+        # Drag the borderless window
+        header.bind("<Button-1>", lambda e: dialog._drag_x and None or setattr(dialog, "_drag_x", e.x) or setattr(dialog, "_drag_y", e.y))
+        header.bind("<B1-Motion>", lambda e: dialog.geometry(f"+{e.x_root - dialog._drag_x}+{e.y_root - dialog._drag_y}"))
+        dialog._drag_x = dialog._drag_y = 0
+
+        # Prompt
+        tk.Label(
+            dialog,
+            text="Press a key combination",
+            bg=BG, fg=FG,
+            font=("Segoe UI", 10),
+        ).pack(pady=(14, 6))
+
+        # Captured key display
+        display_frame = tk.Frame(dialog, bg=SURFACE, highlightthickness=1, highlightbackground=BORDER)
+        display_frame.pack(fill=tk.X, padx=16)
+        captured_var = tk.StringVar(value=current_value or "(unbound)")
+        captured_lbl = tk.Label(
+            display_frame,
+            textvariable=captured_var,
+            bg=SURFACE, fg=ACCENT,
+            font=("Consolas", 12, "bold"),
+            padx=10, pady=8,
+        )
+        captured_lbl.pack(fill=tk.X)
+
+        # Hint
+        tk.Label(
+            dialog,
+            text="Enter saves  •  Backspace unbinds  •  Esc cancels",
+            bg=BG, fg=MUTED,
+            font=("Segoe UI", 8),
+        ).pack(pady=(10, 0))
+
+        def commit(value):
+            result["value"] = value
+            dialog.destroy()
+
+        def cancel():
+            result["value"] = None
+            dialog.destroy()
+
+        def on_key(event):
+            if event.keysym == 'Escape':
+                cancel()
+                return "break"
+            if event.keysym == 'BackSpace':
+                captured_var.set("(unbound)")
+                return "break"
+            if event.keysym in ('Return', 'KP_Enter'):
+                if result["value"] is None:
+                    current = captured_var.get()
+                    commit("" if current == "(unbound)" else current)
+                else:
+                    dialog.destroy()
+                return "break"
+            hotkey_str = self._tk_event_to_hotkey_string(event)
+            if hotkey_str:
+                captured_var.set(hotkey_str)
+                result["value"] = hotkey_str
+            return "break"
+
+        dialog.bind('<Key>', on_key)
+        dialog.focus_force()
+        dialog.grab_set()
+        dialog.wait_window()
+        return result["value"]
+
+    def _tk_event_to_hotkey_string(self, event):
+        """Convert a Tk KeyPress event into a human-readable hotkey string."""
+        # Ignore bare modifier key presses
+        modifier_keysyms = {
+            'Shift_L', 'Shift_R', 'Control_L', 'Control_R',
+            'Alt_L', 'Alt_R', 'Meta_L', 'Meta_R', 'Caps_Lock', 'Num_Lock',
+        }
+        if event.keysym in modifier_keysyms:
+            return None
+
+        parts = []
+        # State bit masks (cross-platform)
+        if event.state & 0x4:
+            parts.append('Ctrl')
+        if event.state & 0x8:
+            parts.append('Alt')
+        if event.state & 0x1:
+            parts.append('Shift')
+        if event.state & 0x40:
+            parts.append('Meta')
+
+        # Main key
+        keysym = event.keysym
+        if len(keysym) == 1 and keysym.isprintable():
+            main_key = keysym.upper() if keysym.isalpha() else keysym
+        elif keysym.startswith('F') and keysym[1:].isdigit():
+            main_key = keysym.upper()
+        else:
+            pretty = {
+                'Escape': 'Esc',
+                'Return': 'Enter',
+                'space': 'Space',
+                'Tab': 'Tab',
+                'BackSpace': 'Backspace',
+                'Delete': 'Delete',
+                'Insert': 'Insert',
+                'Home': 'Home',
+                'End': 'End',
+                'Prior': 'PageUp',
+                'Next': 'PageDown',
+                'Up': 'Up',
+                'Down': 'Down',
+                'Left': 'Left',
+                'Right': 'Right',
+            }
+            main_key = pretty.get(keysym, keysym)
+        parts.append(main_key)
+        return '+'.join(parts)
+
+    def _reset_hotkey_defaults(self):
+        """Reset all hotkey settings to their default values."""
+        for config_key, default_value in self._hotkey_defaults.items():
+            self.hotkey_vars[config_key].set(default_value)
+            setattr(self.config, config_key, default_value)
+            for item_id, key in self.hotkey_item_mapping.items():
+                if key == config_key:
+                    self.hotkey_tree.set(item_id, 'value', default_value)
+                    break
+        try:
+            from bandcamp_auto_uploader.config import save_config
+            save_config(self.config)
+        except Exception as e:
+            logger.debug(f"Failed to save hotkey config: {e}")
+        if hasattr(self, 'apply_hotkey_bindings'):
+            self.apply_hotkey_bindings()
+        if hasattr(self, 'show_toast'):
+            self.show_toast("Hotkeys reset to defaults", 1500, "success")
+
+    def _hotkey_string_to_tk_binding(self, hotkey_str):
+        """Convert a hotkey string like 'Ctrl+Shift+Z' to a Tk binding '<Control-Shift-Z>'."""
+        if not hotkey_str:
+            return None
+        try:
+            parts = [p.strip() for p in hotkey_str.split('+') if p.strip()]
+        except Exception:
+            return None
+        if not parts:
+            return None
+        main_key = parts[-1]
+        modifiers = parts[:-1]
+        tk_modifiers = []
+        for mod in modifiers:
+            mod_lower = mod.lower()
+            if mod_lower in ('ctrl', 'control'):
+                tk_modifiers.append('Control')
+            elif mod_lower == 'alt':
+                tk_modifiers.append('Alt')
+            elif mod_lower == 'shift':
+                tk_modifiers.append('Shift')
+            elif mod_lower in ('cmd', 'meta', 'super'):
+                tk_modifiers.append('Meta')
+        if len(main_key) == 1:
+            main_key_norm = main_key.lower() if main_key.isalpha() else main_key
+        elif main_key.upper().startswith('F') and main_key[1:].isdigit():
+            main_key_norm = main_key.upper()
+        else:
+            special_map = {
+                'Esc': 'Escape',
+                'Enter': 'Return',
+                'Space': 'space',
+                'Backspace': 'BackSpace',
+                'PageUp': 'Prior',
+                'PageDown': 'Next',
+            }
+            main_key_norm = special_map.get(main_key, main_key)
+        if tk_modifiers:
+            return f"<{'-'.join(tk_modifiers)}-{main_key_norm}>"
+        return f"<{main_key_norm}>"
+
     def create_interface_combined_settings(self, parent):
         """Create combined Interface settings section that includes all sub-sections"""
         # Combined settings from all interface sub-sections

@@ -306,9 +306,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Save window geometry on close
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.report_callback_exception = self.handle_tk_callback_exception
-        
+
         self.set_window_icon()
-        
+        self.apply_hotkey_bindings()
+
         # Variables
         self.urls = {}
         self.session = None
@@ -515,6 +516,58 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
         except Exception as e:
             logger.debug(f"Failed to set Windows taskbar icon {icon_path}: {e}")
+
+    def apply_hotkey_bindings(self):
+        """Bind the configured undo/redo hotkeys on the root window.
+
+        Skips while focus is on a text-entry widget so that the default
+        text-undo behaviour (and other Entry/Text bindings) keeps working.
+        """
+        if not hasattr(self, 'root'):
+            return
+        # Remove any previously applied custom hotkey bindings.
+        for tag in ('hotkey_undo', 'hotkey_redo'):
+            try:
+                self.root.unbind(tag)
+            except tk.TclError:
+                pass
+        undo_binding = self._hotkey_string_to_tk_binding(
+            getattr(self.config, 'undo_hotkey', 'Ctrl+Z')
+        )
+        redo_binding = self._hotkey_string_to_tk_binding(
+            getattr(self.config, 'redo_hotkey', 'Ctrl+Y')
+        )
+        if undo_binding:
+            self.root.bind(undo_binding, self._on_undo_hotkey, add='+')
+        if redo_binding:
+            self.root.bind(redo_binding, self._on_redo_hotkey, add='+')
+
+    def _hotkey_focus_is_text_widget(self):
+        try:
+            focus = self.root.focus_get()
+        except Exception:
+            return False
+        if focus is None:
+            return False
+        return isinstance(focus, (tk.Entry, ttk.Entry, tk.Text, ttk.Combobox, ttk.Spinbox))
+
+    def _on_undo_hotkey(self, event):
+        if self._hotkey_focus_is_text_widget():
+            return None
+        try:
+            self.undo_track_table_action()
+        except Exception as e:
+            logger.debug(f"Undo hotkey failed: {e}")
+        return "break"
+
+    def _on_redo_hotkey(self, event):
+        if self._hotkey_focus_is_text_widget():
+            return None
+        try:
+            self.redo_track_table_action()
+        except Exception as e:
+            logger.debug(f"Redo hotkey failed: {e}")
+        return "break"
 
     def load_context_menu_icons(self):
         """Load optional icons for track context menu commands."""
