@@ -199,7 +199,7 @@ class BandcampTrackData:
     title: str = "track 1"
     streaming: int = 1
     enable_download: int = 1
-    price: str = "0.00"
+    price: str = "1.50"
     nyp: int = 1
     label_id: int = 0
     new_desc_format: int = 1

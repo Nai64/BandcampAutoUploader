@@ -9,7 +9,7 @@ from InquirerPy import inquirer
 @dataclasses.dataclass
 class Config:
     album_price: float = 0
-    track_price: float = 0
+    track_price: float = 1.5
     name_your_price: bool = True
     track_streaming: bool = True
     track_downloading: bool = True

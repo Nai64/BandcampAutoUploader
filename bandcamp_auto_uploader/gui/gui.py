@@ -3515,7 +3515,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 comment,
                 length,
                 extension,
-                self.format_price_display(track_data.price) if track_data and getattr(track_data, 'price', '') else "",
+                self.format_price_display(track_data.price if track_data and getattr(track_data, 'price', '') else "1.50"),
                 "Yes" if track_data and getattr(track_data, 'nyp', 0) else "No",
                 year,
                 genre,
@@ -4299,7 +4299,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_enable_dl_var.set(data.get('enable_download', True))
         self.td_private_var.set(data.get('private', False))
         self.td_featured_var.set(data.get('featured', False))
-        self.td_price_var.set(self.format_price_display(data.get('price', "")))
+        self.td_price_var.set(self.format_price_display(data.get('price', "1.50")))
         self.td_nyp_var.set(data.get('nyp', True))
         self.td_video_id_var.set(data.get('video_id', ""))
         self.td_video_caption_var.set(data.get('video_caption', ""))
@@ -4355,7 +4355,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         was_featured = self.track_editor_data.get(path, {}).get('featured', False)
         now_featured = self.td_featured_var.get()
         release_date = self.sanitize_release_date_var(self.td_release_date_var)
-        price = self.sanitize_price_var(self.td_price_var, default="")
+        price = self.sanitize_price_var(self.td_price_var, default="1.50")
         data = {
             'name': self.td_name_var.get(),
             'artist': self.td_artist_var.get(),
@@ -5740,7 +5740,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 artist = track.track_data.artist if track.track_data.artist and not self.ignore_artist_var.get() else ""
                 title = track.track_data.title
                 comment = track.track_data.download_desc or getattr(track.track_data, 'about', '') or self.get_track_comment_metadata(track_path)
-                price = self.format_price_display(track.track_data.price)
+                price = self.format_price_display(track.track_data.price or "1.50")
                 nyp = "Yes" if track.track_data.nyp else "No"
 
                 # Get audio length
@@ -7667,7 +7667,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             values[3] = track.track_data.download_desc or getattr(track.track_data, 'about', '') or self.get_track_comment_metadata(file_path)
             values[4] = self.get_audio_length(file_path)
             values[5] = file_path.suffix
-            values[6] = self.format_price_display(track.track_data.price)
+            values[6] = self.format_price_display(track.track_data.price or "1.50")
             values[7] = "Yes" if track.track_data.nyp else "No"
             values[8] = year
             values[9] = genre
