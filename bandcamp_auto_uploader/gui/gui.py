@@ -1143,6 +1143,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         checkbox_frame = ttk.Frame(preview_container)
         checkbox_frame.pack(fill=tk.X, pady=(0, 4))
 
+        ttk.Label(checkbox_frame, text="Search:").pack(side=tk.LEFT)
+        self._track_search_var = tk.StringVar()
+        self._track_search_var.trace_add('write', lambda *args: self._filter_track_table())
+        self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
+        self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
+
         ttk.Frame(checkbox_frame).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         self.guess_case_preview_values = None
@@ -4622,6 +4628,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.tag_configure("corrupted", background=getattr(self.config, 'corrupted_track_highlight_color', '#ffd6d6'))
         self.track_table.tag_configure("drag_target", background="#e8f4fd")
         self.track_table.tag_configure("featured", background="#c8e6c9")
+        self.track_table.tag_configure("search_match", background="#cfe2ff")
         self._featured_track_path = None
 
     def _on_column_lock_press(self, event):
@@ -4702,7 +4709,33 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         for tag in extra_tags:
             if tag not in tags:
                 tags.append(tag)
+        if self._track_row_matches_search(item_id):
+            tags.append("search_match")
         self.track_table.item(item_id, tags=tuple(tags))
+
+    def _track_row_matches_search(self, item_id):
+        """Return True if the given track row matches the active search query."""
+        query = getattr(self, '_track_search_query', '')
+        if not query:
+            return False
+        try:
+            values = self.track_table.item(item_id).get("values", ())
+        except tk.TclError:
+            return False
+        haystack = " ".join("" if v is None else str(v) for v in values).lower()
+        return query in haystack
+
+    def _filter_track_table(self):
+        """Re-apply track row tags to reflect the current search query."""
+        if not hasattr(self, 'track_table') or not hasattr(self, '_track_search_var'):
+            return
+        try:
+            query = self._track_search_var.get().strip().lower()
+        except Exception:
+            return
+        self._track_search_query = query
+        if hasattr(self, 'refresh_all_track_row_tags'):
+            self.refresh_all_track_row_tags()
 
     def is_track_item_featured(self, item_id):
         """Check if a track row is currently featured based on stored editor data."""
