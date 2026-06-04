@@ -1314,7 +1314,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         right_column = ttk.Frame(middle_section)
         right_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
 
-        cover_frame = ttk.LabelFrame(right_column, text="Cover Art", padding=(6, 5))
+        cover_title = ttk.Frame(right_column)
+        self.cover_art_title_label = ttk.Label(
+            cover_title,
+            text="Cover Art",
+            font=("Segoe UI", 9, "bold")
+        )
+        self.cover_art_title_label.pack(side=tk.LEFT)
+        self.cover_art_size_label = ttk.Label(
+            cover_title,
+            text="",
+            font=("Segoe UI", 8),
+            foreground="#64748b"
+        )
+        self.cover_art_size_label.pack(side=tk.LEFT, padx=(5, 0))
+
+        cover_frame = ttk.LabelFrame(right_column, labelwidget=cover_title, padding=(6, 5))
         cover_frame.pack(fill=tk.X, anchor=tk.NW)
 
         cover_content_frame = ttk.Frame(cover_frame)
@@ -2072,6 +2087,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
 
         cover_path = self.cover_path_var.get()
+        self.update_cover_art_size_label(cover_path)
 
         if not cover_path:
             # No cover - show placeholder
@@ -2122,6 +2138,27 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             )
             if hasattr(self, '_cover_photo'):
                 delattr(self, '_cover_photo')
+
+    def update_cover_art_size_label(self, cover_path=None):
+        """Refresh the muted WIDTHxHEIGHT suffix in the Cover Art title."""
+        if not hasattr(self, 'cover_art_size_label'):
+            return
+
+        if cover_path is None and hasattr(self, 'cover_path_var'):
+            cover_path = self.cover_path_var.get()
+
+        if not cover_path or self._is_url(cover_path) or not Path(cover_path).exists():
+            self.cover_art_size_label.configure(text="")
+            return
+
+        try:
+            from PIL import Image
+            with Image.open(cover_path) as source:
+                width, height = source.size
+            self.cover_art_size_label.configure(text=f"{width}x{height}")
+        except Exception as e:
+            logger.debug(f"Failed to read cover dimensions for {cover_path}: {e}")
+            self.cover_art_size_label.configure(text="")
 
     def get_resampling_method(self):
         """Convert scaling method string to a PIL resampling constant."""
