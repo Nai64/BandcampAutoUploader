@@ -681,13 +681,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 logger.warning(f"Failed to load context menu icon {icon_path}: {e}")
                 self.icon_images[label] = None
 
-        # Load search magnifier icon for search bars (via PIL for proper alpha)
+        # Load search magnifier icon for search bars
         search_icon_path = icons_dir / "magnifier.png"
         if search_icon_path.exists():
             try:
-                from PIL import Image, ImageTk
-                pil_img = Image.open(str(search_icon_path))
-                self.icon_images["Search"] = ImageTk.PhotoImage(pil_img, master=self.root)
+                self.icon_images["Search"] = tk.PhotoImage(master=self.root, file=str(search_icon_path))
             except Exception as e:
                 logger.warning(f"Failed to load search icon: {e}")
                 self.icon_images["Search"] = None
@@ -1258,24 +1256,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self._track_search_var.trace_add('write', lambda *args: self._filter_track_table())
         search_icon = getattr(self, 'icon_images', {}).get('Search')
         if search_icon:
-            try:
-                style = ttk.Style()
-                if 'TrackSearch.icon' not in style.element_names():
-                    style.element_create('TrackSearch.icon', 'image', search_icon, padding=(0, 0, 4, 0), sticky='w')
-                style.layout('TrackSearch.TEntry', [
-                    ('Entry.field', {'sticky': 'nswe', 'children': [
-                        ('Entry.background', {'sticky': 'nswe', 'children': [
-                            ('Entry.padding', {'sticky': 'nswe', 'children': [
-                                ('TrackSearch.icon', {'sticky': 'w'}),
-                                ('Entry.textarea', {'sticky': 'nswe'})
-                            ]})
-                        ]})
-                    ]})
-                ])
-                self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, style='TrackSearch.TEntry', width=28)
-            except Exception:
-                self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
+            style = ttk.Style()
+            style.configure('TrackSearch.TEntry', padding=(22, 0, 0, 0))
+            self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, style='TrackSearch.TEntry', width=28)
             self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
+            icon_lbl = ttk.Label(self._track_search_entry, image=search_icon)
+            icon_lbl.place(x=3, rely=0.5, anchor='w')
+            icon_lbl.bind('<Button-1>', lambda e: self._track_search_entry.focus_set())
         else:
             self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
             self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
