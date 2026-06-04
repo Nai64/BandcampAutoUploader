@@ -1143,17 +1143,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         checkbox_frame = ttk.Frame(preview_container)
         checkbox_frame.pack(fill=tk.X, pady=(0, 4))
 
-        self.ignore_artist_var = tk.BooleanVar(value=getattr(self.config, 'ignore_artist_name', False))
-        self.filename_as_title_var = tk.BooleanVar(value=getattr(self.config, 'use_filename_as_title', False))
-        self.ignore_metadata_var = tk.BooleanVar(value=getattr(self.config, 'ignore_all_metadata', False))
-
-        self.ignore_artist_check = ttk.Checkbutton(checkbox_frame, text="Ignore artist", variable=self.ignore_artist_var, command=self.on_ignore_artist_changed)
-        self.ignore_artist_check.pack(side=tk.LEFT, padx=(0, 10))
-        self.filename_as_title_check = ttk.Checkbutton(checkbox_frame, text="Filename as title", variable=self.filename_as_title_var, command=self.on_filename_as_title_changed)
-        self.filename_as_title_check.pack(side=tk.LEFT, padx=(0, 10))
-        self.ignore_metadata_check = ttk.Checkbutton(checkbox_frame, text="Ignore metadata", variable=self.ignore_metadata_var, command=self.on_ignore_metadata_changed)
-        self.ignore_metadata_check.pack(side=tk.LEFT, padx=(0, 10))
-
         ttk.Frame(checkbox_frame).pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         self.guess_case_preview_values = None
@@ -5885,7 +5874,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 extension = track_path.suffix if track_path.exists() else ""
 
                 # Get track metadata
-                artist = track.track_data.artist if track.track_data.artist and not self.ignore_artist_var.get() else ""
+                artist = track.track_data.artist if track.track_data.artist and not self.config.ignore_artist_name else ""
                 title = track.track_data.title
                 comment = track.track_data.download_desc or getattr(track.track_data, 'about', '') or self.get_track_comment_metadata(track_path)
                 price = self.format_price_display(track.track_data.price or "1.50")
@@ -7855,57 +7844,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Push editable table metadata into current_album when it is available."""
         self.sync_track_table_to_current_album()
     
-    def on_filename_as_title_changed(self):
-        """Handle changes to the 'Use filename as title' checkbox"""
-        if self.is_upload_in_progress():
-            return
-
-        try:
-            self.config.use_filename_as_title = self.filename_as_title_var.get()
-            save_config(self.config)
-            self.sync_track_table_to_current_album()
-            if getattr(self.config, 'notify_on_settings_save', False):
-                self.show_toast("Setting applied", 1500, "success", trigger="settings_save")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to update setting:\n{e}")
-            logger.exception(e)
-
-    def on_ignore_metadata_changed(self):
-        """Handle changes to the 'Ignore metadata' checkbox"""
-        if self.is_upload_in_progress():
-            return
-
-        try:
-            self.config.ignore_all_metadata = self.ignore_metadata_var.get()
-            save_config(self.config)
-            self.update_preview_artist_visibility()
-            if getattr(self.config, 'notify_on_settings_save', False):
-                self.show_toast("Setting applied", 1500, "success", trigger="settings_save")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to update setting:\n{e}")
-            logger.exception(e)
-
-    def on_ignore_artist_changed(self):
-        """Handle changes to the 'Ignore artist' checkbox"""
-        if self.is_upload_in_progress():
-            return
-
-        try:
-            self.config.ignore_artist_name = self.ignore_artist_var.get()
-            save_config(self.config)
-            self.update_preview_artist_visibility()
-            if getattr(self.config, 'notify_on_settings_save', False):
-                self.show_toast("Setting applied", 1500, "success", trigger="settings_save")
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to update setting:\n{e}")
-            logger.exception(e)
-
     def update_preview_artist_visibility(self):
         """Apply artist visibility settings without rebuilding track titles or metadata."""
         if not hasattr(self, 'track_table'):
             return
 
-        hide_artist = self.ignore_artist_var.get() or self.ignore_metadata_var.get()
+        hide_artist = self.config.ignore_artist_name or self.config.ignore_all_metadata
         for item in self.track_table.get_children():
             values = list(self.track_table.item(item)['values'])
             while len(values) < 13:
@@ -8016,8 +7960,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             try:
                 logger.info("Starting upload process")
                 
-                # Apply ignore artist name setting from checkbox to config
-                self.config.ignore_artist_name = self.ignore_artist_var.get()
+                # Apply ignore artist name setting from config
                 if self.config.ignore_artist_name:
                     logger.info("Ignoring artist name from metadata")
                 
@@ -8384,9 +8327,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "open_folder_btn": state,
             "reload_album_btn": state,
             "album_path_entry": state,
-            "ignore_artist_check": state,
-            "filename_as_title_check": state,
-            "ignore_metadata_check": state,
             "guess_case_btn": state,
             "extract_filename_btn": state,
             "add_track_btn": state,
@@ -8922,7 +8862,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             extension = track_path.suffix if track_path.exists() else ""
 
             # Use filename as title if checkbox is checked
-            if self.filename_as_title_var.get():
+            if self.config.use_filename_as_title:
                 title = track_path.stem
             else:
                 title = track_path.stem  # Default to stem for now

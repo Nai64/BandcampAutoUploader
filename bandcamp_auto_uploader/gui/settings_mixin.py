@@ -417,6 +417,9 @@ class SettingsMixin:
             ("Create session.txt files (Recommended)", "create_album_session_files", "bool"),
             ("Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
             ("Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
+            ("Ignore artist name", "ignore_artist_name", "bool"),
+            ("Use filename as title", "use_filename_as_title", "bool"),
+            ("Ignore all metadata", "ignore_all_metadata", "bool"),
             ("Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
             ("Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
             ("Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
@@ -442,67 +445,125 @@ class SettingsMixin:
             ("Limit Log Files", "log_file_limit", "int", 1, 99),
             ("File Size Unit", "file_size_unit", "str"),
         ]
-        
-        # Create treeview for general settings (no headings)
+
+        # Build display value + per-setting data so the search filter can rebuild rows
+        self._general_settings_data = []
+        for setting_data in settings:
+            setting_name = setting_data[0]
+            config_key = setting_data[1]
+            setting_type = setting_data[2]
+            if setting_type == "bool":
+                display_value = "☑" if getattr(self.config, config_key, True) else "☐"
+            elif setting_type == "disabled_bool":
+                display_value = "☐"
+            elif setting_type == "str":
+                display_value = getattr(self.config, config_key, "Off")
+            elif setting_type == "color":
+                display_value = getattr(self.config, config_key, '#ffffff')
+            elif setting_type == "int":
+                min_val = setting_data[3]
+                display_value = str(getattr(self.config, config_key, min_val))
+            elif setting_type == "action":
+                display_value = "Preview..."
+            else:
+                display_value = ""
+            self._general_settings_data.append((setting_name, config_key, setting_type, display_value))
+
+        # Search bar above the treeview
+        search_frame = ttk.Frame(parent)
+        search_frame.pack(fill=tk.X, padx=5, pady=(5, 0))
+
+        ttk.Label(search_frame, text="Search:").pack(side=tk.LEFT)
+        self._general_search_var = tk.StringVar()
+        self._general_search_var.trace_add('write', lambda *args: self._filter_general_settings())
+        search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
+        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
+        self._general_search_entry = search_entry
+
+        # Treeview for general settings (no headings)
         self.general_tree = ttk.Treeview(
             parent,
             columns=('setting', 'value'),
             show='tree',
             selectmode='browse'
         )
-        self.general_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+        self.general_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=(5, 5))
+
+        # Configure the blue-highlight tag for matching rows
+        self.general_tree.tag_configure('search_match', background='#cfe2ff')
+
         # Hide the tree column
         self.general_tree.column('#0', width=0, stretch=False)
-        
+
         # Configure columns
         self.general_tree.column('setting', width=250, anchor=tk.W)
         self.general_tree.column('value', width=150, anchor=tk.W)
-        
+
         # Populate treeview with settings
         self.general_vars = {}
         self.general_item_mapping = {}
-        
-        for setting_data in settings:
-            setting_name = setting_data[0]
-            config_key = setting_data[1]
-            setting_type = setting_data[2]
-            
+
+        for setting_data in self._general_settings_data:
+            setting_name, config_key, setting_type, display_value = setting_data
+
             if setting_type == "bool":
                 var = tk.BooleanVar(value=getattr(self.config, config_key, True))
-                display_value = "☑" if var.get() else "☐"
             elif setting_type == "disabled_bool":
                 var = tk.BooleanVar(value=False)
-                display_value = "☐"
             elif setting_type == "str":
                 var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
-                display_value = var.get()
             elif setting_type == "color":
                 var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
-                display_value = var.get()
             elif setting_type == "int":
-                min_val = setting_data[3]
-                max_val = setting_data[4]
+                min_val = next((d[3] for d in settings if d[1] == config_key), 1)
+                max_val = next((d[4] for d in settings if d[1] == config_key), 99)
                 var = tk.IntVar(value=getattr(self.config, config_key, min_val))
-                display_value = str(var.get())
+                self.general_vars[f"{config_key}_min"] = min_val
+                self.general_vars[f"{config_key}_max"] = max_val
             elif setting_type == "action":
                 var = None
-                display_value = "Preview..."
-            
+            else:
+                var = None
+
             if var is not None:
                 self.general_vars[config_key] = var
             self.general_vars[f"{config_key}_type"] = setting_type
-            if setting_type == "int":
-                self.general_vars[f"{config_key}_min"] = min_val
-                self.general_vars[f"{config_key}_max"] = max_val
-            
+
             # Add item to treeview
             item_id = self.general_tree.insert('', 'end', values=(setting_name, display_value))
             self.general_item_mapping[item_id] = config_key
-        
+
         # Bind double-click to edit
         self.general_tree.bind('<Button-1>', self.on_general_tree_click)
         self.general_tree.bind('<Double-Button-1>', self.on_general_tree_double_click)
+
+    def _filter_general_settings(self):
+        """Filter the general settings treeview by the search bar text.
+
+        Matching rows (in either the setting name or current value) are
+        highlighted in blue; non-matching rows are hidden.
+        """
+        if not hasattr(self, 'general_tree') or not hasattr(self, '_general_settings_data'):
+            return
+
+        try:
+            query = self._general_search_var.get().strip().lower()
+        except Exception:
+            return
+
+        for item_id in self.general_tree.get_children():
+            self.general_tree.detach(item_id)
+
+        for setting_name, config_key, setting_type, display_value in self._general_settings_data:
+            if not query:
+                new_id = self.general_tree.insert('', 'end', values=(setting_name, display_value))
+            else:
+                haystack = f"{setting_name} {display_value}".lower()
+                if query in haystack:
+                    new_id = self.general_tree.insert('', 'end', values=(setting_name, display_value), tags=('search_match',))
+                else:
+                    continue
+            self.general_item_mapping[new_id] = config_key
     
     def create_context_menu_settings(self, parent):
         """Create Context Menu settings section using Treeview"""
@@ -1280,6 +1341,21 @@ class SettingsMixin:
             elif config_key == "lock_column_sizes":
                 self.config.lock_column_sizes = new_value
                 save_config(self.config)
+            elif config_key == "ignore_artist_name":
+                self.config.ignore_artist_name = new_value
+                save_config(self.config)
+                if hasattr(self, 'update_preview_artist_visibility'):
+                    self.update_preview_artist_visibility()
+            elif config_key == "ignore_all_metadata":
+                self.config.ignore_all_metadata = new_value
+                save_config(self.config)
+                if hasattr(self, 'update_preview_artist_visibility'):
+                    self.update_preview_artist_visibility()
+            elif config_key == "use_filename_as_title":
+                self.config.use_filename_as_title = new_value
+                save_config(self.config)
+                if hasattr(self, 'sync_track_table_to_current_album'):
+                    self.sync_track_table_to_current_album()
             elif config_key == "highlight_corrupted_tracks":
                 self.config.highlight_corrupted_tracks = new_value
                 save_config(self.config)
@@ -2412,6 +2488,9 @@ class SettingsMixin:
             ("General: Create session.txt files (Recommended)", "create_album_session_files", "bool"),
             ("General: Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
             ("General: Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
+            ("General: Ignore artist name", "ignore_artist_name", "bool"),
+            ("General: Use filename as title", "use_filename_as_title", "bool"),
+            ("General: Ignore all metadata", "ignore_all_metadata", "bool"),
             ("General: Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
             ("General: Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
             ("General: Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
@@ -2677,6 +2756,9 @@ class SettingsMixin:
         self.config.create_album_session_files = self.general_combined_vars['create_album_session_files'].get()
         self.config.guess_album_title_from_track_metadata = self.general_combined_vars['guess_album_title_from_track_metadata'].get()
         self.config.guess_release_date_from_track_metadata = self.general_combined_vars['guess_release_date_from_track_metadata'].get()
+        self.config.ignore_artist_name = self.general_combined_vars['ignore_artist_name'].get()
+        self.config.use_filename_as_title = self.general_combined_vars['use_filename_as_title'].get()
+        self.config.ignore_all_metadata = self.general_combined_vars['ignore_all_metadata'].get()
         self.config.use_folder_name_when_album_missing = self.general_combined_vars['use_folder_name_when_album_missing'].get()
         self.config.smart_randomize_on_album_load = self.general_combined_vars['smart_randomize_on_album_load'].get()
         self.config.auto_guess_case_on_album_load = self.general_combined_vars['auto_guess_case_on_album_load'].get()
