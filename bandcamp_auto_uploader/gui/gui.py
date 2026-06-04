@@ -307,6 +307,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
         self.root.report_callback_exception = self.handle_tk_callback_exception
 
+        # Make ttk buttons release focus after click so that Space/Enter don't
+        # re-trigger them and override configured hotkeys.
+        self.root.bind_class("TButton", "<Button-1>", self._release_focus_on_button_click, add="+")
+
         self.set_window_icon()
         self.apply_hotkey_bindings()
 
@@ -548,6 +552,29 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if focus is None:
             return False
         return isinstance(focus, (tk.Entry, ttk.Entry, tk.Text, ttk.Combobox, ttk.Spinbox))
+
+    def _release_focus_on_button_click(self, event):
+        """Class-level binding on ttk.Button: clear focus after click.
+
+        Prevents Space/Enter from re-triggering the last clicked button,
+        which would otherwise override configured hotkeys. The click command
+        still runs because this binding is added with add='+'.
+        """
+        widget = event.widget
+        try:
+            toplevel = widget.winfo_toplevel()
+        except Exception:
+            return None
+        def _clear():
+            try:
+                toplevel.focus_set()
+            except Exception:
+                pass
+        try:
+            toplevel.after_idle(_clear)
+        except Exception:
+            pass
+        return None
 
     def _on_undo_hotkey(self, event):
         if self._hotkey_focus_is_text_widget():
