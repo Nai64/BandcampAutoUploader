@@ -2032,16 +2032,6 @@ class SettingsMixin:
             item_id = self.hotkey_tree.insert('', 'end', values=(setting_name, current_value))
             self.hotkey_item_mapping[item_id] = config_key
 
-        # Hint label below the tree
-        hint = ttk.Label(
-            parent,
-            text="Double-click a hotkey to record a new key combination.\nClick 'Reset to default' to restore the original binding.",
-            font=("Segoe UI", 9),
-            foreground="#64748b",
-            justify=tk.LEFT,
-        )
-        hint.pack(side=tk.LEFT, padx=5, pady=(0, 5), anchor=tk.W)
-
         # Reset button
         reset_btn = ttk.Button(
             parent,
@@ -2083,101 +2073,42 @@ class SettingsMixin:
             self.show_toast(label, 1500, "success")
 
     def _capture_hotkey_dialog(self, current_value=""):
-        """Show a borderless modal that captures a key combination.
+        """Show a modal dialog that captures a key combination.
 
         Returns the captured hotkey as a string like 'Ctrl+Shift+Z', an empty
         string if the user explicitly unbound the key, or None if cancelled.
-        Any key press commits (Enter/Return confirms, Escape cancels, Backspace
-        unbinds). The dialog has no buttons and no title bar.
         """
-        BG = "#0f172a"
-        FG = "#f8fafc"
-        MUTED = "#94a3b8"
-        ACCENT = "#38bdf8"
-        SURFACE = "#1e293b"
-        BORDER = "#334155"
-
         dialog = tk.Toplevel(self.root)
-        dialog.overrideredirect(True)
+        dialog.title("Record hotkey")
         dialog.transient(self.root)
-        dialog.configure(bg=BG, highlightthickness=1, highlightbackground=BORDER)
-        self.center_dialog(dialog, width=360, height=170)
+        dialog.resizable(False, False)
+        dialog.configure(padx=16, pady=12)
+        self.center_dialog(dialog, width=340, height=200)
 
         result = {"value": None}
 
-        # Custom title strip
-        header = tk.Frame(dialog, bg=BG, height=28)
-        header.pack(fill=tk.X)
-        header.pack_propagate(False)
-        tk.Label(
-            header,
-            text="●  Record hotkey",
-            bg=BG, fg=MUTED,
-            font=("Segoe UI", 9, "bold"),
-        ).pack(side=tk.LEFT, padx=10, pady=6)
-        close_btn = tk.Label(
-            header, text="✕", bg=BG, fg=MUTED,
-            font=("Segoe UI", 10), cursor="hand2", padx=10,
-        )
-        close_btn.pack(side=tk.RIGHT)
-        close_btn.bind("<Button-1>", lambda e: cancel())
-        close_btn.bind("<Enter>", lambda e: close_btn.configure(fg=FG))
-        close_btn.bind("<Leave>", lambda e: close_btn.configure(fg=MUTED))
-        # Drag the borderless window
-        header.bind("<Button-1>", lambda e: dialog._drag_x and None or setattr(dialog, "_drag_x", e.x) or setattr(dialog, "_drag_y", e.y))
-        header.bind("<B1-Motion>", lambda e: dialog.geometry(f"+{e.x_root - dialog._drag_x}+{e.y_root - dialog._drag_y}"))
-        dialog._drag_x = dialog._drag_y = 0
-
-        # Prompt
-        tk.Label(
-            dialog,
-            text="Press a key combination",
-            bg=BG, fg=FG,
-            font=("Segoe UI", 10),
-        ).pack(pady=(14, 6))
-
-        # Captured key display
-        display_frame = tk.Frame(dialog, bg=SURFACE, highlightthickness=1, highlightbackground=BORDER)
-        display_frame.pack(fill=tk.X, padx=16)
         captured_var = tk.StringVar(value=current_value or "(unbound)")
-        captured_lbl = tk.Label(
-            display_frame,
-            textvariable=captured_var,
-            bg=SURFACE, fg=ACCENT,
-            font=("Consolas", 12, "bold"),
-            padx=10, pady=8,
-        )
-        captured_lbl.pack(fill=tk.X)
-
-        # Hint
-        tk.Label(
+        captured_label = ttk.Label(
             dialog,
-            text="Enter saves  •  Backspace unbinds  •  Esc cancels",
-            bg=BG, fg=MUTED,
-            font=("Segoe UI", 8),
-        ).pack(pady=(10, 0))
+            textvariable=captured_var,
+            font=("Consolas", 11),
+            foreground="#1d4ed8",
+            padding=(8, 6),
+            relief="groove",
+        )
+        captured_label.pack(fill=tk.X, pady=(0, 10))
 
-        def commit(value):
-            result["value"] = value
-            dialog.destroy()
-
-        def cancel():
-            result["value"] = None
-            dialog.destroy()
+        button_frame = ttk.Frame(dialog)
+        button_frame.pack(fill=tk.X)
 
         def on_key(event):
             if event.keysym == 'Escape':
-                cancel()
+                result["value"] = None
+                dialog.destroy()
                 return "break"
             if event.keysym == 'BackSpace':
                 captured_var.set("(unbound)")
-                return "break"
-            if event.keysym in ('Return', 'KP_Enter'):
-                if result["value"] is None:
-                    current = captured_var.get()
-                    commit("" if current == "(unbound)" else current)
-                else:
-                    dialog.destroy()
+                result["value"] = ""
                 return "break"
             hotkey_str = self._tk_event_to_hotkey_string(event)
             if hotkey_str:
@@ -2185,8 +2116,25 @@ class SettingsMixin:
                 result["value"] = hotkey_str
             return "break"
 
+        def on_save():
+            if result["value"] is None and captured_var.get() not in ("(unbound)", ""):
+                result["value"] = captured_var.get()
+            dialog.destroy()
+
+        def on_cancel():
+            result["value"] = None
+            dialog.destroy()
+
+        def on_clear():
+            captured_var.set("(unbound)")
+            result["value"] = ""
+
+        ttk.Button(button_frame, text="Clear", command=on_clear).pack(side=tk.LEFT)
+        ttk.Button(button_frame, text="Cancel", command=on_cancel).pack(side=tk.RIGHT, padx=(4, 0))
+        ttk.Button(button_frame, text="Save", command=on_save).pack(side=tk.RIGHT)
+
         dialog.bind('<Key>', on_key)
-        dialog.focus_force()
+        captured_label.focus_set()
         dialog.grab_set()
         dialog.wait_window()
         return result["value"]
