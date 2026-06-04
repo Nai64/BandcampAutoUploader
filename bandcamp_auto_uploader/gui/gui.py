@@ -378,11 +378,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Bind keyboard shortcuts
         self.bind_keyboard_shortcuts()
-        
-        # Global shortcuts
-        self.root.bind('<Control-Return>', lambda e: self.start_upload() if self.upload_btn['state'] == tk.NORMAL else None)
-        self.root.bind('<Escape>', lambda e: self.cancel_upload() if self.cancel_btn['state'] == tk.NORMAL else None)
-        
+
         # Load initial data
         self.root.after(100, self.initialize_app)
         
@@ -518,29 +514,31 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             logger.debug(f"Failed to set Windows taskbar icon {icon_path}: {e}")
 
     def apply_hotkey_bindings(self):
-        """Bind the configured undo/redo hotkeys on the root window.
+        """Bind the configured hotkeys on the root window.
 
-        Skips while focus is on a text-entry widget so that the default
-        text-undo behaviour (and other Entry/Text bindings) keeps working.
+        Skips undo/redo while focus is on a text-entry widget so the default
+        text-undo behaviour keeps working. Upload/Cancel only fire when the
+        corresponding button is enabled.
         """
         if not hasattr(self, 'root'):
             return
-        # Remove any previously applied custom hotkey bindings.
-        for tag in ('hotkey_undo', 'hotkey_redo'):
+        for tag in ('hotkey_undo', 'hotkey_redo', 'hotkey_upload', 'hotkey_cancel'):
             try:
                 self.root.unbind(tag)
             except tk.TclError:
                 pass
-        undo_binding = self._hotkey_string_to_tk_binding(
-            getattr(self.config, 'undo_hotkey', 'Ctrl+Z')
-        )
-        redo_binding = self._hotkey_string_to_tk_binding(
-            getattr(self.config, 'redo_hotkey', 'Ctrl+Y')
-        )
-        if undo_binding:
-            self.root.bind(undo_binding, self._on_undo_hotkey, add='+')
-        if redo_binding:
-            self.root.bind(redo_binding, self._on_redo_hotkey, add='+')
+
+        bindings = [
+            ('hotkey_undo', 'undo_hotkey', 'Ctrl+Z', self._on_undo_hotkey),
+            ('hotkey_redo', 'redo_hotkey', 'Ctrl+Y', self._on_redo_hotkey),
+            ('hotkey_upload', 'upload_hotkey', 'Ctrl+Enter', self._on_upload_hotkey),
+            ('hotkey_cancel', 'cancel_hotkey', 'Ctrl+Space+Enter', self._on_cancel_hotkey),
+        ]
+        for tag, attr, default, handler in bindings:
+            hotkey = getattr(self.config, attr, default)
+            tk_binding = self._hotkey_string_to_tk_binding(hotkey)
+            if tk_binding:
+                self.root.bind(tk_binding, handler, add='+')
 
     def _hotkey_focus_is_text_widget(self):
         try:
@@ -567,6 +565,26 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.redo_track_table_action()
         except Exception as e:
             logger.debug(f"Redo hotkey failed: {e}")
+        return "break"
+
+    def _on_upload_hotkey(self, event):
+        if self._hotkey_focus_is_text_widget():
+            return None
+        try:
+            if hasattr(self, 'upload_btn') and str(self.upload_btn['state']) == str(tk.NORMAL):
+                self.start_upload()
+        except Exception as e:
+            logger.debug(f"Upload hotkey failed: {e}")
+        return "break"
+
+    def _on_cancel_hotkey(self, event):
+        if self._hotkey_focus_is_text_widget():
+            return None
+        try:
+            if hasattr(self, 'cancel_btn') and str(self.cancel_btn['state']) == str(tk.NORMAL):
+                self.cancel_upload()
+        except Exception as e:
+            logger.debug(f"Cancel hotkey failed: {e}")
         return "break"
 
     def load_context_menu_icons(self):

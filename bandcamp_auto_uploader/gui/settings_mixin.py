@@ -1996,10 +1996,14 @@ class SettingsMixin:
         defaults = {
             "undo_hotkey": "Ctrl+Z",
             "redo_hotkey": "Ctrl+Y",
+            "upload_hotkey": "Ctrl+Enter",
+            "cancel_hotkey": "Ctrl+Space+Enter",
         }
         settings = [
             ("Undo", "undo_hotkey", "hotkey", defaults["undo_hotkey"]),
             ("Redo", "redo_hotkey", "hotkey", defaults["redo_hotkey"]),
+            ("Upload album", "upload_hotkey", "hotkey", defaults["upload_hotkey"]),
+            ("Cancel album", "cancel_hotkey", "hotkey", defaults["cancel_hotkey"]),
         ]
 
         self.hotkey_tree = ttk.Treeview(
@@ -2067,8 +2071,9 @@ class SettingsMixin:
     def _capture_hotkey_dialog(self, current_value=""):
         """Show a modal dialog that captures a key combination.
 
-        Returns the captured hotkey as a string like 'Ctrl+Shift+Z', an empty
-        string if the user explicitly unbound the key, or None if cancelled.
+        Returns the captured hotkey as a string like 'Ctrl+Shift+Z' or a
+        multi-key sequence like 'Ctrl+Space+Enter', an empty string if the
+        user explicitly unbound the key, or None if cancelled.
         """
         dialog = tk.Toplevel(self.root)
         dialog.title("Record hotkey")
@@ -2077,6 +2082,7 @@ class SettingsMixin:
         dialog.configure(padx=16, pady=12)
 
         result = {"value": None}
+        SEQUENCE_TIMEOUT_MS = 900
 
         captured_var = tk.StringVar(value=current_value or "(unbound)")
         captured_label = ttk.Label(
@@ -2092,31 +2098,78 @@ class SettingsMixin:
         button_frame = ttk.Frame(dialog)
         button_frame.pack(fill=tk.X)
 
+        pending_after_id = [None]
+
+        def finalize_sequence():
+            pending_after_id[0] = None
+            result["value"] = captured_var.get()
+            dialog.destroy()
+
+        def schedule_finalize():
+            if pending_after_id[0] is not None:
+                try:
+                    dialog.after_cancel(pending_after_id[0])
+                except Exception:
+                    pass
+            pending_after_id[0] = dialog.after(SEQUENCE_TIMEOUT_MS, finalize_sequence)
+
         def on_key(event):
             if event.keysym == 'Escape':
+                if pending_after_id[0] is not None:
+                    try:
+                        dialog.after_cancel(pending_after_id[0])
+                    except Exception:
+                        pass
                 result["value"] = None
                 dialog.destroy()
                 return "break"
             if event.keysym == 'BackSpace':
+                if pending_after_id[0] is not None:
+                    try:
+                        dialog.after_cancel(pending_after_id[0])
+                    except Exception:
+                        pass
+                pending_after_id[0] = None
                 captured_var.set("(unbound)")
                 result["value"] = ""
                 return "break"
             hotkey_str = self._tk_event_to_hotkey_string(event)
             if hotkey_str:
-                captured_var.set(hotkey_str)
-                result["value"] = hotkey_str
+                current = captured_var.get()
+                if current in ("", "(unbound)"):
+                    captured_var.set(hotkey_str)
+                else:
+                    captured_var.set(current + "+" + hotkey_str)
+                result["value"] = captured_var.get()
+                schedule_finalize()
             return "break"
 
         def on_save():
+            if pending_after_id[0] is not None:
+                try:
+                    dialog.after_cancel(pending_after_id[0])
+                except Exception:
+                    pass
             if result["value"] is None and captured_var.get() not in ("(unbound)", ""):
                 result["value"] = captured_var.get()
             dialog.destroy()
 
         def on_cancel():
+            if pending_after_id[0] is not None:
+                try:
+                    dialog.after_cancel(pending_after_id[0])
+                except Exception:
+                    pass
             result["value"] = None
             dialog.destroy()
 
         def on_clear():
+            if pending_after_id[0] is not None:
+                try:
+                    dialog.after_cancel(pending_after_id[0])
+                except Exception:
+                    pass
+            pending_after_id[0] = None
             captured_var.set("(unbound)")
             result["value"] = ""
 
@@ -2202,7 +2255,12 @@ class SettingsMixin:
             self.show_toast("Hotkeys reset to defaults", 1500, "success")
 
     def _hotkey_string_to_tk_binding(self, hotkey_str):
-        """Convert a hotkey string like 'Ctrl+Shift+Z' to a Tk binding '<Control-Shift-Z>'."""
+        """Convert a hotkey string like 'Ctrl+Shift+Z' to a Tk binding.
+
+        Supports multi-key sequences: 'Ctrl+Space+Enter' becomes
+        '<Control-space><Return>' (hold Ctrl, press Space, then press Enter).
+        A step is a modifier-prefix followed by exactly one non-modifier key.
+        """
         if not hotkey_str:
             return None
         try:
@@ -2211,36 +2269,54 @@ class SettingsMixin:
             return None
         if not parts:
             return None
-        main_key = parts[-1]
-        modifiers = parts[:-1]
-        tk_modifiers = []
-        for mod in modifiers:
-            mod_lower = mod.lower()
-            if mod_lower in ('ctrl', 'control'):
-                tk_modifiers.append('Control')
-            elif mod_lower == 'alt':
-                tk_modifiers.append('Alt')
-            elif mod_lower == 'shift':
-                tk_modifiers.append('Shift')
-            elif mod_lower in ('cmd', 'meta', 'super'):
-                tk_modifiers.append('Meta')
-        if len(main_key) == 1:
-            main_key_norm = main_key.lower() if main_key.isalpha() else main_key
-        elif main_key.upper().startswith('F') and main_key[1:].isdigit():
-            main_key_norm = main_key.upper()
-        else:
-            special_map = {
-                'Esc': 'Escape',
-                'Enter': 'Return',
-                'Space': 'space',
-                'Backspace': 'BackSpace',
-                'PageUp': 'Prior',
-                'PageDown': 'Next',
-            }
-            main_key_norm = special_map.get(main_key, main_key)
-        if tk_modifiers:
-            return f"<{'-'.join(tk_modifiers)}-{main_key_norm}>"
-        return f"<{main_key_norm}>"
+
+        mod_aliases = {
+            'ctrl': 'Control', 'control': 'Control',
+            'alt': 'Alt',
+            'shift': 'Shift',
+            'cmd': 'Meta', 'meta': 'Meta', 'super': 'Meta',
+        }
+        special_map = {
+            'Esc': 'Escape',
+            'Enter': 'Return',
+            'Space': 'space',
+            'Backspace': 'BackSpace',
+            'PageUp': 'Prior',
+            'PageDown': 'Next',
+        }
+
+        def norm_key(k):
+            if len(k) == 1:
+                return k.lower() if k.isalpha() else k
+            if k.upper().startswith('F') and k[1:].isdigit():
+                return k.upper()
+            return special_map.get(k, k)
+
+        # Split into steps: a step is consecutive modifiers followed by ONE key.
+        steps = []
+        current_mods = []
+        for part in parts:
+            mapped = mod_aliases.get(part.lower())
+            if mapped:
+                current_mods.append(mapped)
+            else:
+                # A non-modifier ends the current step.
+                steps.append((list(current_mods), norm_key(part)))
+                current_mods = []
+        if current_mods:
+            # Trailing modifiers with no key: ignore.
+            pass
+
+        if not steps:
+            return None
+
+        rendered = []
+        for mods, key in steps:
+            if mods:
+                rendered.append(f"<{'-'.join(mods)}-{key}>")
+            else:
+                rendered.append(f"<{key}>")
+        return ''.join(rendered)
 
     def create_interface_combined_settings(self, parent):
         """Create combined Interface settings section that includes all sub-sections"""
