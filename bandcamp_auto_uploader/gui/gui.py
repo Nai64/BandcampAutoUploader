@@ -681,6 +681,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 logger.warning(f"Failed to load context menu icon {icon_path}: {e}")
                 self.icon_images[label] = None
 
+        # Load search magnifier icon for search bars
+        search_icon_path = icons_dir / "magnifier.png"
+        if search_icon_path.exists():
+            try:
+                self.icon_images["Search"] = tk.PhotoImage(master=self.root, file=str(search_icon_path))
+            except Exception as e:
+                logger.warning(f"Failed to load search icon: {e}")
+                self.icon_images["Search"] = None
+        else:
+            self.icon_images["Search"] = None
+
     def refresh_context_menu_icons(self):
         """Reload or clear context menu icons after the icon preference changes."""
         if getattr(self.config, 'show_context_menu_icons', True):
@@ -1241,11 +1252,20 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         checkbox_frame = ttk.Frame(preview_container)
         checkbox_frame.pack(fill=tk.X, pady=(0, 4))
 
-        ttk.Label(checkbox_frame, text="Search:").pack(side=tk.LEFT)
         self._track_search_var = tk.StringVar()
         self._track_search_var.trace_add('write', lambda *args: self._filter_track_table())
-        self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
-        self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
+        search_icon = getattr(self, 'icon_images', {}).get('Search')
+        if search_icon:
+            style = ttk.Style()
+            style.configure('TrackSearch.TEntry', padding=(22, 0, 0, 0))
+            self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, style='TrackSearch.TEntry', width=28)
+            self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
+            icon_lbl = ttk.Label(self._track_search_entry, image=search_icon)
+            icon_lbl.place(x=3, rely=0.5, anchor='w')
+            icon_lbl.bind('<Button-1>', lambda e: self._track_search_entry.focus_set())
+        else:
+            self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
+            self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
 
         ttk.Frame(checkbox_frame).pack(side=tk.LEFT, fill=tk.X, expand=True)
 

@@ -483,11 +483,20 @@ class SettingsMixin:
         search_frame = ttk.Frame(parent)
         search_frame.pack(fill=tk.X, padx=5, pady=(5, 0))
 
-        ttk.Label(search_frame, text="Search:").pack(side=tk.LEFT)
         self._general_search_var = tk.StringVar()
         self._general_search_var.trace_add('write', lambda *args: self._filter_general_settings())
-        search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
-        search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
+        search_icon = getattr(self, 'icon_images', {}).get('Search')
+        if search_icon:
+            style = ttk.Style()
+            style.configure('GenSearch.TEntry', padding=(22, 0, 0, 0))
+            search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
+            search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
+            icon_lbl = ttk.Label(search_entry, image=search_icon)
+            icon_lbl.place(x=3, rely=0.5, anchor='w')
+            icon_lbl.bind('<Button-1>', lambda e: search_entry.focus_set())
+        else:
+            search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
+            search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
         self._general_search_entry = search_entry
 
         # Treeview for general settings (no headings)
