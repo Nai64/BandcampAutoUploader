@@ -114,6 +114,7 @@ class Config:
     show_composer: bool = False
     show_isrc: bool = False
     auto_fit_columns: bool = True  # Automatically fit preview table columns after updates
+    lock_column_sizes: bool = True  # Prevent the user from resizing preview table columns
     locked_track_highlight_color: str = "#fff4ce"  # Track table row highlight for locked tracks
     highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
     corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks

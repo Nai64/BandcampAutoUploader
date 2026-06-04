@@ -1257,6 +1257,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.column("album_artist_metadata", width=140, anchor=tk.W)
         self.track_table.column("composer", width=120, anchor=tk.W)
         self.track_table.column("isrc", width=110, anchor=tk.CENTER)
+
+        self.track_table.bind('<Button-1>', self._block_column_separator_click, add='+')
         
         # Store original column widths for restoration
         self.column_widths = {
@@ -4627,6 +4629,20 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.tag_configure("drag_target", background="#e8f4fd")
         self.track_table.tag_configure("featured", background="#c8e6c9")
         self._featured_track_path = None
+
+    def _block_column_separator_click(self, event):
+        """Block resizing the preview table columns when 'Lock Column Sizes' is on."""
+        if not getattr(self.config, 'lock_column_sizes', True):
+            return None
+        if not hasattr(self, 'track_table'):
+            return None
+        try:
+            region = self.track_table.identify_region(event.x, event.y)
+        except tk.TclError:
+            return None
+        if region == "separator":
+            return "break"
+        return None
 
     def apply_track_item_tags(self, item_id, *extra_tags):
         """Restore row tags while preserving locked-row, corrupted, and featured highlighting."""
