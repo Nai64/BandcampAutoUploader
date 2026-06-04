@@ -431,6 +431,7 @@ class SettingsMixin:
             ("Auto load cookies on startup", "auto_load_cookies", "bool"),
             ("Check for updates on startup", "check_for_updates", "bool"),
             ("Check for updates now", "check_updates_now", "action"),
+            ("Remove splash art", "remove_splash_art", "disabled_bool"),
             # Track Table display settings
             ("Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Locked Track Highlight Color", "locked_track_highlight_color", "color"),
@@ -469,6 +470,9 @@ class SettingsMixin:
             if setting_type == "bool":
                 var = tk.BooleanVar(value=getattr(self.config, config_key, True))
                 display_value = "☑" if var.get() else "☐"
+            elif setting_type == "disabled_bool":
+                var = tk.BooleanVar(value=False)
+                display_value = "☐"
             elif setting_type == "str":
                 var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
                 display_value = var.get()
@@ -1224,6 +1228,9 @@ class SettingsMixin:
         
         setting_type = self.general_vars.get(f"{config_key}_type")
 
+        if setting_type == "disabled_bool":
+            return
+
         if setting_type == "action":
             if config_key == "preview_description":
                 self.open_description_preview_dialog()
@@ -1354,6 +1361,8 @@ class SettingsMixin:
             return
 
         config_key = self.general_item_mapping.get(item_id)
+        if self.general_vars.get(f"{config_key}_type") == "disabled_bool":
+            return
         if config_key == "description_auto_fill_mode":
             self.root.after_idle(lambda: self.open_description_autofill_dialog(
                 self.general_tree,
