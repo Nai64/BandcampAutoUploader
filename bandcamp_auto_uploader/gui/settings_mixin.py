@@ -490,17 +490,18 @@ class SettingsMixin:
             try:
                 style = ttk.Style()
                 if 'GenSearch.icon' not in style.element_names():
-                    style.element_create('GenSearch.icon', 'image', search_icon, sticky='w', width=30)
+                    style.element_create('GenSearch.icon', 'image', search_icon, sticky='w', width=22)
                 style.layout('GenSearch.TEntry', [
                     ('Entry.field', {'sticky': 'nswe', 'children': [
                         ('Entry.background', {'sticky': 'nswe', 'children': [
-                            ('GenSearch.icon', {'sticky': 'w'}),
                             ('Entry.padding', {'sticky': 'nswe', 'children': [
+                                ('GenSearch.icon', {'sticky': 'w'}),
                                 ('Entry.textarea', {'sticky': 'nswe'})
                             ]})
                         ]})
                     ]})
                 ])
+                style.configure('GenSearch.TEntry', padding=(2, 0, 0, 0))
                 search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
             except Exception:
                 search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
