@@ -487,13 +487,24 @@ class SettingsMixin:
         self._general_search_var.trace_add('write', lambda *args: self._filter_general_settings())
         search_icon = getattr(self, 'icon_images', {}).get('Search')
         if search_icon:
-            style = ttk.Style()
-            style.configure('GenSearch.TEntry', padding=(22, 0, 0, 0))
-            search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
+            try:
+                style = ttk.Style()
+                if 'GenSearch.icon' not in style.element_names():
+                    style.element_create('GenSearch.icon', 'image', search_icon, padding=(0, 0, 4, 0), sticky='w')
+                style.layout('GenSearch.TEntry', [
+                    ('Entry.field', {'sticky': 'nswe', 'children': [
+                        ('Entry.background', {'sticky': 'nswe', 'children': [
+                            ('Entry.padding', {'sticky': 'nswe', 'children': [
+                                ('GenSearch.icon', {'sticky': 'w'}),
+                                ('Entry.textarea', {'sticky': 'nswe'})
+                            ]})
+                        ]})
+                    ]})
+                ])
+                search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
+            except Exception:
+                search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
             search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
-            icon_lbl = ttk.Label(search_entry, image=search_icon)
-            icon_lbl.place(x=3, rely=0.5, anchor='w')
-            icon_lbl.bind('<Button-1>', lambda e: search_entry.focus_set())
         else:
             search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
             search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
