@@ -490,27 +490,6 @@ class SettingsMixin:
                 display_value = ""
             self._general_settings_data.append((setting_name, config_key, setting_type, display_value))
 
-        # Search bar above the treeview
-        search_frame = ttk.Frame(parent)
-        search_frame.pack(fill=tk.X, padx=5, pady=(5, 0))
-
-        self._general_search_var = tk.StringVar()
-        self._general_search_var.trace_add('write', lambda *args: self._filter_general_settings())
-        search_icon = getattr(self, 'icon_images', {}).get('Search')
-        if search_icon:
-            style = ttk.Style()
-            style.configure('GenSearch.TEntry', padding=(28, 0, 0, 0))
-            search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
-            search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
-            icon_canvas = tk.Canvas(search_entry, width=24, height=20, highlightthickness=0, bd=0, bg='SystemWindow')
-            icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
-            icon_canvas.place(x=2, rely=0.5, anchor='w')
-            icon_canvas.bind('<Button-1>', lambda e: search_entry.focus_set())
-        else:
-            search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
-            search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
-        self._general_search_entry = search_entry
-
         # Treeview for general settings (no headings)
         self.general_tree = ttk.Treeview(
             parent,
@@ -519,9 +498,6 @@ class SettingsMixin:
             selectmode='browse'
         )
         self.general_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=(5, 5))
-
-        # Configure the blue-highlight tag for matching rows
-        self.general_tree.tag_configure('search_match', background='#cfe2ff')
 
         # Hide the tree column
         self.general_tree.column('#0', width=0, stretch=False)
@@ -568,34 +544,7 @@ class SettingsMixin:
         self.general_tree.bind('<Button-1>', self.on_general_tree_click)
         self.general_tree.bind('<Double-Button-1>', self.on_general_tree_double_click)
 
-    def _filter_general_settings(self):
-        """Filter the general settings treeview by the search bar text.
 
-        Matching rows (in either the setting name or current value) are
-        highlighted in blue; non-matching rows are hidden.
-        """
-        if not hasattr(self, 'general_tree') or not hasattr(self, '_general_settings_data'):
-            return
-
-        try:
-            query = self._general_search_var.get().strip().lower()
-        except Exception:
-            return
-
-        for item_id in self.general_tree.get_children():
-            self.general_tree.detach(item_id)
-
-        for setting_name, config_key, setting_type, display_value in self._general_settings_data:
-            if not query:
-                new_id = self.general_tree.insert('', 'end', values=(setting_name, display_value))
-            else:
-                haystack = f"{setting_name} {display_value}".lower()
-                if query in haystack:
-                    new_id = self.general_tree.insert('', 'end', values=(setting_name, display_value), tags=('search_match',))
-                else:
-                    continue
-            self.general_item_mapping[new_id] = config_key
-    
     def create_context_menu_settings(self, parent):
         """Create Context Menu settings section using Treeview"""
         # Context menu settings treeview
