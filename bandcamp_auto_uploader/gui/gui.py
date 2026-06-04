@@ -4714,7 +4714,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.item(item_id, tags=tuple(tags))
 
     def _track_row_matches_search(self, item_id):
-        """Return True if the given track row matches the active search query."""
+        """Return True if the given track row matches the active search query.
+
+        Only returns True when the v1 highlight mode is enabled and the query
+        is non-empty. In v2 (default) mode, non-matching rows are hidden by
+        detaching them, so highlighting is not used.
+        """
+        if not getattr(self.config, 'highlight_search_matches', False):
+            return False
         query = getattr(self, '_track_search_query', '')
         if not query:
             return False
@@ -4726,16 +4733,97 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         return query in haystack
 
     def _filter_track_table(self):
-        """Re-apply track row tags to reflect the current search query."""
+        """Filter the track table by the search query.
+
+        Two modes are supported (chosen via the "Highlight Search Matches"
+        setting in General Settings):
+        - v1 (highlight): matching rows get a blue background tag, every row
+          stays visible.
+        - v2 (default): non-matching rows are detached (hidden) so only the
+          matches remain in the table, preserving their original order.
+        """
         if not hasattr(self, 'track_table') or not hasattr(self, '_track_search_var'):
             return
+
         try:
             query = self._track_search_var.get().strip().lower()
         except Exception:
             return
+
+        highlight_mode = getattr(self.config, 'highlight_search_matches', False)
         self._track_search_query = query
-        if hasattr(self, 'refresh_all_track_row_tags'):
-            self.refresh_all_track_row_tags()
+
+        # Re-attach any rows detached by a previous filter so we can re-evaluate
+        # them against the new query. The previous order is preserved via the
+        # stored snapshot (when available).
+        stored_order = getattr(self, '_track_table_order', None)
+        if stored_order:
+            attached = set(self.track_table.get_children())
+            for item_id in stored_order:
+                if not self.track_table.exists(item_id):
+                    continue
+                if item_id not in attached:
+                    try:
+                        self.track_table.reattach(item_id, '', 'end')
+                    except tk.TclError:
+                        continue
+            for idx, item_id in enumerate(stored_order):
+                try:
+                    if self.track_table.exists(item_id):
+                        self.track_table.move(item_id, '', idx)
+                except tk.TclError:
+                    continue
+
+        if not query:
+            # Empty query: clear the stored snapshot and refresh tags.
+            self._track_table_order = None
+            if hasattr(self, 'refresh_all_track_row_tags'):
+                self.refresh_all_track_row_tags()
+            return
+
+        # Take a fresh snapshot of the now-attached items in display order.
+        self._track_table_order = list(self.track_table.get_children())
+
+        visible_index = 0
+        for item_id in self._track_table_order:
+            if not self.track_table.exists(item_id):
+                continue
+            try:
+                values = self.track_table.item(item_id).get('values', ())
+            except tk.TclError:
+                continue
+            haystack = " ".join("" if v is None else str(v) for v in values).lower()
+            matches = query in haystack
+
+            if highlight_mode:
+                # v1: keep all rows visible, move into order, apply blue tag
+                try:
+                    self.track_table.move(item_id, '', visible_index)
+                    visible_index += 1
+                except tk.TclError:
+                    continue
+                if matches:
+                    current_tags = list(self.track_table.item(item_id, 'tags') or ())
+                    if 'search_match' not in current_tags:
+                        current_tags.append('search_match')
+                        self.track_table.item(item_id, tags=tuple(current_tags))
+                else:
+                    self.apply_track_item_tags(item_id)
+            else:
+                # v2 (default): hide non-matching rows by detaching them
+                if matches:
+                    try:
+                        self.track_table.move(item_id, '', visible_index)
+                        visible_index += 1
+                    except tk.TclError:
+                        continue
+                    # Drop the search_match tag if it was previously applied
+                    self.apply_track_item_tags(item_id)
+                else:
+                    try:
+                        self.track_table.detach(item_id)
+                    except tk.TclError:
+                        continue
 
     def is_track_item_featured(self, item_id):
         """Check if a track row is currently featured based on stored editor data."""

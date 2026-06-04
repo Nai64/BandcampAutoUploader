@@ -438,6 +438,7 @@ class SettingsMixin:
             # Track Table display settings
             ("Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Lock Column Sizes", "lock_column_sizes", "bool"),
+            ("Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
             ("Locked Track Highlight Color", "locked_track_highlight_color", "color"),
             ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Show Total Album Duration", "show_total_album_duration", "bool"),
@@ -1341,6 +1342,11 @@ class SettingsMixin:
             elif config_key == "lock_column_sizes":
                 self.config.lock_column_sizes = new_value
                 save_config(self.config)
+            elif config_key == "highlight_search_matches":
+                self.config.highlight_search_matches = new_value
+                save_config(self.config)
+                if hasattr(self, '_filter_track_table'):
+                    self._filter_track_table()
             elif config_key == "ignore_artist_name":
                 self.config.ignore_artist_name = new_value
                 save_config(self.config)
@@ -2507,6 +2513,7 @@ class SettingsMixin:
             ("General: Check for updates now", "check_updates_now", "action"),
             ("General: Auto Fit Columns", "auto_fit_columns", "bool"),
             ("General: Lock Column Sizes", "lock_column_sizes", "bool"),
+            ("General: Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
             ("General: Locked Track Highlight Color", "locked_track_highlight_color", "color"),
             ("General: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("General: Show Total Album Duration", "show_total_album_duration", "bool"),
@@ -2773,6 +2780,7 @@ class SettingsMixin:
         self.config.check_for_updates = self.general_combined_vars['check_for_updates'].get()
         self.config.auto_fit_columns = self.general_combined_vars['auto_fit_columns'].get()
         self.config.lock_column_sizes = self.general_combined_vars['lock_column_sizes'].get()
+        self.config.highlight_search_matches = self.general_combined_vars['highlight_search_matches'].get()
         self.config.locked_track_highlight_color = self.general_combined_vars['locked_track_highlight_color'].get()
         self.config.highlight_corrupted_tracks = self.general_combined_vars['highlight_corrupted_tracks'].get()
         self.config.show_total_album_duration = self.general_combined_vars['show_total_album_duration'].get()
