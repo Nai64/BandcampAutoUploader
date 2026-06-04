@@ -492,7 +492,7 @@ class SettingsMixin:
             search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
             search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
             icon_canvas = tk.Canvas(search_entry, width=24, height=20, highlightthickness=0, bd=0, bg='SystemWindow')
-            icon_canvas.create_image(4, 0, image=search_icon, anchor='nw')
+            icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
             icon_canvas.place(x=2, rely=0.5, anchor='w')
             icon_canvas.bind('<Button-1>', lambda e: search_entry.focus_set())
         else:
