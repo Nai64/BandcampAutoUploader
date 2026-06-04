@@ -1260,6 +1260,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self._column_lock_active = False
         self._column_lock_widths = None
+        self._column_lock_pending = False
         self.track_table.bind('<Button-1>', self._on_column_lock_press, add='+')
         self.track_table.bind('<B1-Motion>', self._on_column_lock_motion, add='+')
         self.track_table.bind('<ButtonRelease-1>', self._on_column_lock_release, add='+')
@@ -4654,26 +4655,48 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         return None
 
     def _on_column_lock_motion(self, event):
-        """Revert any column width change made during a locked separator drag."""
+        """Schedule a column-width revert after ttk's internal resize finishes."""
         if not getattr(self, '_column_lock_active', False):
             return None
         if not getattr(self.config, 'lock_column_sizes', True):
             return None
-        saved = getattr(self, '_column_lock_widths', None)
-        if not saved or not hasattr(self, 'track_table'):
+        if getattr(self, '_column_lock_pending', False):
             return None
+        saved = getattr(self, '_column_lock_widths', None)
+        if not saved or not hasattr(self, 'root'):
+            return None
+        self._column_lock_pending = True
+        self.root.after_idle(self._apply_column_lock_revert, saved)
+        return None
+
+    def _apply_column_lock_revert(self, saved):
+        """Restore the original column widths captured at separator press."""
+        self._column_lock_pending = False
+        if not getattr(self, '_column_lock_active', False):
+            return
+        if not getattr(self.config, 'lock_column_sizes', True):
+            return
+        if not hasattr(self, 'track_table'):
+            return
         for col, width in saved.items():
             try:
                 if self.track_table.column(col, 'width') != width:
                     self.track_table.column(col, width=width)
             except tk.TclError:
                 continue
-        return None
 
     def _on_column_lock_release(self, event):
-        """Disarm the column lock handler."""
+        """Disarm the column lock handler and force a final revert."""
         self._column_lock_active = False
+        saved = getattr(self, '_column_lock_widths', None)
         self._column_lock_widths = None
+        if saved and getattr(self.config, 'lock_column_sizes', True) and hasattr(self, 'track_table'):
+            for col, width in saved.items():
+                try:
+                    if self.track_table.column(col, 'width') != width:
+                        self.track_table.column(col, width=width)
+                except tk.TclError:
+                    continue
         return None
 
     def apply_track_item_tags(self, item_id, *extra_tags):
