@@ -488,12 +488,13 @@ class SettingsMixin:
         search_icon = getattr(self, 'icon_images', {}).get('Search')
         if search_icon:
             style = ttk.Style()
-            style.configure('GenSearch.TEntry', padding=(22, 0, 0, 0))
+            style.configure('GenSearch.TEntry', padding=(28, 0, 0, 0))
             search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var, style='GenSearch.TEntry')
             search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
-            icon_lbl = ttk.Label(search_entry, image=search_icon)
-            icon_lbl.place(x=3, rely=0.5, anchor='w')
-            icon_lbl.bind('<Button-1>', lambda e: search_entry.focus_set())
+            icon_canvas = tk.Canvas(search_entry, width=24, height=20, highlightthickness=0, bd=0, bg='SystemWindow')
+            icon_canvas.create_image(4, 0, image=search_icon, anchor='nw')
+            icon_canvas.place(x=2, rely=0.5, anchor='w')
+            icon_canvas.bind('<Button-1>', lambda e: search_entry.focus_set())
         else:
             search_entry = ttk.Entry(search_frame, textvariable=self._general_search_var)
             search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
