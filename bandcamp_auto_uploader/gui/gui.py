@@ -1258,7 +1258,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.column("composer", width=120, anchor=tk.W)
         self.track_table.column("isrc", width=110, anchor=tk.CENTER)
 
-        self.track_table.bind('<Button-1>', self._block_column_separator_click, add='+')
+        self._column_lock_active = False
+        self._column_lock_widths = None
+        self.track_table.bind('<Button-1>', self._on_column_lock_press, add='+')
+        self.track_table.bind('<B1-Motion>', self._on_column_lock_motion, add='+')
+        self.track_table.bind('<ButtonRelease-1>', self._on_column_lock_release, add='+')
         
         # Store original column widths for restoration
         self.column_widths = {
@@ -4630,8 +4634,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.tag_configure("featured", background="#c8e6c9")
         self._featured_track_path = None
 
-    def _block_column_separator_click(self, event):
-        """Block resizing the preview table columns when 'Lock Column Sizes' is on."""
+    def _on_column_lock_press(self, event):
+        """Arm the column lock handler when a header separator is pressed."""
         if not getattr(self.config, 'lock_column_sizes', True):
             return None
         if not hasattr(self, 'track_table'):
@@ -4640,8 +4644,36 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             region = self.track_table.identify_region(event.x, event.y)
         except tk.TclError:
             return None
-        if region == "separator":
-            return "break"
+        if region != "separator":
+            return None
+        self._column_lock_widths = {
+            col: self.track_table.column(col, 'width')
+            for col in self.track_table['columns']
+        }
+        self._column_lock_active = True
+        return None
+
+    def _on_column_lock_motion(self, event):
+        """Revert any column width change made during a locked separator drag."""
+        if not getattr(self, '_column_lock_active', False):
+            return None
+        if not getattr(self.config, 'lock_column_sizes', True):
+            return None
+        saved = getattr(self, '_column_lock_widths', None)
+        if not saved or not hasattr(self, 'track_table'):
+            return None
+        for col, width in saved.items():
+            try:
+                if self.track_table.column(col, 'width') != width:
+                    self.track_table.column(col, width=width)
+            except tk.TclError:
+                continue
+        return None
+
+    def _on_column_lock_release(self, event):
+        """Disarm the column lock handler."""
+        self._column_lock_active = False
+        self._column_lock_widths = None
         return None
 
     def apply_track_item_tags(self, item_id, *extra_tags):
