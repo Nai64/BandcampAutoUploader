@@ -476,6 +476,46 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         except Exception as e:
             logger.warning(f"Failed to set application icon {icon_path}: {e}")
 
+        if sys.platform == "win32":
+            self._set_windows_taskbar_icon(icon_path)
+
+    def _set_windows_taskbar_icon(self, icon_path):
+        """Set the big (taskbar) and small (title bar) window icons via Win32.
+
+        Tk's ``iconbitmap`` doesn't reliably propagate to the Windows taskbar,
+        so we also push the icon through ``WM_SETICON`` with ``ICON_BIG`` using
+        ``LoadImageW`` / ``SendMessageW``.
+        """
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            user32 = ctypes.windll.user32
+            IMAGE_ICON = 1
+            LR_LOADFROMFILE = 0x00000010
+            LR_SHARED = 0x00008000
+            WM_SETICON = 0x0080
+            ICON_SMALL = 0
+            ICON_BIG = 1
+
+            hwnd = self.root.winfo_id()
+            hicon = user32.LoadImageW(
+                None,
+                str(icon_path),
+                IMAGE_ICON,
+                0,
+                0,
+                LR_LOADFROMFILE | LR_SHARED,
+            )
+            if not hicon:
+                logger.debug(f"LoadImageW returned no handle for {icon_path}")
+                return
+
+            user32.SendMessageW(hwnd, WM_SETICON, ICON_BIG, hicon)
+            user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
+        except Exception as e:
+            logger.debug(f"Failed to set Windows taskbar icon {icon_path}: {e}")
+
     def load_context_menu_icons(self):
         """Load optional icons for track context menu commands."""
         icon_files = {
