@@ -2032,15 +2032,7 @@ class SettingsMixin:
             item_id = self.hotkey_tree.insert('', 'end', values=(setting_name, current_value))
             self.hotkey_item_mapping[item_id] = config_key
 
-        # Reset button
-        reset_btn = ttk.Button(
-            parent,
-            text="Reset to default",
-            command=self._reset_hotkey_defaults,
-            style="Subtle.TButton",
-        )
-        reset_btn.pack(side=tk.RIGHT, padx=5, pady=(0, 5))
-
+        # Reset button removed per user request.
         self.hotkey_tree.bind('<Double-Button-1>', self._on_hotkey_tree_double_click)
 
     def _on_hotkey_tree_double_click(self, event):
@@ -2152,10 +2144,11 @@ class SettingsMixin:
             return None
 
         parts = []
-        # State bit masks (cross-platform). Alt is intentionally ignored
-        # because it is often held while the user navigates menus.
+        # State bit masks (cross-platform)
         if event.state & 0x4:
             parts.append('Ctrl')
+        if event.state & 0x8:
+            parts.append('Alt')
         if event.state & 0x1:
             parts.append('Shift')
         if event.state & 0x40:
