@@ -471,17 +471,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if getattr(sys, 'frozen', False):
             bundle_root = Path(getattr(sys, '_MEIPASS', Path(sys.executable).parent))
             candidate_paths.extend([
-                bundle_root / "bandcamp_auto_uploader" / "img" / "icon.ico",
-                Path(sys.executable).parent / "bandcamp_auto_uploader" / "img" / "icon.ico",
-                Path(sys.executable).parent / "icon.ico",
+                bundle_root / "assets" / "icon.ico",
+                Path(sys.executable).parent / "assets" / "icon.ico",
             ])
 
-        package_root = Path(__file__).resolve().parent.parent
-        project_root = package_root.parent
+        project_root = Path(__file__).resolve().parent.parent.parent
         candidate_paths.extend([
-            package_root / "img" / "icon.ico",
-            project_root / "bandcamp_auto_uploader" / "img" / "icon.ico",
-            Path.cwd() / "bandcamp_auto_uploader" / "img" / "icon.ico",
+            project_root / "assets" / "icon.ico",
+            Path.cwd() / "assets" / "icon.ico",
         ])
 
         return next((path for path in candidate_paths if path.exists()), None)
