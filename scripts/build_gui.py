@@ -1,16 +1,25 @@
 """
 Build script for creating executable and optional installer.
 
-Supports building for multiple architectures (x64, x86, arm64).
-Each architecture gets its own output folder:
-    dist/{arch}/Bandcamp Auto Uploader.exe
-    dist/installer/{arch}/BandcampAutoUploader-Setup-{version}-{arch}.exe
+Output layout (everything for a given version is grouped under one folder)::
+
+    dist/
+    +-- BandcampAutoUploader-V3b/
+        +-- BandcampAutoUploader-3b-x64.exe          (standalone)
+        +-- BandcampAutoUploader-3b-x86.exe
+        +-- BandcampAutoUploader-3b-arm64.exe
+        +-- BandcampAutoUploader-Setup-3b-x64.exe    (installer)
+        +-- BandcampAutoUploader-Setup-3b-x86.exe
+        +-- BandcampAutoUploader-Setup-3b-arm64.exe
+
+The folder name follows ``BandcampAutoUploader-V{__version__}`` and is read
+from ``bandcamp_auto_uploader/__version__.py`` (the single source of truth).
 
 Cross-compilation note: PyInstaller cannot cross-compile. To build for a
 target architecture you must run this script on a Python interpreter that
 matches that architecture (e.g. x86 Python for x86 builds, ARM64 Python
 for arm64 builds). Use the --all flag to attempt every known arch via
-the Windows `py` launcher and skip any that aren't installed.
+the Windows ``py`` launcher and skip any that are not installed.
 """
 import argparse
 import os
@@ -21,6 +30,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from bandcamp_auto_uploader import __version__  # noqa: E402
 
 # Arch -> PEP 514 "py launcher" tag. Add entries here to support more.
 KNOWN_ARCHS = {
@@ -31,6 +43,26 @@ KNOWN_ARCHS = {
 
 SPEC_TEMPLATE = Path("bandcamp_auto_uploader.spec")
 TEMP_SPEC = Path("bandcamp_auto_uploader.generated.spec")
+INTERMEDIATE_DIR = Path("dist/_intermediate")
+
+
+def _version_folder_name() -> str:
+    """Top-level version folder: ``BandcampAutoUploader-V{version}``."""
+    return f"BandcampAutoUploader-V{__version__}"
+
+
+def _version_dir() -> Path:
+    """Absolute path to the version output folder."""
+    return ROOT / "dist" / _version_folder_name()
+
+
+def _version_dir_rel_from_scripts() -> str:
+    """Path to the version folder relative to scripts/installer.iss."""
+    return f"..\\dist\\{_version_folder_name()}"
+
+
+def _standalone_name(arch: str) -> str:
+    return f"BandcampAutoUploader-{__version__}-{arch}.exe"
 
 
 def _run(cmd, **kwargs):
@@ -42,7 +74,7 @@ def _run(cmd, **kwargs):
 def _py_for_arch(arch: str) -> list:
     """Return the Python interpreter argv prefix for the given arch.
 
-    Uses the Windows `py` launcher when a PEP 514 tag is known for the arch,
+    Uses the Windows ``py`` launcher when a PEP 514 tag is known for the arch,
     otherwise falls back to the currently running interpreter.
     """
     tag = KNOWN_ARCHS.get(arch)
@@ -52,11 +84,12 @@ def _py_for_arch(arch: str) -> list:
 
 
 def _detect_installed_archs():
-    """Query `py --list` to figure out which arches are actually installed.
+    """Query ``py --list`` to figure out which arches are actually installed.
 
     Returns a subset of KNOWN_ARCHS whose matching interpreter is present.
     Falls back to the current arch when only a single Python is installed
-    (the `py` launcher only shows PEP 514 tags when multiple interpreters exist).
+    (the ``py`` launcher only shows PEP 514 tags when multiple interpreters
+    exist).
     """
     if sys.platform != "win32":
         return list(KNOWN_ARCHS.keys())
@@ -70,14 +103,12 @@ def _detect_installed_archs():
 
     available = []
     for arch, tag in KNOWN_ARCHS.items():
-        # PEP 514 tag present in `py --list` output (only when multiple Pythons exist)
         for sep in (" ", "\t", "\n"):
             if f"-{tag}{sep}" in output or f"-{tag} *{sep}" in output:
                 available.append(arch)
                 break
 
     if not available and "Python" in output:
-        # Single Python installed: assume it matches the running interpreter's arch.
         import platform
         machine = platform.machine().lower()
         if machine in ("amd64", "x86_64"):
@@ -94,7 +125,6 @@ def _generate_spec(arch: str) -> Path:
     if not SPEC_TEMPLATE.exists():
         raise FileNotFoundError(f"Spec file not found: {SPEC_TEMPLATE}")
     content = SPEC_TEMPLATE.read_text(encoding="utf-8")
-    # Replace the bare `target_arch=None` with the requested arch.
     new_content, n = re.subn(
         r"target_arch\s*=\s*None",
         f'target_arch="{arch}"',
@@ -121,7 +151,9 @@ def build_exe(arch: str = "x64") -> int:
     print(f"[i] Using Python: {' '.join(py)}")
 
     spec = _generate_spec(arch)
-    dist_dir = Path(f"dist/{arch}")
+    intermediate = INTERMEDIATE_DIR / arch
+    version_dir = _version_dir()
+    version_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"\n{'=' * 60}")
     print("Running PyInstaller...")
@@ -129,23 +161,29 @@ def build_exe(arch: str = "x64") -> int:
 
     result = _run([
         *py, "-m", "PyInstaller", "--clean",
-        "--distpath", str(dist_dir),
+        "--distpath", str(intermediate),
         "--workpath", f"build/{arch}",
         str(spec),
     ])
 
-    if result.returncode == 0:
-        print(f"\n{'=' * 60}")
-        print(f"[OK] Build completed successfully!  (arch={arch})")
-        print(f"{'=' * 60}")
-        exe_path = dist_dir / "Bandcamp Auto Uploader.exe"
-        print(f"\nExecutable: {exe_path}")
-        return 0
-    else:
+    if result.returncode != 0:
         print(f"\n{'=' * 60}")
         print(f"[FAIL] Build failed!  (arch={arch})")
         print(f"{'=' * 60}")
         return result.returncode
+
+    # PyInstaller emits the EXE under its spec-defined name; rename to the
+    # versioned + arch-tagged filename and move it into the version folder.
+    src = intermediate / "Bandcamp Auto Uploader.exe"
+    dst = version_dir / _standalone_name(arch)
+    shutil.move(str(src), str(dst))
+    shutil.rmtree(INTERMEDIATE_DIR, ignore_errors=True)
+
+    print(f"\n{'=' * 60}")
+    print(f"[OK] Build completed successfully!  (arch={arch})")
+    print(f"{'=' * 60}")
+    print(f"\nStandalone: {dst.relative_to(ROOT)}")
+    return 0
 
 
 def _find_iscc():
@@ -179,20 +217,30 @@ def build_installer(arch: str = "x64") -> int:
         print(f"[FAIL] Installer script not found: {iss_script}")
         return 1
 
+    version_dir = _version_dir()
+    standalone = version_dir / _standalone_name(arch)
+    if not standalone.exists():
+        print(f"[FAIL] Standalone EXE not found, build it first: {standalone}")
+        return 1
+
     print(f"\n{'=' * 60}")
     print(f"Building installer  (arch={arch})...")
     print(f"{'=' * 60}\n")
 
-    src_path = f"..\\dist\\{arch}\\Bandcamp Auto Uploader.exe"
+    output_dir = _version_dir_rel_from_scripts()
+    src_path = f"{output_dir}\\{_standalone_name(arch)}"
+
     result = _run([
         str(iscc),
         f"/DMyAppArch={arch}",
-        f"/DMyAppSourcePath={src_path}",
+        f"/DMyAppOutputDir={output_dir}",
+        f"/DMyAppExePath={src_path}",
         str(iss_script),
     ])
     if result.returncode == 0:
+        installer = version_dir / f"BandcampAutoUploader-Setup-{__version__}-{arch}.exe"
         print(f"\n[OK] Installer built successfully!  (arch={arch})")
-        print(f"  dist\\installer\\{arch}\\")
+        print(f"  {installer.relative_to(ROOT)}")
         return 0
     else:
         print(f"\n[FAIL] Installer build failed!  (arch={arch})")
@@ -201,7 +249,7 @@ def build_installer(arch: str = "x64") -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Build Bandcamp Auto Uploader (per-architecture)."
+        description="Build Bandcamp Auto Uploader (per-architecture, versioned)."
     )
     parser.add_argument(
         "--arch",
@@ -227,6 +275,7 @@ def main() -> int:
         return 1
 
     print(f"Target architectures: {', '.join(archs)}")
+    print(f"Output folder: dist/{_version_folder_name()}/")
 
     overall_rc = 0
     for arch in archs:
