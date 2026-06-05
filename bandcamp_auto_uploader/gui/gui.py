@@ -1378,6 +1378,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.bind('<Button-1>', self._on_column_lock_press, add='+')
         self.track_table.bind('<B1-Motion>', self._on_column_lock_motion, add='+')
         self.track_table.bind('<ButtonRelease-1>', self._on_column_lock_release, add='+')
+        self.track_table.bind('<Button-1>', self._on_artist_cell_toggle_click, add='+')
         
         # Store original column widths for restoration
         self.column_widths = {
@@ -1417,9 +1418,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Drag and drop for reordering
         self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None}
-        self.track_table.bind('<Button-1>', self.on_drag_start)
-        self.track_table.bind('<B1-Motion>', self.on_drag_motion)
-        self.track_table.bind('<ButtonRelease-1>', self.on_drag_release)
+        self.track_table.bind('<Button-1>', self.on_drag_start, add='+')
+        self.track_table.bind('<B1-Motion>', self.on_drag_motion, add='+')
+        self.track_table.bind('<ButtonRelease-1>', self.on_drag_release, add='+')
         self.track_table.bind('<<TreeviewSelect>>', self.on_track_select)
 
         # Enable drag & drop for adding audio files (if available)
@@ -5055,11 +5056,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         return None
 
     def configure_track_table_heading_commands(self):
-        """Let editable column headers batch-update that whole column."""
+        """Let editable column headers batch-update that whole column (artist toggles per-cell instead)."""
         labels = self.get_track_table_column_labels()
         editable_columns = self.get_track_table_editable_columns()
         for column_id in self.track_table["columns"]:
-            if column_id in editable_columns:
+            if column_id in editable_columns and column_id != "artist":
                 self.track_table.heading(
                     column_id,
                     text=labels.get(column_id, column_id),
@@ -6114,7 +6115,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 extension = track_path.suffix if track_path.exists() else ""
 
                 # Get track metadata
-                artist = "" if getattr(self, '_artist_hidden', False) else (track.track_data.artist or "")
+                artist = track.track_data.artist or ""
                 title = track.track_data.title
                 comment = track.track_data.download_desc or getattr(track.track_data, 'about', '') or self.get_track_comment_metadata(track_path)
                 price = self.format_price_display(track.track_data.price or "1.50")
@@ -8077,27 +8078,42 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def sync_track_table_metadata_to_current_album(self):
         """Push editable table metadata into current_album when it is available."""
         self.sync_track_table_to_current_album()
-    
-    def update_preview_artist_visibility(self):
-        """Apply artist visibility settings without rebuilding track titles or metadata."""
-        if not hasattr(self, 'track_table'):
+
+    def _on_artist_cell_toggle_click(self, event):
+        """Toggle the artist cell: remove it if shown, restore it from file metadata if empty."""
+        if self.is_upload_in_progress():
+            return
+        region = self.track_table.identify("region", event.x, event.y)
+        if region != "cell":
+            return
+        item = self.track_table.identify("item", event.x, event.y)
+        column = self.track_table.identify("column", event.x, event.y)
+        if not item or not column:
+            return
+        column_id = self.get_track_table_column_id_from_event_column(column)
+        if column_id != "artist":
+            return
+        if self.is_track_item_locked(item):
+            self.show_toast("Track is locked", 1600, "warning")
             return
 
-        hide_artist = getattr(self, '_artist_hidden', False)
-        for item in self.track_table.get_children():
-            values = list(self.track_table.item(item)['values'])
-            while len(values) < 13:
-                values.append("")
+        values = list(self.track_table.item(item).get("values", ()))
+        while len(values) < 13:
+            values.append("")
+        current_artist = str(values[1]) if len(values) > 1 else ""
 
-            if hide_artist:
-                values[1] = ""
-            elif not str(values[1]).strip():
-                values[1] = self.get_track_artist_metadata(values[12])
+        if current_artist.strip():
+            values[1] = ""
+            toast = "Artist hidden (click to restore)"
+        else:
+            restored = self.get_track_artist_metadata(values[12])
+            values[1] = restored
+            toast = "Artist restored" if restored else "No artist metadata found"
 
-            self.track_table.item(item, values=tuple(values))
-
+        self.track_table.item(item, values=tuple(values))
         self.sync_track_table_to_current_album()
-    
+        self.show_toast(toast, 1400, "info")
+
     def upload_as_single(self, item_id):
         """Upload the selected track as a standalone single-track release."""
         if not self.session or not self.selected_artist_url:
@@ -8193,10 +8209,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         def upload():
             try:
                 logger.info("Starting upload process")
-                
-                # Apply ignore artist name setting from config
-                if getattr(self, '_artist_hidden', False):
-                    logger.info("Ignoring artist name from metadata")
 
                 self.update_status("Processing album...", 10)
                 

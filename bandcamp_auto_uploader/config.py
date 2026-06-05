@@ -13,7 +13,6 @@ class Config:
     name_your_price: bool = True
     track_streaming: bool = True
     track_downloading: bool = True
-    hide_artist_name: bool = False  # Hide artist name in track table and during upload
     cookies_file: str = ""
     auto_load_cookies: bool = False  # Auto load cookies on startup
     debug: bool = False
