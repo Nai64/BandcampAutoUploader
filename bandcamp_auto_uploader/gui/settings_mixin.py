@@ -1596,10 +1596,13 @@ class SettingsMixin:
     def create_about_settings(self, parent):
         """Create About section"""
         import webbrowser
-        import sys
 
         container = ttk.Frame(parent)
         container.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        splash_label = self._build_about_icon(container)
+        if splash_label is not None:
+            splash_label.pack(pady=(0, 10))
 
         ttk.Label(container, text="Bandcamp Auto Uploader",
                   font=("Segoe UI", 16, "bold")).pack()
@@ -1607,12 +1610,6 @@ class SettingsMixin:
         ttk.Label(container, text=f"Version {__version__}",
                   font=("Segoe UI", 10)).pack(pady=(5, 15))
 
-        info = f"Python {sys.version.split()[0]}  |  {sys.platform}  |  {'EXE' if getattr(sys, 'frozen', False) else 'Source'}"
-        ttk.Label(container, text=info, font=("Segoe UI", 8), foreground="gray").pack()
-
-        ttk.Separator(container, orient='horizontal').pack(fill=tk.X, pady=15)
-
-        ttk.Label(container, text="Links", font=("Segoe UI", 10, "bold")).pack()
         ttk.Button(container, text="GitHub Repository",
                    command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"),
                    width=25).pack(pady=3)
@@ -1620,18 +1617,50 @@ class SettingsMixin:
                    command=lambda: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"),
                    width=25).pack(pady=3)
 
-        ttk.Separator(container, orient='horizontal').pack(fill=tk.X, pady=15)
+        ttk.Label(container, text="Based on bandcamp-auto-uploader by 7x11x13\n"
+                                  "GUI fork and enhancements by Nai64",
+                  font=("Segoe UI", 8), justify=tk.CENTER,
+                  foreground="gray").pack(pady=(15, 5))
 
-        ttk.Label(container, text="Credits", font=("Segoe UI", 10, "bold")).pack()
-        credits = ("Based on bandcamp-auto-uploader by 7x11x13\n"
-                   "GUI fork and enhancements by Nai64\n"
-                   "Some icons by Yusuke Kamiyamane (CC BY 3.0)")
-        ttk.Label(container, text=credits, font=("Segoe UI", 8), justify=tk.CENTER,
-                  foreground="gray").pack(pady=(5, 15))
+    def _build_about_icon(self, parent):
+        """Render the splash PNG as a centered icon above the About tab title."""
+        try:
+            from PIL import Image, ImageTk
+        except ImportError:
+            return None
+        splash_path = None
+        try:
+            from bandcamp_auto_uploader.gui.gui import get_splash_image_path
+            splash_path = get_splash_image_path()
+        except Exception:
+            splash_path = None
+        if splash_path is None:
+            from pathlib import Path
+            project_root = Path(__file__).resolve().parents[2]
+            for candidate in (project_root / "assets" / "splash.png", Path.cwd() / "assets" / "splash.png"):
+                if candidate.exists():
+                    splash_path = candidate
+                    break
+        if splash_path is None or not splash_path.exists():
+            return None
 
-        ttk.Label(container, text="MIT License — See GitHub for full text",
-                  font=("Segoe UI", 8), foreground="gray").pack()
-    
+        max_size = 128
+        try:
+            with Image.open(splash_path) as source:
+                source = source.convert("RGBA")
+                width, height = source.size
+                scale = min(max_size / max(width, 1), max_size / max(height, 1), 1.0)
+                if scale < 1.0:
+                    new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
+                    resampling = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+                    source = source.resize(new_size, resampling)
+                photo = ImageTk.PhotoImage(source, master=parent.winfo_toplevel())
+        except Exception:
+            return None
+
+        parent._about_icon_photo = photo
+        return ttk.Label(parent, image=photo)
+
     def edit_treeview_cell(self, tree, item_id, column, current_value, callback):
         """Edit treeview cell inline with Entry widget"""
         # Get cell coordinates

@@ -2319,6 +2319,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         content = ttk.Frame(container)
         content.place(relx=0.5, rely=0.5, anchor=tk.CENTER)
 
+        icon = self._build_about_icon(content)
+        if icon is not None:
+            icon.pack(pady=(0, 10))
+
         ttk.Label(content, text="Bandcamp Auto Uploader",
                   font=("Segoe UI", 20, "bold")).pack()
 
@@ -2330,9 +2334,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                          font=("Segoe UI", 9), foreground="#4a90e2", cursor="hand2")
         link.pack()
         link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"))
-
-        ttk.Label(content, text="By Nai64",
-                  font=("Segoe UI", 10), foreground="gray").pack(pady=(0, 20))
 
         btn_frame = ttk.Frame(content)
         btn_frame.pack()
@@ -2348,9 +2349,34 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         ttk.Label(content, text="Made with ❤ for the Bandcamp community",
                   font=("Segoe UI", 9), foreground="gray").pack(pady=(20, 5))
-        ttk.Label(content, text="© 2026 Bandcamp Auto Uploader",
-                  font=("Segoe UI", 8), foreground="gray").pack()
-    
+
+    def _build_about_icon(self, parent):
+        """Render the splash PNG as a centered icon above the About tab title."""
+        try:
+            from PIL import Image, ImageTk
+        except ImportError:
+            return None
+        splash_path = get_splash_image_path()
+        if splash_path is None or not splash_path.exists():
+            return None
+
+        max_size = 128
+        try:
+            with Image.open(splash_path) as source:
+                source = source.convert("RGBA")
+                width, height = source.size
+                scale = min(max_size / max(width, 1), max_size / max(height, 1), 1.0)
+                if scale < 1.0:
+                    new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
+                    resampling = getattr(getattr(Image, "Resampling", Image), "LANCZOS")
+                    source = source.resize(new_size, resampling)
+                photo = ImageTk.PhotoImage(source, master=parent.winfo_toplevel())
+        except Exception:
+            return None
+
+        parent._about_icon_photo = photo
+        return ttk.Label(parent, image=photo)
+
     def show_privacy_policy(self):
         """Show privacy policy dialog"""
         import sys
