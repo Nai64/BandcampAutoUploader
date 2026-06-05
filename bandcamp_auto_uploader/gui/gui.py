@@ -9549,10 +9549,33 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return cumulative
         return None
 
-    def _animate_toast_in(self, toast, from_x, from_y, to_x, to_y, steps=10, interval=22):
-        """Fade in and slide a new toast from (from_x, from_y) to (to_x, to_y)."""
-        dx = (to_x - from_x) / steps
-        dy = (to_y - from_y) / steps
+    @staticmethod
+    def _ease_out_back(t):
+        """Easing that overshoots target then settles (springy bounce-in)."""
+        c1 = 1.70158
+        c3 = c1 + 1
+        return 1 + c3 * (t - 1) ** 3 + c1 * (t - 1) ** 2
+
+    @staticmethod
+    def _ease_out_bounce(t):
+        """Easing that bounces like a ball settling into place."""
+        n1 = 7.5625
+        d1 = 2.75
+        if t < 1 / d1:
+            return n1 * t * t
+        if t < 2 / d1:
+            t -= 1.5 / d1
+            return n1 * t * t + 0.75
+        if t < 2.5 / d1:
+            t -= 2.25 / d1
+            return n1 * t * t + 0.9375
+        t -= 2.625 / d1
+        return n1 * t * t + 0.984375
+
+    def _animate_toast_in(self, toast, from_x, from_y, to_x, to_y, steps=12, interval=20):
+        """Fade in and slide a new toast from (from_x, from_y) to (to_x, to_y) with springy ease-out-back."""
+        dx = to_x - from_x
+        dy = to_y - from_y
 
         def step(i):
             if i >= steps:
@@ -9563,9 +9586,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     pass
                 return
             try:
-                new_x = int(round(from_x + dx * (i + 1)))
-                new_y = int(round(from_y + dy * (i + 1)))
-                new_alpha = (i + 1) / steps
+                t = (i + 1) / steps
+                eased = self._ease_out_back(t)
+                new_x = int(round(from_x + dx * eased))
+                new_y = int(round(from_y + dy * eased))
+                new_alpha = min(1.0, t * 1.2)
                 toast.geometry(f"+{new_x}+{new_y}")
                 toast.attributes('-alpha', new_alpha)
                 toast.after(interval, lambda: step(i + 1))
@@ -9575,7 +9600,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         step(0)
 
     def _animate_toast_repack(self, base_y, gap, is_top, exclude=None):
-        """Slide every active toast to its target position in the stack."""
+        """Slide every active toast to its target position in the stack with bouncy ease-out-bounce."""
         for toast, x, _height in self.active_toasts:
             if exclude is not None and toast is exclude:
                 continue
@@ -9584,8 +9609,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 continue
             self._animate_toast_to(toast, x, target_y)
 
-    def _animate_toast_to(self, toast, target_x, target_y, steps=8, interval=22):
-        """Slide a toast to (target_x, target_y) with animation."""
+    def _animate_toast_to(self, toast, target_x, target_y, steps=10, interval=20):
+        """Slide a toast to (target_x, target_y) with bouncy ease-out-bounce animation."""
         try:
             parts = toast.geometry().split('+')
             if len(parts) < 3:
@@ -9598,8 +9623,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if current_x == target_x and current_y == target_y:
             return
 
-        dx = (target_x - current_x) / steps
-        dy = (target_y - current_y) / steps
+        dx = target_x - current_x
+        dy = target_y - current_y
 
         def step(i):
             if i >= steps:
@@ -9609,8 +9634,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     pass
                 return
             try:
-                new_x = int(round(current_x + dx * (i + 1)))
-                new_y = int(round(current_y + dy * (i + 1)))
+                t = (i + 1) / steps
+                eased = self._ease_out_bounce(t)
+                new_x = int(round(current_x + dx * eased))
+                new_y = int(round(current_y + dy * eased))
                 toast.geometry(f"+{new_x}+{new_y}")
                 toast.after(interval, lambda: step(i + 1))
             except tk.TclError:
