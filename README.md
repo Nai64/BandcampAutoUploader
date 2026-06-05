@@ -165,7 +165,7 @@ Right-click any track row to access:
 | OGG Vorbis | `.ogg` | Converted to FLAC | Requires FFmpeg |
 | Opus | `.opus` | Converted to FLAC | Requires FFmpeg |
 | M4A / AAC | `.m4a`, `.aac` | Converted to FLAC | Requires FFmpeg |
-| Tracker modules | `.mod`, `.xm` | As-is | Treated as-is (no conversion) |
+| Tracker modules | `.mod`, `.xm` | FLAC | Converted to FLAC |
 
 > [!WARNING]
 > FFmpeg is **required** for converting MP3, OGG, Opus, and M4A/AAC files. If conversion fails, make sure FFmpeg is on your `PATH` or in the app folder.
