@@ -1,8 +1,11 @@
 ; Inno Setup script for Bandcamp Auto Uploader
 ; Requires Inno Setup 6+ (https://jrsoftware.org/isinfo.php)
+; Version is pulled from scripts/version.inc (auto-generated from
+; bandcamp_auto_uploader/__version__.py via scripts/set_version.py).
+
+#include "version.inc"
 
 #define MyAppName "Bandcamp Auto Uploader"
-#define MyAppVersion "3"
 #define MyAppPublisher "Nai64"
 #define MyAppURL "https://github.com/Nai64/bandcamp-auto-uploader"
 #define MyAppExeName "Bandcamp Auto Uploader.exe"

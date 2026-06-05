@@ -1,6 +1,7 @@
 [tool.poetry]
 name = "bandcamp-auto-uploader"
-version = "3"
+# Version is auto-synced from bandcamp_auto_uploader/__version__.py via scripts/set_version.py
+version = "3b"
 description = "Upload albums to Bandcamp automatically without a Pro account"
 authors = ["7x11x13 <x7x11x13@gmail.com>"]
 license = "MIT"
