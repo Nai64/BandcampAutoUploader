@@ -6114,7 +6114,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 extension = track_path.suffix if track_path.exists() else ""
 
                 # Get track metadata
-                artist = track.track_data.artist if track.track_data.artist and not self.config.ignore_artist_name else ""
+                artist = "" if getattr(self, '_artist_hidden', False) else (track.track_data.artist or "")
                 title = track.track_data.title
                 comment = track.track_data.download_desc or getattr(track.track_data, 'about', '') or self.get_track_comment_metadata(track_path)
                 price = self.format_price_display(track.track_data.price or "1.50")
@@ -7496,7 +7496,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 context_menu.grab_release()
             except tk.TclError:
                 pass
-    
+
     def play_track(self, item_id):
         """Play the selected track"""
         # Get file path from the table
@@ -8023,13 +8023,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
 
         try:
-            original_config = dataclasses.replace(
-                self.config,
-                ignore_all_metadata=False,
-                ignore_artist_name=False,
-                use_filename_as_title=False,
-            )
-            track = Track.from_file(file_path, original_config)
+            track = Track.from_file(file_path, self.config)
             if track is None:
                 self.show_toast("Could not read original metadata", 2000, "warning")
                 return
@@ -8089,7 +8083,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if not hasattr(self, 'track_table'):
             return
 
-        hide_artist = self.config.ignore_artist_name or self.config.ignore_all_metadata
+        hide_artist = getattr(self, '_artist_hidden', False)
         for item in self.track_table.get_children():
             values = list(self.track_table.item(item)['values'])
             while len(values) < 13:
@@ -8201,9 +8195,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 logger.info("Starting upload process")
                 
                 # Apply ignore artist name setting from config
-                if self.config.ignore_artist_name:
+                if getattr(self, '_artist_hidden', False):
                     logger.info("Ignoring artist name from metadata")
-                
+
                 self.update_status("Processing album...", 10)
                 
                 # Build album from manual tracks if available, otherwise from directory
@@ -9101,11 +9095,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             file_size = track_path.stat().st_size / (1024**2) if track_path.exists() else 0
             extension = track_path.suffix if track_path.exists() else ""
 
-            # Use filename as title if checkbox is checked
-            if self.config.use_filename_as_title:
-                title = track_path.stem
-            else:
-                title = track_path.stem  # Default to stem for now
+            # Title is always the filename stem
+            title = track_path.stem
 
             # Get metadata from file
             year, genre, bitrate = self.get_track_metadata(track_path)

@@ -437,9 +437,6 @@ class SettingsMixin:
             ("Create session.txt files (Recommended)", "create_album_session_files", "bool"),
             ("Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
             ("Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
-            ("Ignore artist name", "ignore_artist_name", "bool"),
-            ("Use filename as title", "use_filename_as_title", "bool"),
-            ("Ignore all metadata", "ignore_all_metadata", "bool"),
             ("Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
             ("Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
             ("Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
@@ -576,9 +573,9 @@ class SettingsMixin:
             ("Clear Metadata", "context_menu_clear_metadata", "bool"),
             ("Clear All Metadata", "context_menu_clear_all_metadata", "bool"),
             ("Clear All Tracks", "context_menu_clear_all", "bool"),
-            ("Upload as Single", "context_menu_upload_as_single", "bool")
+            ("Upload as Single", "context_menu_upload_as_single", "bool"),
         ]
-        
+
         # Create treeview for context menu settings (no headings)
         self.context_menu_tree = ttk.Treeview(
             parent,
@@ -587,26 +584,26 @@ class SettingsMixin:
             selectmode='browse'
         )
         self.context_menu_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
-        
+
         # Hide the tree column
         self.context_menu_tree.column('#0', width=0, stretch=False)
-        
+
         # Configure columns
         self.context_menu_tree.column('setting', width=250, anchor=tk.W)
         self.context_menu_tree.column('value', width=150, anchor=tk.W)
-        
+
         # Populate treeview with settings
         self.context_menu_vars = {}
         self.context_menu_item_mapping = {}
-        
+
         for setting_name, config_key, setting_type in settings:
             if setting_type == "bool":
                 var = tk.BooleanVar(value=getattr(self.config, config_key, True))
                 display_value = "☑" if var.get() else "☐"
-            
+
             self.context_menu_vars[config_key] = var
             self.context_menu_vars[f"{config_key}_type"] = setting_type
-            
+
             # Add item to treeview
             item_id = self.context_menu_tree.insert('', 'end', values=(setting_name, display_value))
             self.context_menu_item_mapping[item_id] = config_key
@@ -651,11 +648,11 @@ class SettingsMixin:
             "context_menu_sort_by", "context_menu_clear_metadata", "context_menu_clear_all_metadata",
             "context_menu_clear_all", "context_menu_upload_as_single"
         ]
-        
+
         for config_key in context_menu_configs:
             if config_key in self.context_menu_vars:
                 setattr(self.config, config_key, self.context_menu_vars[config_key].get())
-        
+
         save_config(self.config)
         self.refresh_context_menu_icons()
 
@@ -1255,7 +1252,7 @@ class SettingsMixin:
             self.show_toast("Test notification sent", 2000, "success")
         except Exception as e:
             messagebox.showerror("Test Failed", f"Failed to send test notification:\n{e}")
-    
+
     def on_general_tree_double_click(self, event):
         """Handle double-click on general treeview to edit settings"""
         # Get clicked item
@@ -1326,21 +1323,6 @@ class SettingsMixin:
                 save_config(self.config)
                 if hasattr(self, '_filter_track_table'):
                     self._filter_track_table()
-            elif config_key == "ignore_artist_name":
-                self.config.ignore_artist_name = new_value
-                save_config(self.config)
-                if hasattr(self, 'update_preview_artist_visibility'):
-                    self.update_preview_artist_visibility()
-            elif config_key == "ignore_all_metadata":
-                self.config.ignore_all_metadata = new_value
-                save_config(self.config)
-                if hasattr(self, 'update_preview_artist_visibility'):
-                    self.update_preview_artist_visibility()
-            elif config_key == "use_filename_as_title":
-                self.config.use_filename_as_title = new_value
-                save_config(self.config)
-                if hasattr(self, 'sync_track_table_to_current_album'):
-                    self.sync_track_table_to_current_album()
             elif config_key == "highlight_corrupted_tracks":
                 self.config.highlight_corrupted_tracks = new_value
                 save_config(self.config)
@@ -2801,9 +2783,6 @@ class SettingsMixin:
             ("General: Create session.txt files (Recommended)", "create_album_session_files", "bool"),
             ("General: Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
             ("General: Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
-            ("General: Ignore artist name", "ignore_artist_name", "bool"),
-            ("General: Use filename as title", "use_filename_as_title", "bool"),
-            ("General: Ignore all metadata", "ignore_all_metadata", "bool"),
             ("General: Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
             ("General: Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
             ("General: Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
@@ -3070,9 +3049,6 @@ class SettingsMixin:
         self.config.create_album_session_files = self.general_combined_vars['create_album_session_files'].get()
         self.config.guess_album_title_from_track_metadata = self.general_combined_vars['guess_album_title_from_track_metadata'].get()
         self.config.guess_release_date_from_track_metadata = self.general_combined_vars['guess_release_date_from_track_metadata'].get()
-        self.config.ignore_artist_name = self.general_combined_vars['ignore_artist_name'].get()
-        self.config.use_filename_as_title = self.general_combined_vars['use_filename_as_title'].get()
-        self.config.ignore_all_metadata = self.general_combined_vars['ignore_all_metadata'].get()
         self.config.use_folder_name_when_album_missing = self.general_combined_vars['use_folder_name_when_album_missing'].get()
         self.config.smart_randomize_on_album_load = self.general_combined_vars['smart_randomize_on_album_load'].get()
         self.config.auto_guess_case_on_album_load = self.general_combined_vars['auto_guess_case_on_album_load'].get()

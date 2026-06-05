@@ -13,9 +13,7 @@ class Config:
     name_your_price: bool = True
     track_streaming: bool = True
     track_downloading: bool = True
-    use_filename_as_title: bool = False  # Force use filename as track title
-    ignore_all_metadata: bool = False  # Ignore all metadata from audio files
-    ignore_artist_name: bool = False  # Ignore artist name from metadata
+    hide_artist_name: bool = False  # Hide artist name in track table and during upload
     cookies_file: str = ""
     auto_load_cookies: bool = False  # Auto load cookies on startup
     debug: bool = False
