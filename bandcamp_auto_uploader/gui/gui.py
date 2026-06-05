@@ -343,6 +343,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Toast queue
         self.toast_queue = queue.Queue()
+        self.active_toasts = []
         self.context_sort_directions = {}
 
         # Undo functionality
@@ -9370,25 +9371,55 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         toast.update_idletasks()
         position = getattr(self.config, 'toast_position', 'top-right')
 
-        if position == 'top-right':
-            x = self.root.winfo_x() + self.root.winfo_width() - toast.winfo_width() - 20
-            y = self.root.winfo_y() + 60
-        elif position == 'top-left':
-            x = self.root.winfo_x() + 20
-            y = self.root.winfo_y() + 60
-        elif position == 'bottom-right':
-            x = self.root.winfo_x() + self.root.winfo_width() - toast.winfo_width() - 20
-            y = self.root.winfo_y() + self.root.winfo_height() - toast.winfo_height() - 20
-        elif position == 'bottom-left':
-            x = self.root.winfo_x() + 20
-            y = self.root.winfo_y() + self.root.winfo_height() - toast.winfo_height() - 20
-        else:
-            # Default to top-right
-            x = self.root.winfo_x() + self.root.winfo_width() - toast.winfo_width() - 20
-            y = self.root.winfo_y() + 60
+        is_top_position = position.startswith('top-')
+        base_margin = 20
+        toast_gap = 10
+        toast_top_offset = 60
 
-        toast.geometry(f"+{x}+{y}")
+        if position == 'top-right':
+            x = self.root.winfo_x() + self.root.winfo_width() - toast.winfo_width() - base_margin
+            base_y = self.root.winfo_y() + toast_top_offset
+        elif position == 'top-left':
+            x = self.root.winfo_x() + base_margin
+            base_y = self.root.winfo_y() + toast_top_offset
+        elif position == 'bottom-right':
+            x = self.root.winfo_x() + self.root.winfo_width() - toast.winfo_width() - base_margin
+            base_y = self.root.winfo_y() + self.root.winfo_height() - base_margin
+        elif position == 'bottom-left':
+            x = self.root.winfo_x() + base_margin
+            base_y = self.root.winfo_y() + self.root.winfo_height() - base_margin
+        else:
+            x = self.root.winfo_x() + self.root.winfo_width() - toast.winfo_width() - base_margin
+            base_y = self.root.winfo_y() + toast_top_offset
+            is_top_position = True
+
+        # Register toast in active stack (top of list = top of screen)
+        if is_top_position:
+            self.active_toasts.insert(0, (toast, x, toast_height))
+        else:
+            self.active_toasts.append((toast, x, toast_height))
+
+        target_y = self._compute_target_y_for_toast(toast, base_y, toast_gap, is_top_position)
+        if target_y is None:
+            try:
+                toast.destroy()
+            except tk.TclError:
+                pass
+            return
+
+        # Position off-screen for slide-in, then animate in
+        if is_top_position:
+            start_y = base_y - 30
+        else:
+            start_y = base_y + 30
+        try:
+            toast.geometry(f"+{x}+{start_y}")
+            toast.attributes('-alpha', 0.0)
+        except tk.TclError:
+            pass
         toast.deiconify()
+        self._animate_toast_in(toast, x, start_y, x, target_y)
+        self._animate_toast_repack(base_y, toast_gap, is_top_position, exclude=toast)
 
         closed = False
         start_time = time.monotonic()
@@ -9398,12 +9429,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if closed:
                 return
             closed = True
+            self.active_toasts = [(t, xx, h) for (t, xx, h) in self.active_toasts if t is not toast]
             try:
                 toast.destroy()
             except tk.TclError:
                 pass
+            position_after = getattr(self.config, 'toast_position', 'top-right')
+            is_top_after = position_after.startswith('top-')
+            base_y_after = self._compute_base_y(position_after, toast_top_offset, base_margin)
+            self._animate_toast_repack(base_y_after, toast_gap, is_top_after)
 
         def fade_out(alpha=0.96):
+            nonlocal closed
             if closed:
                 return
             if alpha <= 0.08:
@@ -9412,9 +9449,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             try:
                 toast.attributes('-alpha', alpha)
             except tk.TclError:
-                destroy_toast()
+                closed = True
                 return
-            toast.after(24, lambda: fade_out(alpha - 0.08))
+            try:
+                toast.after(24, lambda: fade_out(alpha - 0.08))
+            except tk.TclError:
+                closed = True
 
         def begin_close():
             if getattr(self.config, 'toast_fade_out', True):
@@ -9423,14 +9463,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 destroy_toast()
 
         def update_progress():
+            nonlocal closed
             if closed:
                 return
             elapsed_ms = (time.monotonic() - start_time) * 1000
             remaining = max(0, 1 - (elapsed_ms / max(duration, 1)))
             line_end = 18 + (text_width - 44) * remaining
-            canvas.coords(progress_fg, 18, toast_height - 17, line_end, toast_height - 17)
+            try:
+                canvas.coords(progress_fg, 18, toast_height - 17, line_end, toast_height - 17)
+            except tk.TclError:
+                closed = True
+                return
             if remaining > 0:
-                toast.after(40, update_progress)
+                try:
+                    toast.after(40, update_progress)
+                except tk.TclError:
+                    closed = True
 
         def on_close_enter(_event=None):
             canvas.itemconfigure(close_text_tag, fill=close_hover_color)
@@ -9446,6 +9494,99 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         update_progress()
         toast.after(duration, begin_close)
+
+    def _compute_base_y(self, position, top_offset, base_margin):
+        """Return the anchor y for the toast stack (top edge for top-* positions, bottom edge for bottom-*)."""
+        if position in ('top-right', 'top-left'):
+            return self.root.winfo_y() + top_offset
+        return self.root.winfo_y() + self.root.winfo_height() - base_margin
+
+    def _compute_target_y_for_toast(self, target_toast, base_y, gap, is_top):
+        """Compute the target y for a specific toast in the current stack."""
+        for index, (toast, _x, height) in enumerate(self.active_toasts):
+            if toast is not target_toast:
+                continue
+            if is_top:
+                offset = 0
+                for prev_index in range(index):
+                    offset += self.active_toasts[prev_index][2] + gap
+                return base_y + offset
+            total_height = sum(h for _, _, h in self.active_toasts)
+            total_height += gap * max(0, len(self.active_toasts) - 1)
+            cumulative = base_y - total_height
+            for j in range(index):
+                cumulative += self.active_toasts[j][2] + gap
+            return cumulative
+        return None
+
+    def _animate_toast_in(self, toast, from_x, from_y, to_x, to_y, steps=10, interval=22):
+        """Fade in and slide a new toast from (from_x, from_y) to (to_x, to_y)."""
+        dx = (to_x - from_x) / steps
+        dy = (to_y - from_y) / steps
+
+        def step(i):
+            if i >= steps:
+                try:
+                    toast.geometry(f"+{to_x}+{to_y}")
+                    toast.attributes('-alpha', 1.0)
+                except tk.TclError:
+                    pass
+                return
+            try:
+                new_x = int(round(from_x + dx * (i + 1)))
+                new_y = int(round(from_y + dy * (i + 1)))
+                new_alpha = (i + 1) / steps
+                toast.geometry(f"+{new_x}+{new_y}")
+                toast.attributes('-alpha', new_alpha)
+                toast.after(interval, lambda: step(i + 1))
+            except tk.TclError:
+                return
+
+        step(0)
+
+    def _animate_toast_repack(self, base_y, gap, is_top, exclude=None):
+        """Slide every active toast to its target position in the stack."""
+        for toast, x, _height in self.active_toasts:
+            if exclude is not None and toast is exclude:
+                continue
+            target_y = self._compute_target_y_for_toast(toast, base_y, gap, is_top)
+            if target_y is None:
+                continue
+            self._animate_toast_to(toast, x, target_y)
+
+    def _animate_toast_to(self, toast, target_x, target_y, steps=8, interval=22):
+        """Slide a toast to (target_x, target_y) with animation."""
+        try:
+            parts = toast.geometry().split('+')
+            if len(parts) < 3:
+                return
+            current_x = int(parts[1])
+            current_y = int(parts[2])
+        except (tk.TclError, ValueError):
+            return
+
+        if current_x == target_x and current_y == target_y:
+            return
+
+        dx = (target_x - current_x) / steps
+        dy = (target_y - current_y) / steps
+
+        def step(i):
+            if i >= steps:
+                try:
+                    toast.geometry(f"+{target_x}+{target_y}")
+                except tk.TclError:
+                    pass
+                return
+            try:
+                new_x = int(round(current_x + dx * (i + 1)))
+                new_y = int(round(current_y + dy * (i + 1)))
+                toast.geometry(f"+{new_x}+{new_y}")
+                toast.after(interval, lambda: step(i + 1))
+            except tk.TclError:
+                return
+
+        step(0)
     
     
     def save_shortcut(self):
