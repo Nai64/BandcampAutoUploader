@@ -8100,12 +8100,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self._artist_collapsed = not getattr(self, '_artist_collapsed', False)
         labels = self.get_track_table_column_labels()
-        heading_text = labels.get(column_id, column_id)
-        if self._artist_collapsed:
-            heading_text = f"{heading_text}  ✕"
-        else:
-            heading_text = labels.get(column_id, column_id)
-        self.track_table.heading(column_id, text=heading_text)
+        self.track_table.heading(column_id, text=labels.get(column_id, column_id))
 
         for item in rows:
             if self.is_track_item_locked(item):
