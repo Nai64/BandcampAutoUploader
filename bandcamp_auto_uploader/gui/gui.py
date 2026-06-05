@@ -437,6 +437,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def handle_tk_callback_exception(self, exc_type, exc_value, exc_traceback):
         """Route Tk callback exceptions into the persistent diagnostic log."""
+        if self._is_known_tkinter_bug(exc_type, exc_value, exc_traceback):
+            return
         logger.error("Unhandled Tkinter callback exception", exc_info=(exc_type, exc_value, exc_traceback))
         self.show_bug_log_prompt(
             "Application Error",
@@ -444,6 +446,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             error_text=str(exc_value),
             exc_info=(exc_type, exc_value, exc_traceback),
         )
+
+    @staticmethod
+    def _is_known_tkinter_bug(exc_type, exc_value, exc_traceback):
+        """Swallow Python 3.14 tkinter shutdown bugs that don't come from app code."""
+        import traceback
+        try:
+            tb_list = traceback.extract_tb(exc_traceback)
+        except Exception:
+            return False
+        for frame in tb_list:
+            normalized = (frame.filename or "").replace("\\", "/")
+            if normalized.endswith("/tkinter/__init__.py") and frame.name in ("callit", "deletecommand"):
+                return True
+        if exc_type is AttributeError and exc_value is not None:
+            msg = str(exc_value)
+            if "NoneType" in msg and "remove" in msg:
+                return True
+        return False
 
     def find_app_icon_path(self):
         """Find the bundled app icon in script and frozen builds."""
@@ -3061,11 +3081,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def get_album_session_payload(self):
         """Build a serializable album session snapshot."""
-        columns = list(self.track_table["columns"]) if hasattr(self, 'track_table') else []
+        columns = []
         rows = []
         if hasattr(self, 'track_table'):
-            for item in self.track_table.get_children():
-                values = list(self.track_table.item(item).get("values", ()))
+            try:
+                columns = list(self.track_table["columns"])
+                children = self.track_table.get_children()
+            except (tk.TclError, AttributeError):
+                children = []
+            for item in children:
+                try:
+                    values = list(self.track_table.item(item).get("values", ()))
+                except (tk.TclError, AttributeError):
+                    continue
                 row = {}
                 for index, column in enumerate(columns):
                     row[column] = str(values[index]) if index < len(values) else ""
