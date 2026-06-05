@@ -9,6 +9,15 @@
 #define MyAppPublisher "Nai64"
 #define MyAppURL "https://github.com/Nai64/bandcamp-auto-uploader"
 #define MyAppExeName "Bandcamp Auto Uploader.exe"
+; Source path of the EXE — set by build_gui.py per architecture.
+; Default points to dist/x64/; override via scripts/installer.iss override or
+; by passing /DMyAppSourcePath="..\dist\<arch>\{#MyAppExeName}" to ISCC.
+#ifndef MyAppSourcePath
+  #define MyAppSourcePath "..\dist\x64\{#MyAppExeName}"
+#endif
+#ifndef MyAppArch
+  #define MyAppArch "x64"
+#endif
 
 [Setup]
 AppId={{B5A8C4D2-1F3E-4A7B-9C6D-8E2F1A3B5C7D}
@@ -21,8 +30,8 @@ AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
-OutputDir=..\dist\installer
-OutputBaseFilename=BandcampAutoUploader-Setup-{#MyAppVersion}
+OutputDir=..\dist\installer\{#MyAppArch}
+OutputBaseFilename=BandcampAutoUploader-Setup-{#MyAppVersion}-{#MyAppArch}
 SetupIconFile=..\bandcamp_auto_uploader\img\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma2
@@ -37,7 +46,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional icons:"
 
 [Files]
-Source: "..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#MyAppSourcePath}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\PRIVACY_POLICY.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
