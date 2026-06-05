@@ -670,14 +670,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         candidate_dirs = []
         if getattr(sys, 'frozen', False):
             candidate_dirs.extend([
-                Path(getattr(sys, '_MEIPASS', Path(sys.executable).parent)) / "context_menu_icons",
-                Path(sys.executable).parent / "context_menu_icons",
+                Path(getattr(sys, '_MEIPASS', Path(sys.executable).parent)) / "icons",
+                Path(sys.executable).parent / "icons",
             ])
 
         project_root = Path(__file__).resolve().parent.parent.parent
         candidate_dirs.extend([
-            project_root / "context_menu_icons",
-            Path.cwd() / "context_menu_icons",
+            project_root / "icons",
+            Path.cwd() / "icons",
         ])
 
         icons_dir = next((path for path in candidate_dirs if path.exists()), None)
