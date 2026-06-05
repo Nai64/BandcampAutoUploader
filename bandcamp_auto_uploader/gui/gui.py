@@ -9418,8 +9418,27 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         except tk.TclError:
             pass
         toast.deiconify()
-        self._animate_toast_in(toast, x, start_y, x, target_y)
-        self._animate_toast_repack(base_y, toast_gap, is_top_position, exclude=toast)
+        animations_enabled = getattr(self.config, 'toast_animations_enabled', True)
+        if animations_enabled:
+            self._animate_toast_in(toast, x, start_y, x, target_y)
+            self._animate_toast_repack(base_y, toast_gap, is_top_position, exclude=toast)
+        else:
+            try:
+                toast.geometry(f"+{x}+{target_y}")
+                toast.attributes('-alpha', 1.0)
+            except tk.TclError:
+                pass
+            for remaining_toast, remaining_x, _h in self.active_toasts:
+                if remaining_toast is toast:
+                    continue
+                try:
+                    new_y = self._compute_target_y_for_toast(
+                        remaining_toast, base_y, toast_gap, is_top_position
+                    )
+                    if new_y is not None:
+                        remaining_toast.geometry(f"+{remaining_x}+{new_y}")
+                except tk.TclError:
+                    pass
 
         closed = False
         start_time = time.monotonic()
@@ -9437,7 +9456,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             position_after = getattr(self.config, 'toast_position', 'top-right')
             is_top_after = position_after.startswith('top-')
             base_y_after = self._compute_base_y(position_after, toast_top_offset, base_margin)
-            self._animate_toast_repack(base_y_after, toast_gap, is_top_after)
+            if getattr(self.config, 'toast_animations_enabled', True):
+                self._animate_toast_repack(base_y_after, toast_gap, is_top_after)
+            else:
+                for remaining_toast, remaining_x, _h in self.active_toasts:
+                    try:
+                        new_y = self._compute_target_y_for_toast(
+                            remaining_toast, base_y_after, toast_gap, is_top_after
+                        )
+                        if new_y is not None:
+                            remaining_toast.geometry(f"+{remaining_x}+{new_y}")
+                    except tk.TclError:
+                        pass
 
         def fade_out(alpha=0.96):
             nonlocal closed

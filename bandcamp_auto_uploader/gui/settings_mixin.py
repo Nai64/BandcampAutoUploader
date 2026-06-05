@@ -718,6 +718,7 @@ class SettingsMixin:
             ("Toast Position", "toast_position", "str"),
             ("Test Toast Notification", "test_toast_notification", "action"),
             ("Enable Fade Out Effect", "toast_fade_out", "bool"),
+            ("Enable Animations (slide/fade)", "toast_animations_enabled", "bool"),
             ("Font Family", "toast_font_family", "str"),
             ("Font Size", "toast_font_size", "int"),
             ("Font Bold", "toast_font_bold", "bool"),
@@ -840,6 +841,7 @@ class SettingsMixin:
         self.config.toast_duration = int(self.toast_vars['toast_duration'].get())
         self.config.toast_position = self.toast_vars['toast_position'].get()
         self.config.toast_fade_out = self.toast_vars['toast_fade_out'].get()
+        self.config.toast_animations_enabled = self.toast_vars['toast_animations_enabled'].get()
         self.config.toast_font_family = self.toast_vars['toast_font_family'].get()
         self.config.toast_font_size = int(self.toast_vars['toast_font_size'].get())
         self.config.toast_font_bold = self.toast_vars['toast_font_bold'].get()
@@ -1082,6 +1084,7 @@ class SettingsMixin:
             ("Toast: Toast Position", "toast_position", "str"),
             ("Toast: Test Toast Notification", "test_toast_notification", "action"),
             ("Toast: Enable Fade Out Effect", "toast_fade_out", "bool"),
+            ("Toast: Enable Animations (slide/fade)", "toast_animations_enabled", "bool"),
             ("Toast: Font Family", "toast_font_family", "str"),
             ("Toast: Font Size", "toast_font_size", "int"),
             ("Toast: Font Bold", "toast_font_bold", "bool"),
@@ -1195,6 +1198,7 @@ class SettingsMixin:
         self.config.toast_duration = int(self.notifications_combined_vars['toast_duration'].get())
         self.config.toast_position = self.notifications_combined_vars['toast_position'].get()
         self.config.toast_fade_out = self.notifications_combined_vars['toast_fade_out'].get()
+        self.config.toast_animations_enabled = self.notifications_combined_vars['toast_animations_enabled'].get()
         self.config.toast_font_family = self.notifications_combined_vars['toast_font_family'].get()
         self.config.toast_font_size = int(self.notifications_combined_vars['toast_font_size'].get())
         self.config.toast_font_bold = self.notifications_combined_vars['toast_font_bold'].get()

@@ -37,6 +37,7 @@ class Config:
     toast_warning_color: str = "#f59e0b"  # Warning toast color
     toast_info_color: str = "#38bdf8"  # Info toast color
     toast_fade_out: bool = True  # Enable fade out effect when toast closes
+    toast_animations_enabled: bool = True  # When disabled, all toast animations are instantaneous
     show_context_menu_icons: bool = True  # Show icons in context menus
     windows_notifications: bool = False  # Use Windows native notifications
     apply_settings_immediately: bool = True  # Apply settings immediately without Save button
