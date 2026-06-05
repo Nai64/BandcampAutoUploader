@@ -9697,7 +9697,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         except Exception as e:
             logger.error(f"Failed to save window geometry: {e}")
         finally:
-            self.root.destroy()
+            try:
+                self.root.destroy()
+            except (tk.TclError, AttributeError):
+                pass
     
     def on_drop_folder(self, event):
         """Handle drag & drop of folder onto album path field"""

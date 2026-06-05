@@ -155,14 +155,25 @@ class LogsMixin:
         if not hasattr(self, "track_table"):
             return []
 
-        columns = list(self.track_table["columns"])
+        try:
+            columns = list(self.track_table["columns"])
+        except (tk.TclError, AttributeError):
+            return []
+
         labels = {}
         if hasattr(self, "get_track_table_column_labels"):
             labels = self.get_track_table_column_labels()
 
         tracks = []
-        for item_id in self.track_table.get_children():
-            values = list(self.track_table.item(item_id).get("values", ()))
+        try:
+            children = self.track_table.get_children()
+        except (tk.TclError, AttributeError):
+            return []
+        for item_id in children:
+            try:
+                values = list(self.track_table.item(item_id).get("values", ()))
+            except (tk.TclError, AttributeError):
+                continue
             row = {}
             for index, column_id in enumerate(columns):
                 if index >= len(values):
@@ -372,25 +383,37 @@ class LogsMixin:
                 formatted_message = sanitize_log_text(self.format_log_message(message, levelno))
 
                 # Insert message with color tag
-                self.log_text.insert(tk.END, formatted_message + "\n", (f"level_{levelno}",))
-                self.log_text.tag_config(f"level_{levelno}", foreground=color)
+                try:
+                    self.log_text.insert(tk.END, formatted_message + "\n", (f"level_{levelno}",))
+                    self.log_text.tag_config(f"level_{levelno}", foreground=color)
+                except (tk.TclError, AttributeError):
+                    return
 
                 # Trim to max lines if set
                 if self.config.log_max_lines > 0:
-                    line_count = int(self.log_text.index('end-1c').split('.')[0])
-                    if line_count > self.config.log_max_lines:
-                        # Remove excess lines from the top
-                        excess_lines = line_count - self.config.log_max_lines
-                        self.log_text.delete(1.0, f"{excess_lines + 1}.0")
+                    try:
+                        line_count = int(self.log_text.index('end-1c').split('.')[0])
+                        if line_count > self.config.log_max_lines:
+                            # Remove excess lines from the top
+                            excess_lines = line_count - self.config.log_max_lines
+                            self.log_text.delete(1.0, f"{excess_lines + 1}.0")
+                    except (tk.TclError, AttributeError):
+                        return
 
                 # Auto-scroll if enabled
                 if self.config.log_auto_scroll:
-                    self.log_text.see(tk.END)
+                    try:
+                        self.log_text.see(tk.END)
+                    except (tk.TclError, AttributeError):
+                        return
         except queue.Empty:
             pass
 
         # Schedule next check
-        self.root.after(self.log_poll_interval_ms, self.monitor_logs)
+        try:
+            self.root.after(self.log_poll_interval_ms, self.monitor_logs)
+        except (tk.TclError, AttributeError):
+            pass
 
     def format_log_message(self, message, levelno):
         """Format log message based on display settings"""
