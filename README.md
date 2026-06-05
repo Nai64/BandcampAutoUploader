@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Version-3-blue?style=for-the-badge" alt="Version 3">
 </p>
 
-# 🎵 Bandcamp Auto Uploader
+# Bandcamp Auto Uploader
 
 > **Upload your music to Bandcamp in bulk — no Pro account needed.**
 > Drag in a folder of audio files, review the tracks, and upload. That's it.
@@ -16,7 +16,7 @@
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
 - [Quick Start](#-quick-start)
 - [What You Can Do](#-what-you-can-do)
@@ -32,7 +32,7 @@
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Download the app** — grab the latest `BandcampAutoUploaderGUI.exe` from the [Releases page](https://github.com/Nai64/BandcampAutoUploader/releases). No Python installation needed.
 2. **Launch it** — the upload window opens immediately.
@@ -46,7 +46,7 @@
 
 ---
 
-## ✨ What You Can Do
+## What You Can Do
 
 | Feature | What it means for you |
 | :--- | :--- |
@@ -69,7 +69,7 @@
 
 ---
 
-## 🔧 How It Works (the short version)
+## How It Works (the short version)
 
 1. The app grabs your Bandcamp login from your browser's cookies — **your credentials never leave your computer**.
 2. It authenticates with Bandcamp's standard artist edit interface (the same one you use in a browser).
@@ -81,7 +81,7 @@ $$ \text{Upload} = f(\text{audio}, \text{cookies}, \text{FFmpeg}) \rightarrow \t
 
 ---
 
-## ⌨️ Hotkeys
+## Hotkeys
 
 All four are user-customizable from **Preferences → Hotkeys**. Multi-key sequences (like `Ctrl+Space` then `Enter`) are supported.
 
@@ -97,7 +97,7 @@ All four are user-customizable from **Preferences → Hotkeys**. Multi-key seque
 
 ---
 
-## 🔍 Track Table Tips
+## Track Table Tips
 
 The track table supports real-time filtering. Type in the **search bar** above the table to narrow the visible rows.
 
@@ -111,7 +111,7 @@ The track table supports real-time filtering. Type in the **search bar** above t
 
 ---
 
-## 🖱️ The Right-Click Context Menu
+## The Right-Click Context Menu
 
 Right-click any track row to access:
 
@@ -136,7 +136,7 @@ Right-click any track row to access:
 
 ---
 
-## ⚙️ Settings at a Glance
+## Settings at a Glance
 
 | Section | What you'll find |
 | :--- | :--- |
@@ -154,7 +154,7 @@ Right-click any track row to access:
 
 ---
 
-## 🎧 Supported Audio Formats
+## Supported Audio Formats
 
 | Format | Extension | Uploaded as | Notes |
 | :--- | :--- | :--- | :--- |
@@ -172,7 +172,7 @@ Right-click any track row to access:
 
 ---
 
-## ❓ FAQ
+## FAQ
 
 ### Do I need a Pro account?
 **No.** This works with any free Bandcamp artist account.
@@ -205,7 +205,7 @@ Open Preferences → **Hotkeys**. Double-click any action and press the key comb
 
 ---
 
-## 📜 Third-party licenses
+## Third-party licenses
 
 - [Azure ttk theme](https://github.com/rdbende/Azure-ttk-theme) by rdbende is bundled under the MIT License.
 - [TKinterModernThemes](https://github.com/RobertJN64/TKinterModernThemes) by Robert Nies is used for Sun-Valley theme support under the MIT License. TKinterModernThemes credits the included Sun-Valley theme work to [rdbende](https://github.com/rdbende).
@@ -213,12 +213,8 @@ Open Preferences → **Hotkeys**. Double-click any action and press the key comb
 
 ---
 
-## 🆘 Need Help?
+## Need Help?
 
 - [Browse open issues](https://github.com/Nai64/BandcampAutoUploader/issues)
 - [Open a new issue](https://github.com/Nai64/BandcampAutoUploader/issues/new)
 - [Releases page](https://github.com/Nai64/BandcampAutoUploader/releases)
-
-<sub>Made with ❤️ for indie musicians who don't want to pay for Pro.</sub>
-
-- - - -
