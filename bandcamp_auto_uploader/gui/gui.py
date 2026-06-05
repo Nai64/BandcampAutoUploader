@@ -1375,10 +1375,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self._column_lock_active = False
         self._column_lock_widths = None
         self._column_lock_pending = False
+        self._artist_collapsed = False
         self.track_table.bind('<Button-1>', self._on_column_lock_press, add='+')
         self.track_table.bind('<B1-Motion>', self._on_column_lock_motion, add='+')
         self.track_table.bind('<ButtonRelease-1>', self._on_column_lock_release, add='+')
-        self.track_table.bind('<Button-1>', self._on_artist_cell_toggle_click, add='+')
         
         # Store original column widths for restoration
         self.column_widths = {
@@ -5056,11 +5056,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         return None
 
     def configure_track_table_heading_commands(self):
-        """Let editable column headers batch-update that whole column (artist toggles per-cell instead)."""
+        """Let editable column headers batch-update that whole column; Artist toggles all tracks."""
         labels = self.get_track_table_column_labels()
         editable_columns = self.get_track_table_editable_columns()
         for column_id in self.track_table["columns"]:
-            if column_id in editable_columns and column_id != "artist":
+            if column_id == "artist":
+                self.track_table.heading(
+                    column_id,
+                    text=labels.get(column_id, column_id),
+                    command=lambda col=column_id: self._toggle_artist_column(col)
+                )
+            elif column_id in editable_columns:
                 self.track_table.heading(
                     column_id,
                     text=labels.get(column_id, column_id),
@@ -6107,6 +6113,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             # Clear existing table
             for item in self.track_table.get_children():
                 self.track_table.delete(item)
+
+            self._artist_collapsed = False
+            self.configure_track_table_heading_commands()
 
             # Populate table with tracks
             for i, track in enumerate(album.tracks, 1):
@@ -8079,40 +8088,43 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Push editable table metadata into current_album when it is available."""
         self.sync_track_table_to_current_album()
 
-    def _on_artist_cell_toggle_click(self, event):
-        """Toggle the artist cell: remove it if shown, restore it from file metadata if empty."""
+    def _toggle_artist_column(self, column_id):
+        """Click the Artist column header to hide/restore all artist names in the preview table."""
         if self.is_upload_in_progress():
-            return
-        region = self.track_table.identify("region", event.x, event.y)
-        if region != "cell":
-            return
-        item = self.track_table.identify("item", event.x, event.y)
-        column = self.track_table.identify("column", event.x, event.y)
-        if not item or not column:
-            return
-        column_id = self.get_track_table_column_id_from_event_column(column)
-        if column_id != "artist":
-            return
-        if self.is_track_item_locked(item):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast("Upload in progress", 1600, "warning")
             return
 
-        values = list(self.track_table.item(item).get("values", ()))
-        while len(values) < 13:
-            values.append("")
-        current_artist = str(values[1]) if len(values) > 1 else ""
+        rows = self.track_table.get_children()
+        if not rows:
+            return
 
-        if current_artist.strip():
-            values[1] = ""
-            toast = "Artist hidden (click to restore)"
+        self._artist_collapsed = not getattr(self, '_artist_collapsed', False)
+        labels = self.get_track_table_column_labels()
+        heading_text = labels.get(column_id, column_id)
+        if self._artist_collapsed:
+            heading_text = f"{heading_text}  ✕"
         else:
-            restored = self.get_track_artist_metadata(values[12])
-            values[1] = restored
-            toast = "Artist restored" if restored else "No artist metadata found"
+            heading_text = labels.get(column_id, column_id)
+        self.track_table.heading(column_id, text=heading_text)
 
-        self.track_table.item(item, values=tuple(values))
+        for item in rows:
+            if self.is_track_item_locked(item):
+                continue
+            values = list(self.track_table.item(item).get("values", ()))
+            while len(values) < 13:
+                values.append("")
+            if self._artist_collapsed:
+                values[1] = ""
+            else:
+                values[1] = self.get_track_artist_metadata(values[12])
+            self.track_table.item(item, values=tuple(values))
+
         self.sync_track_table_to_current_album()
-        self.show_toast(toast, 1400, "info")
+        self.show_toast(
+            "All artists hidden (click Artist column to restore)" if self._artist_collapsed
+            else "All artists restored",
+            1600, "info"
+        )
 
     def upload_as_single(self, item_id):
         """Upload the selected track as a standalone single-track release."""
