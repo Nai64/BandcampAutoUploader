@@ -3583,9 +3583,10 @@ class SettingsMixin:
 
     def open_description_autofill_dialog(self, tree, item_id, column, current_value, callback):
         """Open dialog to select a description auto-fill mode (single selection)."""
-        dialog = tk.Toplevel(self.root)
+        parent = self.get_preferences_dialog_parent()
+        dialog = tk.Toplevel(parent)
         dialog.title("Description Auto-Fill")
-        dialog.transient(self.root)
+        dialog.transient(parent)
         dialog.withdraw()
         dialog.resizable(True, True)
 
@@ -3816,7 +3817,7 @@ class SettingsMixin:
         ttk.Button(btn_frame, text="Delete", command=remove_selected, width=8).pack(side=tk.LEFT)
 
         dialog.update_idletasks()
-        self.center_dialog(dialog, 520, 400, self.root)
+        self.center_dialog(dialog, 520, 400, parent)
         dialog.deiconify()
         dialog.grab_set()
 
