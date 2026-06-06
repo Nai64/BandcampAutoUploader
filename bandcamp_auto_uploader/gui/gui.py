@@ -1584,6 +1584,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.scale_size_var = tk.StringVar(value="1400x1400")
         self.scaling_method_var = tk.StringVar(value=getattr(self.config, 'cover_scaling_method', 'Lanczos'))
+        self.scaling_method_var.trace_add('write', lambda *args: self._on_cover_scaling_method_changed())
         self.scale_size_combo = ttk.Combobox(
             scale_method_frame,
             textvariable=self.scale_size_var,
@@ -1597,7 +1598,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ttk.Label(scale_method_frame, text="Fit:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
 
         self.cover_fit_mode_var = tk.StringVar(value=getattr(self.config, 'cover_fit_mode', 'Crop (fill)'))
-        self.cover_fit_mode_var.trace_add('write', lambda *args: self.update_cover_preview())
+        self.cover_fit_mode_var.trace_add('write', lambda *args: self._on_cover_fit_mode_changed())
         self.cover_fit_mode_combo = ttk.Combobox(
             scale_method_frame,
             textvariable=self.cover_fit_mode_var,

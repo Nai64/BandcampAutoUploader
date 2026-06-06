@@ -1664,6 +1664,23 @@ class SettingsMixin:
         except Exception as e:
             logger.debug(f"Failed to save cover scaling preference: {e}")
 
+    def _on_cover_fit_mode_changed(self):
+        """Persist cover fit mode when changed via main page combobox."""
+        try:
+            self.config.cover_fit_mode = self.cover_fit_mode_var.get()
+            save_config(self.config)
+            self.update_cover_preview()
+        except Exception as e:
+            logger.debug(f"Failed to save cover fit mode: {e}")
+
+    def _on_cover_scaling_method_changed(self):
+        """Persist cover scaling method when changed via main page combobox."""
+        try:
+            self.config.cover_scaling_method = self.scaling_method_var.get()
+            save_config(self.config)
+        except Exception as e:
+            logger.debug(f"Failed to save cover scaling method: {e}")
+
     def create_about_settings(self, parent):
         """Create About section"""
         import webbrowser
