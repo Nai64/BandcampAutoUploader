@@ -8,15 +8,15 @@ then run::
 
 (or pass a new version directly)::
 
-    python scripts/set_version.py 3b
+    python scripts/set_version.py 3.0.0b
     python scripts/set_version.py 4
 """
 from __future__ import annotations
 
 import re
 
-__version__ = "3b"
-__version_label__ = "3b (beta)"
+__version__ = "3.0.0b"
+__version_label__ = "3.0.0b (beta)"
 
 _VERSION_RE = re.compile(r"^\d+(?:\.\d+)*(?:(?:[ab]|rc)\d*)?$")
 
@@ -32,6 +32,6 @@ def full_version() -> str:
 
 
 def numeric_prefix() -> str:
-    """Return the leading integer portion of the version (e.g. '3' from '3b')."""
+    """Return the leading integer portion of the version (e.g. '3' from '3.0.0b')."""
     match = re.match(r"^(\d+)", __version__)
     return match.group(1) if match else __version__
