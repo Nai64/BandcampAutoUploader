@@ -3,6 +3,7 @@ __pycache__/
 *.pyo
 .mypy_cache/
 .ruff_cache/
+.env
 .venv/
 .opencode/
 .vscode/
@@ -19,3 +20,4 @@ tests/
 Features.txt
 scripts/version.inc
 scripts/release.py
+*.env
