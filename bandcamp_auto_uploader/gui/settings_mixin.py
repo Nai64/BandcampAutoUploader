@@ -109,7 +109,13 @@ class SettingsMixin:
         
         # Populate tree with sections and sub-items
         general_id = self.settings_tree.insert('', 'end', 'General', text='General')
-        self.settings_tree.insert(general_id, 'end', 'general_settings', text='General Settings')
+        self.settings_tree.insert(general_id, 'end', 'interface', text='Interface')
+        self.settings_tree.insert(general_id, 'end', 'metadata', text='Metadata')
+        self.settings_tree.insert(general_id, 'end', 'cover_art', text='Cover Art')
+        self.settings_tree.insert(general_id, 'end', 'description', text='Description')
+        self.settings_tree.insert(general_id, 'end', 'track_table', text='Track Table')
+        self.settings_tree.insert(general_id, 'end', 'files_sessions', text='Files & Sessions')
+        self.settings_tree.insert(general_id, 'end', 'startup_updates', text='Startup & Updates')
         self.settings_tree.insert(general_id, 'end', 'context_menu', text='Context Menu')
         self.settings_tree.insert(general_id, 'end', 'sort_methods', text='Sort Methods')
         self.settings_tree.insert(general_id, 'end', 'auto_tagging', text='Auto Tagging')
@@ -207,11 +213,35 @@ class SettingsMixin:
         self.create_about_settings(about_frame)
         self.settings_frames["About"] = about_frame
         
-        # General Settings frame
-        general_settings_frame = ttk.Frame(content_frame)
-        self.create_general_settings(general_settings_frame)
-        self.settings_frames["general_settings"] = general_settings_frame
-        
+        # General sub-section frames
+        interface_frame = ttk.Frame(content_frame)
+        self.create_interface_settings(interface_frame)
+        self.settings_frames["interface"] = interface_frame
+
+        metadata_frame = ttk.Frame(content_frame)
+        self.create_metadata_settings(metadata_frame)
+        self.settings_frames["metadata"] = metadata_frame
+
+        cover_art_frame = ttk.Frame(content_frame)
+        self.create_cover_art_settings(cover_art_frame)
+        self.settings_frames["cover_art"] = cover_art_frame
+
+        description_frame = ttk.Frame(content_frame)
+        self.create_description_settings(description_frame)
+        self.settings_frames["description"] = description_frame
+
+        track_table_frame = ttk.Frame(content_frame)
+        self.create_track_table_settings(track_table_frame)
+        self.settings_frames["track_table"] = track_table_frame
+
+        files_sessions_frame = ttk.Frame(content_frame)
+        self.create_files_sessions_settings(files_sessions_frame)
+        self.settings_frames["files_sessions"] = files_sessions_frame
+
+        startup_updates_frame = ttk.Frame(content_frame)
+        self.create_startup_updates_settings(startup_updates_frame)
+        self.settings_frames["startup_updates"] = startup_updates_frame
+
         # Context Menu frame
         context_menu_frame = ttk.Frame(content_frame)
         self.create_context_menu_settings(context_menu_frame)
@@ -255,9 +285,9 @@ class SettingsMixin:
         self.create_interface_combined_settings(interface_combined_frame)
         self.settings_frames["Interface"] = interface_combined_frame
         
-        # Show General Settings by default (sub-item of General)
-        self.settings_tree.selection_set('general_settings')
-        self.switch_settings_tab("general_settings")
+        # Show Interface by default (first sub-item of General)
+        self.settings_tree.selection_set('interface')
+        self.switch_settings_tab("interface")
         
         # Expand all parent sections so sub-options are visible immediately.
         for section_id in self.settings_tree.get_children(''):
@@ -269,7 +299,13 @@ class SettingsMixin:
     def build_settings_search_index(self):
         """Index preference rows so search can jump to the real setting."""
         section_trees = [
-            ("General Settings", "general_settings", "general_tree"),
+            ("Interface", "interface", "interface_tree"),
+            ("Metadata", "metadata", "metadata_tree"),
+            ("Cover Art", "cover_art", "cover_art_tree"),
+            ("Description", "description", "description_tree"),
+            ("Track Table", "track_table", "track_table_tree"),
+            ("Files & Sessions", "files_sessions", "files_sessions_tree"),
+            ("Startup & Updates", "startup_updates", "startup_updates_tree"),
             ("Context Menu", "context_menu", "context_menu_tree"),
             ("Sort Methods", "sort_methods", "sort_method_tree"),
             ("Auto Tagging", "auto_tagging", "auto_tagging_tree"),
@@ -425,121 +461,167 @@ class SettingsMixin:
             canvas_height = self.content_canvas.winfo_height()
             self.content_canvas.itemconfig(self.content_canvas_window, width=canvas_width, height=canvas_height)
     
-    def create_general_settings(self, parent):
-        """Create General settings section using Treeview"""
-        # General settings treeview
+    def _build_std_tree(self, parent, settings):
+        """Create a standard settings treeview and populate it with items."""
+        tree = ttk.Treeview(
+            parent,
+            columns=('setting', 'value'),
+            show='tree',
+            selectmode='browse'
+        )
+        tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=(5, 5))
+        tree.column('#0', width=0, stretch=False)
+        tree.column('setting', width=250, anchor=tk.W)
+        tree.column('value', width=150, anchor=tk.W)
+
+        vars_dict = {}
+        item_mapping = {}
+
+        for setting_data in settings:
+            setting_name = setting_data[0]
+            config_key = setting_data[1]
+            setting_type = setting_data[2]
+
+            if setting_type == "bool":
+                var = tk.BooleanVar(value=getattr(self.config, config_key, True))
+                display_value = "☑" if var.get() else "☐"
+            elif setting_type == "disabled_bool":
+                var = tk.BooleanVar(value=False)
+                display_value = "☐"
+            elif setting_type == "str":
+                var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
+                display_value = var.get()
+            elif setting_type == "color":
+                var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
+                display_value = var.get()
+            elif setting_type == "int":
+                min_val = setting_data[3]
+                max_val = setting_data[4]
+                var = tk.IntVar(value=getattr(self.config, config_key, min_val))
+                vars_dict[f"{config_key}_min"] = min_val
+                vars_dict[f"{config_key}_max"] = max_val
+                display_value = str(var.get())
+            elif setting_type == "action":
+                var = None
+                display_value = "Preview..."
+            else:
+                var = None
+                display_value = ""
+
+            if var is not None:
+                vars_dict[config_key] = var
+            vars_dict[f"{config_key}_type"] = setting_type
+
+            item_id = tree.insert('', 'end', values=(setting_name, display_value))
+            item_mapping[item_id] = config_key
+
+        return tree, vars_dict, item_mapping
+
+    def _register_std_page(self, tree, vars_dict, item_mapping):
+        """Register a standard settings page for the generic click handlers."""
+        if not hasattr(self, '_std_settings_registry'):
+            self._std_settings_registry = {}
+        self._std_settings_registry[id(tree)] = {
+            "vars": vars_dict,
+            "mapping": item_mapping,
+        }
+        tree.bind('<Button-1>', self._on_std_tree_click)
+        tree.bind('<Double-Button-1>', self._on_std_tree_double_click)
+
+    def create_interface_settings(self, parent):
         settings = [
             ("Apply settings immediately", "apply_settings_immediately", "bool"),
             ("Maximize app on open", "maximize_on_open", "bool"),
             ("Disable tooltips", "disable_tooltips", "bool"),
+            ("Remove splash art", "remove_splash_art", "disabled_bool"),
+            ("Remember Last Opened Album", "remember_last_album", "bool"),
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.interface_tree = tree
+        self.interface_vars = vars_dict
+        self.interface_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
+
+    def create_metadata_settings(self, parent):
+        settings = [
             ("Auto load metadata for album details", "auto_load_metadata", "bool"),
             ("Use Album Artist metadata for Artist in Album details", "use_album_artist_in_album_details", "bool"),
-            ("Create session.txt files (Recommended)", "create_album_session_files", "bool"),
             ("Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
             ("Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
             ("Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
+            ("Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
             ("Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
             ("Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.metadata_tree = tree
+        self.metadata_vars = vars_dict
+        self.metadata_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
+
+    def create_cover_art_settings(self, parent):
+        settings = [
             ("Always auto-scale cover art", "always_auto_scale_cover", "bool"),
             ("Cover scaling method", "cover_scaling_method", "str"),
             ("Cover fit mode", "cover_fit_mode", "str"),
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.cover_art_tree = tree
+        self.cover_art_vars = vars_dict
+        self.cover_art_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
+
+    def create_description_settings(self, parent):
+        settings = [
             ("Description auto-fill", "description_auto_fill_mode", "str"),
             ("Preview Description", "preview_description", "action"),
             ("Create description on upload", "description_auto_fill_on_upload", "bool"),
-            ("Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
-            ("Clear progress on album change", "clear_progress_on_album_change", "bool"),
-            ("Auto load cookies on startup", "auto_load_cookies", "bool"),
-            ("Check for updates on startup", "check_for_updates", "bool"),
-            ("Check for updates now", "check_updates_now", "action"),
-            ("Remove splash art", "remove_splash_art", "disabled_bool"),
-            # Track Table display settings
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.description_tree = tree
+        self.description_vars = vars_dict
+        self.description_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
+
+    def create_track_table_settings(self, parent):
+        settings = [
             ("Auto Fit Columns", "auto_fit_columns", "bool"),
             ("Lock Column Sizes", "lock_column_sizes", "bool"),
             ("Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
             ("Locked Track Highlight Color", "locked_track_highlight_color", "color"),
             ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
             ("Show Total Album Duration", "show_total_album_duration", "bool"),
-            ("Remember Last Opened Album", "remember_last_album", "bool"),
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.track_table_tree = tree
+        self.track_table_vars = vars_dict
+        self.track_table_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
+
+    def create_files_sessions_settings(self, parent):
+        settings = [
+            ("Create session.txt files (Recommended)", "create_album_session_files", "bool"),
+            ("Clear progress on album change", "clear_progress_on_album_change", "bool"),
             ("Limit Log Files", "log_file_limit", "int", 1, 99),
             ("File Size Unit", "file_size_unit", "str"),
         ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.files_sessions_tree = tree
+        self.files_sessions_vars = vars_dict
+        self.files_sessions_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
 
-        # Build display value + per-setting data so the search filter can rebuild rows
-        self._general_settings_data = []
-        for setting_data in settings:
-            setting_name = setting_data[0]
-            config_key = setting_data[1]
-            setting_type = setting_data[2]
-            if setting_type == "bool":
-                display_value = "☑" if getattr(self.config, config_key, True) else "☐"
-            elif setting_type == "disabled_bool":
-                display_value = "☐"
-            elif setting_type == "str":
-                display_value = getattr(self.config, config_key, "Off")
-            elif setting_type == "color":
-                display_value = getattr(self.config, config_key, '#ffffff')
-            elif setting_type == "int":
-                min_val = setting_data[3]
-                display_value = str(getattr(self.config, config_key, min_val))
-            elif setting_type == "action":
-                display_value = "Preview..."
-            else:
-                display_value = ""
-            self._general_settings_data.append((setting_name, config_key, setting_type, display_value))
-
-        # Treeview for general settings (no headings)
-        self.general_tree = ttk.Treeview(
-            parent,
-            columns=('setting', 'value'),
-            show='tree',
-            selectmode='browse'
-        )
-        self.general_tree.pack(fill=tk.BOTH, expand=True, padx=5, pady=(5, 5))
-
-        # Hide the tree column
-        self.general_tree.column('#0', width=0, stretch=False)
-
-        # Configure columns
-        self.general_tree.column('setting', width=250, anchor=tk.W)
-        self.general_tree.column('value', width=150, anchor=tk.W)
-
-        # Populate treeview with settings
-        self.general_vars = {}
-        self.general_item_mapping = {}
-
-        for setting_data in self._general_settings_data:
-            setting_name, config_key, setting_type, display_value = setting_data
-
-            if setting_type == "bool":
-                var = tk.BooleanVar(value=getattr(self.config, config_key, True))
-            elif setting_type == "disabled_bool":
-                var = tk.BooleanVar(value=False)
-            elif setting_type == "str":
-                var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
-            elif setting_type == "color":
-                var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
-            elif setting_type == "int":
-                min_val = next((d[3] for d in settings if d[1] == config_key), 1)
-                max_val = next((d[4] for d in settings if d[1] == config_key), 99)
-                var = tk.IntVar(value=getattr(self.config, config_key, min_val))
-                self.general_vars[f"{config_key}_min"] = min_val
-                self.general_vars[f"{config_key}_max"] = max_val
-            elif setting_type == "action":
-                var = None
-            else:
-                var = None
-
-            if var is not None:
-                self.general_vars[config_key] = var
-            self.general_vars[f"{config_key}_type"] = setting_type
-
-            # Add item to treeview
-            item_id = self.general_tree.insert('', 'end', values=(setting_name, display_value))
-            self.general_item_mapping[item_id] = config_key
-
-        # Bind double-click to edit
-        self.general_tree.bind('<Button-1>', self.on_general_tree_click)
-        self.general_tree.bind('<Double-Button-1>', self.on_general_tree_double_click)
+    def create_startup_updates_settings(self, parent):
+        settings = [
+            ("Auto load cookies on startup", "auto_load_cookies", "bool"),
+            ("Check for updates on startup", "check_for_updates", "bool"),
+            ("Check for updates now", "check_updates_now", "action"),
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.startup_updates_tree = tree
+        self.startup_updates_vars = vars_dict
+        self.startup_updates_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
 
 
     def create_context_menu_settings(self, parent):
@@ -1257,19 +1339,50 @@ class SettingsMixin:
         except Exception as e:
             messagebox.showerror("Test Failed", f"Failed to send test notification:\n{e}")
 
-    def on_general_tree_double_click(self, event):
-        """Handle double-click on general treeview to edit settings"""
-        # Get clicked item
-        item_id = self.general_tree.identify('item', event.x, event.y)
-        if not item_id:
+    def _on_std_tree_click(self, event):
+        """Generic single-click handler for all standard settings pages."""
+        tree = event.widget
+        info = getattr(self, '_std_settings_registry', {}).get(id(tree))
+        if not info:
             return
-        
-        # Get config_key from mapping
-        config_key = self.general_item_mapping.get(item_id)
+        item_id = tree.identify('item', event.x, event.y)
+        column = tree.identify('column', event.x, event.y)
+        if not item_id or column != '#2':
+            return
+        config_key = info["mapping"].get(item_id)
         if not config_key:
             return
-        
-        setting_type = self.general_vars.get(f"{config_key}_type")
+        vars_dict = info["vars"]
+
+        if vars_dict.get(f"{config_key}_type") == "disabled_bool":
+            return
+        if config_key == "description_auto_fill_mode":
+            self.root.after_idle(lambda: self.open_description_autofill_dialog(
+                tree, item_id, 'value',
+                vars_dict[config_key].get(),
+                lambda v: self._apply_std_str_setting(config_key, v)))
+            return "break"
+        if config_key == "preview_description":
+            self.root.after_idle(self.open_description_preview_dialog)
+            return "break"
+        if config_key == "check_updates_now":
+            self.root.after_idle(self.check_for_updates_now)
+            return "break"
+
+    def _on_std_tree_double_click(self, event):
+        """Generic double-click handler for all standard settings pages."""
+        tree = event.widget
+        info = getattr(self, '_std_settings_registry', {}).get(id(tree))
+        if not info:
+            return
+        item_id = tree.identify('item', event.x, event.y)
+        if not item_id:
+            return
+        config_key = info["mapping"].get(item_id)
+        if not config_key:
+            return
+        vars_dict = info["vars"]
+        setting_type = vars_dict.get(f"{config_key}_type")
 
         if setting_type == "disabled_bool":
             return
@@ -1280,23 +1393,29 @@ class SettingsMixin:
             elif config_key == "check_updates_now":
                 self.check_for_updates_now()
             return
-        
+
         if setting_type == "bool":
-            # Toggle boolean
-            current_value = self.general_vars[config_key].get()
+            current_value = vars_dict[config_key].get()
             new_value = not current_value
-            self.general_vars[config_key].set(new_value)
-            self.general_tree.set(item_id, 'value', '☑' if new_value else '☐')
-            
-            # Apply the appropriate setting
+            vars_dict[config_key].set(new_value)
+            tree.set(item_id, 'value', '☑' if new_value else '☐')
+
             if config_key == "apply_settings_immediately":
-                self.apply_immediate_setting()
+                self.config.apply_settings_immediately = new_value
+                save_config(self.config)
             elif config_key == "maximize_on_open":
-                self.apply_maximize_setting()
+                self.config.maximize_on_open = new_value
+                save_config(self.config)
             elif config_key == "disable_tooltips":
-                self.apply_tooltip_setting()
+                self.config.disable_tooltips = new_value
+                ToolTip.disabled = new_value
+                save_config(self.config)
+            elif config_key == "remember_last_album":
+                self.config.remember_last_album = new_value
+                save_config(self.config)
             elif config_key == "auto_load_metadata":
-                self.apply_auto_load_metadata_setting()
+                self.config.auto_load_metadata = new_value
+                save_config(self.config)
             elif config_key in (
                 "create_album_session_files",
                 "guess_album_title_from_track_metadata",
@@ -1310,11 +1429,15 @@ class SettingsMixin:
                 "extract_track_cover_if_missing",
                 "clear_progress_on_album_change",
             ):
-                self.apply_metadata_guess_setting()
+                setattr(self.config, config_key, new_value)
+                if config_key == "always_auto_scale_cover" and hasattr(self, 'scale_cover_var'):
+                    self.scale_cover_var.set(new_value)
+                save_config(self.config)
             elif config_key == "auto_load_cookies":
-                self.apply_auto_load_cookies_setting()
+                self.config.auto_load_cookies = new_value
+                save_config(self.config)
             elif config_key == "check_for_updates":
-                self.config.check_for_updates = self.general_vars['check_for_updates'].get()
+                self.config.check_for_updates = new_value
                 save_config(self.config)
             elif config_key == "auto_fit_columns":
                 self.config.auto_fit_columns = new_value
@@ -1337,53 +1460,38 @@ class SettingsMixin:
                 save_config(self.config)
                 if hasattr(self, 'update_preview_total_duration_label'):
                     self.update_preview_total_duration_label()
-            elif config_key == "remember_last_album":
-                self.config.remember_last_album = new_value
-                save_config(self.config)
+
         elif setting_type == "str":
             if config_key == "description_auto_fill_mode":
-                self.open_description_autofill_dialog(self.general_tree, item_id, 'value',
-                    self.general_vars[config_key].get(),
-                    lambda v: self.apply_general_str_setting(config_key, v))
-            elif config_key == "cover_scaling_method":
+                self.open_description_autofill_dialog(tree, item_id, 'value',
+                    vars_dict[config_key].get(),
+                    lambda v: self._apply_std_str_setting(config_key, v))
+            elif config_key in ("cover_scaling_method", "cover_fit_mode", "file_size_unit"):
+                options = {
+                    "cover_scaling_method": SCALING_METHOD_OPTIONS,
+                    "cover_fit_mode": ["Crop (fill)", "Fit (contain)", "Stretch"],
+                    "file_size_unit": ["Auto", "MB", "GB", "KB", "Bytes"],
+                }
                 self.edit_treeview_cell_dropdown(
-                    self.general_tree,
-                    item_id,
-                    'value',
-                    SCALING_METHOD_OPTIONS,
-                    self.general_vars[config_key].get(),
-                    lambda v: self.apply_general_str_setting(config_key, v),
+                    tree, item_id, 'value',
+                    options[config_key],
+                    vars_dict[config_key].get(),
+                    lambda v: self._apply_std_str_setting(config_key, v),
                 )
-            elif config_key == "cover_fit_mode":
-                self.edit_treeview_cell_dropdown(
-                    self.general_tree,
-                    item_id,
-                    'value',
-                    ["Crop (fill)", "Fit (contain)", "Stretch"],
-                    self.general_vars[config_key].get(),
-                    lambda v: self.apply_general_str_setting(config_key, v),
-                )
-            elif config_key == "file_size_unit":
-                self.edit_treeview_cell_dropdown(
-                    self.general_tree,
-                    item_id,
-                    'value',
-                    ["Auto", "MB", "GB", "KB", "Bytes"],
-                    self.general_vars[config_key].get(),
-                    lambda v: self.apply_general_str_setting(config_key, v),
-                )
+
         elif setting_type == "int":
-            min_val = self.general_vars.get(f"{config_key}_min", 1)
-            max_val = self.general_vars.get(f"{config_key}_max", 99)
-            current_value = str(self.general_vars[config_key].get())
-            
-            def validate_and_save(new_value):
+            min_val = vars_dict.get(f"{config_key}_min", 1)
+            max_val = vars_dict.get(f"{config_key}_max", 99)
+            current_value = str(vars_dict[config_key].get())
+
+            def validate_and_save(new_value, _key=config_key, _item_id=item_id,
+                                   _tree=tree, _vars=vars_dict):
                 try:
                     int_val = int(new_value)
                     if min_val <= int_val <= max_val:
-                        self.general_vars[config_key].set(int_val)
-                        self.general_tree.set(item_id, 'value', str(int_val))
-                        setattr(self.config, config_key, int_val)
+                        _vars[_key].set(int_val)
+                        _tree.set(_item_id, 'value', str(int_val))
+                        setattr(self.config, _key, int_val)
                         save_config(self.config)
                         if hasattr(self, 'cleanup_old_log_files'):
                             self.cleanup_old_log_files()
@@ -1391,42 +1499,47 @@ class SettingsMixin:
                 except ValueError:
                     pass
                 return False
-            
-            self.edit_treeview_cell(self.general_tree, item_id, 'value', current_value, validate_and_save)
+
+            self.edit_treeview_cell(tree, item_id, 'value', current_value, validate_and_save)
+
         elif setting_type == "color":
-            current_color = self.general_vars[config_key].get()
+            current_color = vars_dict[config_key].get()
             new_color = colorchooser.askcolor(color=current_color)[1]
             if new_color:
-                self.general_vars[config_key].set(new_color)
-                self.general_tree.set(item_id, 'value', new_color)
+                vars_dict[config_key].set(new_color)
+                tree.set(item_id, 'value', new_color)
                 self.config.locked_track_highlight_color = new_color
                 save_config(self.config)
                 if hasattr(self, 'configure_track_table_tags'):
                     self.configure_track_table_tags()
-    
-    def on_general_tree_click(self, event):
-        """Handle single-click actions in the General settings tree."""
-        item_id = self.general_tree.identify('item', event.x, event.y)
-        column = self.general_tree.identify('column', event.x, event.y)
-        if not item_id or column != '#2':
-            return
 
-        config_key = self.general_item_mapping.get(item_id)
-        if self.general_vars.get(f"{config_key}_type") == "disabled_bool":
-            return
-        if config_key == "description_auto_fill_mode":
-            self.root.after_idle(lambda: self.open_description_autofill_dialog(
-                self.general_tree,
-                item_id, 'value',
-                self.general_vars[config_key].get(),
-                lambda v: self.apply_general_str_setting(config_key, v)))
-            return "break"
-        if config_key == "preview_description":
-            self.root.after_idle(self.open_description_preview_dialog)
-            return "break"
-        if config_key == "check_updates_now":
-            self.root.after_idle(self.check_for_updates_now)
-            return "break"
+    def _apply_std_str_setting(self, config_key, new_value):
+        """Apply a string/dropdown setting from any standard settings page."""
+        if config_key == "description_auto_fill_mode" and new_value not in DESCRIPTION_AUTO_FILL_MODES:
+            return False
+        if config_key == "cover_scaling_method" and new_value not in SCALING_METHOD_OPTIONS:
+            return False
+        if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
+            return False
+        if config_key == "file_size_unit" and new_value not in ("Auto", "MB", "GB", "KB", "Bytes"):
+            return False
+
+        # Find the right vars dict from any registered section
+        for info in getattr(self, '_std_settings_registry', {}).values():
+            if config_key in info["vars"]:
+                info["vars"][config_key].set(new_value)
+                break
+        setattr(self.config, config_key, new_value)
+        if config_key == "cover_scaling_method" and hasattr(self, 'scaling_method_var'):
+            self.scaling_method_var.set(new_value)
+        if config_key == "cover_fit_mode" and hasattr(self, 'cover_fit_mode_var'):
+            self.cover_fit_mode_var.set(new_value)
+        if config_key == "file_size_unit" and hasattr(self, 'refresh_file_size_display'):
+            self.refresh_file_size_display()
+        save_config(self.config)
+        if config_key == "description_auto_fill_mode" and getattr(self.config, 'notify_on_template_save', False):
+            self.show_toast(f"Description template set to: {new_value}", 1800, "success", trigger="template_save")
+        return True
 
     def center_dialog(self, dialog, width=None, height=None, parent=None):
         """Center a dialog over its parent window, falling back to the screen."""
@@ -1520,70 +1633,7 @@ class SettingsMixin:
         ).pack(side=tk.RIGHT, padx=(5, 0))
         ttk.Button(button_frame, text="Close", command=close_preview).pack(side=tk.RIGHT)
     
-    def apply_general_str_setting(self, config_key, new_value):
-        """Apply a General string/dropdown setting and update config."""
-        if config_key == "cover_scaling_method" and new_value not in SCALING_METHOD_OPTIONS:
-            return False
-        if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
-            return False
-        if config_key == "file_size_unit" and new_value not in ("Auto", "MB", "GB", "KB", "Bytes"):
-            return False
 
-        self.general_vars[config_key].set(new_value)
-        setattr(self.config, config_key, new_value)
-        if config_key == "cover_scaling_method" and hasattr(self, 'scaling_method_var'):
-            self.scaling_method_var.set(new_value)
-        if config_key == "cover_fit_mode" and hasattr(self, 'cover_fit_mode_var'):
-            self.cover_fit_mode_var.set(new_value)
-        if config_key == "file_size_unit" and hasattr(self, 'refresh_file_size_display'):
-            self.refresh_file_size_display()
-        save_config(self.config)
-        if config_key == "description_auto_fill_mode" and getattr(self.config, 'notify_on_template_save', False):
-            self.show_toast(f"Description template set to: {new_value}", 1800, "success", trigger="template_save")
-        return True
-    
-    def apply_immediate_setting(self):
-        """Apply the 'apply settings immediately' setting"""
-        self.config.apply_settings_immediately = self.general_vars['apply_settings_immediately'].get()
-        save_config(self.config)
-    
-    def apply_maximize_setting(self):
-        """Apply the 'maximize on open' setting"""
-        self.config.maximize_on_open = self.general_vars['maximize_on_open'].get()
-        save_config(self.config)
-
-    def apply_tooltip_setting(self):
-        """Apply the tooltip visibility setting."""
-        self.config.disable_tooltips = self.general_vars['disable_tooltips'].get()
-        ToolTip.disabled = self.config.disable_tooltips
-        save_config(self.config)
-    
-    def apply_auto_load_metadata_setting(self):
-        """Apply the 'auto load metadata' setting"""
-        self.config.auto_load_metadata = self.general_vars['auto_load_metadata'].get()
-        save_config(self.config)
-
-    def apply_metadata_guess_setting(self):
-        """Apply metadata guessing and album-load settings."""
-        self.config.guess_album_title_from_track_metadata = self.general_vars['guess_album_title_from_track_metadata'].get()
-        self.config.guess_release_date_from_track_metadata = self.general_vars['guess_release_date_from_track_metadata'].get()
-        self.config.create_album_session_files = self.general_vars['create_album_session_files'].get()
-        self.config.use_folder_name_when_album_missing = self.general_vars['use_folder_name_when_album_missing'].get()
-        self.config.use_album_artist_in_album_details = self.general_vars['use_album_artist_in_album_details'].get()
-        self.config.smart_randomize_on_album_load = self.general_vars['smart_randomize_on_album_load'].get()
-        self.config.auto_guess_case_on_album_load = self.general_vars['auto_guess_case_on_album_load'].get()
-        self.config.always_auto_scale_cover = self.general_vars['always_auto_scale_cover'].get()
-        self.config.description_auto_fill_on_upload = self.general_vars['description_auto_fill_on_upload'].get()
-        self.config.extract_track_cover_if_missing = self.general_vars['extract_track_cover_if_missing'].get()
-        self.config.clear_progress_on_album_change = self.general_vars['clear_progress_on_album_change'].get()
-        if hasattr(self, 'scale_cover_var'):
-            self.scale_cover_var.set(self.config.always_auto_scale_cover)
-        save_config(self.config)
-
-    def apply_auto_load_cookies_setting(self):
-        """Apply the 'auto load cookies' setting"""
-        self.config.auto_load_cookies = self.general_vars['auto_load_cookies'].get()
-        save_config(self.config)
 
     def on_scale_cover_changed(self):
         """Persist the preferred cover auto-scale checkbox state."""
@@ -2807,38 +2857,45 @@ class SettingsMixin:
         """Create combined General settings section that includes all sub-sections"""
         # Combined settings from all general sub-sections
         settings = [
-            # General Settings
-            ("General: Apply settings immediately", "apply_settings_immediately", "bool"),
-            ("General: Maximize app on open", "maximize_on_open", "bool"),
-            ("General: Disable tooltips", "disable_tooltips", "bool"),
-            ("General: Auto load metadata for album details", "auto_load_metadata", "bool"),
-            ("General: Use Album Artist metadata for Artist in Album details", "use_album_artist_in_album_details", "bool"),
-            ("General: Create session.txt files (Recommended)", "create_album_session_files", "bool"),
-            ("General: Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
-            ("General: Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
-            ("General: Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
-            ("General: Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
-            ("General: Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
-            ("General: Always auto-scale cover art", "always_auto_scale_cover", "bool"),
-            ("General: Cover scaling method", "cover_scaling_method", "str"),
-            ("General: Cover fit mode", "cover_fit_mode", "str"),
-            ("General: Description auto-fill", "description_auto_fill_mode", "str"),
-            ("General: Preview Description", "preview_description", "action"),
-            ("General: Create description on upload", "description_auto_fill_on_upload", "bool"),
-            ("General: Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
-            ("General: Clear progress on album change", "clear_progress_on_album_change", "bool"),
-            ("General: Auto load cookies on startup", "auto_load_cookies", "bool"),
-            ("General: Check for updates on startup", "check_for_updates", "bool"),
-            ("General: Check for updates now", "check_updates_now", "action"),
-            ("General: Auto Fit Columns", "auto_fit_columns", "bool"),
-            ("General: Lock Column Sizes", "lock_column_sizes", "bool"),
-            ("General: Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
-            ("General: Locked Track Highlight Color", "locked_track_highlight_color", "color"),
-            ("General: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
-            ("General: Show Total Album Duration", "show_total_album_duration", "bool"),
-            ("General: Remember Last Opened Album", "remember_last_album", "bool"),
-            ("General: Limit Log Files", "log_file_limit", "int", 1, 99),
-            ("General: File Size Unit", "file_size_unit", "str"),
+            # Interface
+            ("Interface: Apply settings immediately", "apply_settings_immediately", "bool"),
+            ("Interface: Maximize app on open", "maximize_on_open", "bool"),
+            ("Interface: Disable tooltips", "disable_tooltips", "bool"),
+            ("Interface: Remove splash art", "remove_splash_art", "disabled_bool"),
+            ("Interface: Remember Last Opened Album", "remember_last_album", "bool"),
+            # Metadata
+            ("Metadata: Auto load metadata for album details", "auto_load_metadata", "bool"),
+            ("Metadata: Use Album Artist metadata for Artist in Album details", "use_album_artist_in_album_details", "bool"),
+            ("Metadata: Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
+            ("Metadata: Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
+            ("Metadata: Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
+            ("Metadata: Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
+            ("Metadata: Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
+            ("Metadata: Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
+            # Cover Art
+            ("Cover Art: Always auto-scale cover art", "always_auto_scale_cover", "bool"),
+            ("Cover Art: Cover scaling method", "cover_scaling_method", "str"),
+            ("Cover Art: Cover fit mode", "cover_fit_mode", "str"),
+            # Description
+            ("Description: Description auto-fill", "description_auto_fill_mode", "str"),
+            ("Description: Preview Description", "preview_description", "action"),
+            ("Description: Create description on upload", "description_auto_fill_on_upload", "bool"),
+            # Track Table
+            ("Track Table: Auto Fit Columns", "auto_fit_columns", "bool"),
+            ("Track Table: Lock Column Sizes", "lock_column_sizes", "bool"),
+            ("Track Table: Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
+            ("Track Table: Locked Track Highlight Color", "locked_track_highlight_color", "color"),
+            ("Track Table: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
+            ("Track Table: Show Total Album Duration", "show_total_album_duration", "bool"),
+            # Files & Sessions
+            ("Files: Create session.txt files (Recommended)", "create_album_session_files", "bool"),
+            ("Files: Clear progress on album change", "clear_progress_on_album_change", "bool"),
+            ("Files: Limit Log Files", "log_file_limit", "int", 1, 99),
+            ("Files: File Size Unit", "file_size_unit", "str"),
+            # Startup & Updates
+            ("Startup: Auto load cookies on startup", "auto_load_cookies", "bool"),
+            ("Startup: Check for updates on startup", "check_for_updates", "bool"),
+            ("Startup: Check for updates now", "check_updates_now", "action"),
             # Context Menu settings
             ("Context: Remove Dividers", "context_menu_remove_dividers", "bool"),
             ("Context: Play", "context_menu_play", "bool"),
