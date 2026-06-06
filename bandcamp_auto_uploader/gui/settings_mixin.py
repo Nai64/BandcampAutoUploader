@@ -503,7 +503,7 @@ class SettingsMixin:
                 display_value = str(var.get())
             elif setting_type == "action":
                 var = None
-                display_value = "Preview..."
+                display_value = "Remove..." if config_key == "remove_all_custom_templates" else "Preview..."
             else:
                 var = None
                 display_value = ""
@@ -3013,7 +3013,7 @@ class SettingsMixin:
                 display_value = var.get()
             elif setting_type == "action":
                 var = None
-                display_value = "Preview..."
+                display_value = "Remove..." if config_key == "remove_all_custom_templates" else "Preview..."
             
             if var is not None:
                 self.general_combined_vars[config_key] = var
