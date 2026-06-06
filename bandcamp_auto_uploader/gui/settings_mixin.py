@@ -3784,7 +3784,7 @@ class SettingsMixin:
         ttk.Button(btn_frame, text="Delete", command=remove_selected, width=8).pack(side=tk.LEFT)
 
     def check_for_updates_now(self):
-        """Check for new releases on GitHub."""
+        """Check for new releases on GitHub. Only alerts if a newer version exists."""
         import json
         import re
         import webbrowser
@@ -3821,26 +3821,9 @@ class SettingsMixin:
                 )
                 if result:
                     webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
-            elif latest_ver < current_ver:
-                messagebox.showinfo(
-                    "Up to Date",
-                    f"You're running a newer version ({__version__}) "
-                    f"than the latest release (v{latest_tag})."
-                )
-            else:
-                messagebox.showinfo(
-                    "Up to Date",
-                    f"You're running the latest version ({__version__})."
-                )
 
-        except Exception as e:
-            messagebox.showerror(
-                "Check Failed",
-                f"Could not check for updates:\n{e}\n\n"
-                "Open the releases page manually?"
-            )
-            if messagebox.askyesno("Open Releases?", "Open GitHub releases page?"):
-                webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
+        except Exception:
+            pass
 
     def restart_application(self):
         """Restart the application"""
