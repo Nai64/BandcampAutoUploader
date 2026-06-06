@@ -2467,6 +2467,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if getattr(self.config, 'remember_last_album', True) and last_path and Path(last_path).is_dir():
                     self.root.after(500, lambda p=last_path: self._load_last_opened_album(p))
 
+                # Check for updates on startup
+                if getattr(self.config, 'check_for_updates', True):
+                    self.root.after(2000, self.check_for_updates_now)
+
                 self.update_status("Ready", 100)
             except Exception as e:
                 exc_info = sys.exc_info()

@@ -3736,7 +3736,11 @@ class SettingsMixin:
 
         def parse_ver(v):
             nums = re.findall(r'\d+', v)
-            return tuple(int(n) for n in nums) if nums else (0,)
+            if not nums:
+                return (0, 0)
+            ver_tuple = tuple(int(n) for n in nums)
+            has_suffix = bool(re.search(r'[a-zA-Z]', v))
+            return ver_tuple + (0,) if has_suffix else ver_tuple + (1,)
 
         try:
             req = urllib.request.Request(
