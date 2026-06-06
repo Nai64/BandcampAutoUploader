@@ -3586,9 +3586,8 @@ class SettingsMixin:
         dialog = tk.Toplevel(self.root)
         dialog.title("Description Auto-Fill")
         dialog.transient(self.root)
-        dialog.grab_set()
+        dialog.withdraw()
         dialog.resizable(True, True)
-        self.center_dialog(dialog, 520, 400, self.root)
 
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -3815,6 +3814,11 @@ class SettingsMixin:
         ttk.Button(btn_frame, text="New", command=new_custom, width=8).pack(side=tk.LEFT, padx=(0, 4))
         ttk.Button(btn_frame, text="Duplicate", command=duplicate_selected, width=10).pack(side=tk.LEFT, padx=(0, 4))
         ttk.Button(btn_frame, text="Delete", command=remove_selected, width=8).pack(side=tk.LEFT)
+
+        dialog.update_idletasks()
+        self.center_dialog(dialog, 520, 400, self.root)
+        dialog.deiconify()
+        dialog.grab_set()
 
     def check_for_updates_now(self):
         """Check for new releases on GitHub. Only alerts if a newer version exists."""
