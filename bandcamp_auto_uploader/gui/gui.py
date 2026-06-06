@@ -72,6 +72,7 @@ from bandcamp_auto_uploader.gui.common import (
 from bandcamp_auto_uploader.gui import image_scaling
 from bandcamp_auto_uploader.gui.logs_mixin import LogsMixin
 from bandcamp_auto_uploader.gui.settings_mixin import SettingsMixin
+
 from bandcamp_auto_uploader.upload import Album, Track, UploadCancelled, get_metadata_track_number
 from bandcamp_auto_uploader import __version__
 
@@ -8114,6 +8115,29 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             values[13:20] = list(extra_metadata)
 
             self.track_table.item(item_id, values=tuple(values))
+            fp_str = str(file_path) if file_path else ""
+            self.track_editor_data.pop(fp_str, None)
+
+            if fp_str and fp_str == getattr(self, '_track_details_path', None):
+                self.td_name_var.set(track.track_data.title)
+                self.td_artist_var.set(track.track_data.artist)
+                self.td_tags_var.set(genre or "")
+                self.td_release_date_var.set("")
+                self.td_isrc_var.set("")
+                self.td_iswc_var.set("")
+                self.td_download_desc_var.set(track.track_data.download_desc or "")
+                self.td_price_var.set(self.format_price_display(track.track_data.price or "1.50"))
+                self.td_nyp_var.set(track.track_data.nyp)
+                self.td_streaming_var.set(True)
+                self.td_enable_dl_var.set(True)
+                self.td_private_var.set(False)
+                self.td_featured_var.set(False)
+                self.td_video_id_var.set("")
+                self.td_video_caption_var.set("")
+                self.td_desc_text.delete("1.0", tk.END)
+                self.td_lyrics_text.delete("1.0", tk.END)
+                self.td_credits_text.delete("1.0", tk.END)
+
             self.sync_track_table_to_current_album()
             self.show_toast("Track reverted to original metadata", 1800, "success")
         except Exception as e:
