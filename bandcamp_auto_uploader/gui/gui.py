@@ -3344,7 +3344,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if path in valid_paths and isinstance(data, dict):
                 if "price" in data:
                     data["price"] = self.normalize_price_value(data.get("price", ""), default="")
-                self.track_editor_data[path] = data
+                existing = self.track_editor_data.get(path, {})
+                existing.update(data)
+                self.track_editor_data[path] = existing
 
     def load_or_create_album_session_file(self, album_path):
         """Load an album session sidecar if it exists, otherwise create one."""
@@ -6183,7 +6185,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 # Get track metadata
                 artist = track.track_data.artist or ""
                 title = track.track_data.title
-                comment = track.track_data.download_desc or getattr(track.track_data, 'about', '') or self.get_track_comment_metadata(track_path)
+                file_comment = self.get_track_comment_metadata(track_path)
+                comment = track.track_data.download_desc or getattr(track.track_data, 'about', '') or ""
                 price = self.format_price_display(track.track_data.price or "1.50")
                 nyp = "Yes" if track.track_data.nyp else "No"
 
@@ -6202,6 +6205,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     year, genre, bitrate, size_str, track_path, *extra_metadata
                 )
                 self.track_table.insert("", tk.END, values=values, tags=self.get_track_row_tags(values))
+
+                # Seed Description in track_editor_data from file comment
+                if file_comment and not getattr(track.track_data, 'about', ''):
+                    self.track_editor_data.setdefault(str(track_path), {})['description'] = file_comment
 
             skipped_paths = getattr(album, 'skipped_paths', []) or []
             if skipped_paths:
@@ -9206,7 +9213,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             # Placeholder values for manual tracks
             artist = ""
-            comment = self.get_track_comment_metadata(track_path)
+            comment = ""
             price = ""
             nyp = ""
 
@@ -9216,6 +9223,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 year, genre, bitrate, size_str, track_path, *extra_metadata
             )
             self.track_table.insert("", tk.END, values=values, tags=self.get_track_row_tags(values))
+
+            file_comment = self.get_track_comment_metadata(track_path)
+            if file_comment:
+                self.track_editor_data.setdefault(str(track_path), {})['description'] = file_comment
 
         self.maybe_auto_fit_track_columns()
         self.update_preview_total_duration_label()
