@@ -1613,8 +1613,8 @@ class SettingsMixin:
         dialog = tk.Toplevel(parent)
         dialog.title("Preview Description")
         dialog.transient(parent)
+        dialog.withdraw()
         dialog.resizable(True, True)
-        self.center_dialog(dialog, 640, 460, parent)
 
         def close_preview():
             try:
@@ -1629,7 +1629,6 @@ class SettingsMixin:
             dialog.destroy()
 
         dialog.protocol("WM_DELETE_WINDOW", close_preview)
-        dialog.grab_set()
 
         frame = ttk.Frame(dialog, padding=10)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -1660,8 +1659,10 @@ class SettingsMixin:
             state=tk.NORMAL if generated_description else tk.DISABLED
         ).pack(side=tk.RIGHT, padx=(5, 0))
         ttk.Button(button_frame, text="Close", command=close_preview).pack(side=tk.RIGHT)
-    
 
+        self.center_dialog(dialog, 640, 460, parent)
+        dialog.deiconify()
+        dialog.grab_set()
 
     def on_scale_cover_changed(self):
         """Persist the preferred cover auto-scale checkbox state."""
@@ -3464,12 +3465,12 @@ class SettingsMixin:
 
     def open_custom_filename_patterns_dialog(self):
         """Open dialog to manage custom filename regex patterns."""
-        dialog = tk.Toplevel(self.root)
+        parent = self.get_preferences_dialog_parent()
+        dialog = tk.Toplevel(parent)
         dialog.title("Custom Filename Patterns")
-        dialog.transient(self.root)
-        dialog.grab_set()
+        dialog.transient(parent)
+        dialog.withdraw()
         dialog.resizable(True, True)
-        self.center_dialog(dialog, 600, 400, self.root)
 
         patterns = list(getattr(self.config, 'filename_track_patterns', []))
 
@@ -3580,6 +3581,9 @@ class SettingsMixin:
             dialog.destroy()
 
         dialog.protocol("WM_DELETE_WINDOW", on_close)
+        self.center_dialog(dialog, 600, 400, parent)
+        dialog.deiconify()
+        dialog.grab_set()
 
     def open_description_autofill_dialog(self, tree, item_id, column, current_value, callback):
         """Open dialog to select a description auto-fill mode (single selection)."""
