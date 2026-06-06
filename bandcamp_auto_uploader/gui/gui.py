@@ -4489,7 +4489,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         display = self.format_price_display(normalized, default=default)
         if original != display:
             var.set(display)
-            if show_warning:
+            if show_warning and normalized == default:
                 self.show_toast("Price must be $0-$1000 with up to 2 decimals", 2200, "warning")
         return normalized
 
