@@ -857,6 +857,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         self.album_browse_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
 
+        self.new_album_btn = ttk.Button(
+            album_btn_row1,
+            text="New Album",
+            command=self.create_new_album,
+            style="Subtle.TButton"
+        )
+        self.new_album_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
+        ToolTip(self.new_album_btn, "Create a new album folder in Documents/Bandcamp Auto Uploader/Albums/")
+
         self.open_folder_btn = ttk.Button(
             album_btn_row1,
             text="Open Folder",
@@ -873,8 +882,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         self.reload_album_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        # Second row removed to keep layout compact
-        
         # MIDDLE SECTION: Three columns for details
         middle_section = ttk.Frame(scrollable_frame)
         middle_section.pack(fill=tk.BOTH, expand=True, padx=12, pady=4)
@@ -3973,6 +3980,87 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         btn_f.pack(fill=tk.X, pady=(10, 0))
         ttk.Button(btn_f, text="Apply", command=apply, width=10).pack(side=tk.RIGHT, padx=3)
         ttk.Button(btn_f, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.RIGHT)
+
+    def _ask_album_name_dialog(self):
+        """Modern input dialog for album name."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("New Album")
+        dialog.transient(self.root)
+        dialog.withdraw()
+        dialog.resizable(False, False)
+
+        w, h = 360, 160
+        x = (dialog.winfo_screenwidth() // 2) - (w // 2)
+        y = (dialog.winfo_screenheight() // 2) - (h // 2)
+        dialog.geometry("{}x{}+{}+{}".format(w, h, x, y))
+
+        frame = ttk.Frame(dialog, padding=20)
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(frame, text="Enter album name:", font=("Segoe UI", 10)).pack(anchor=tk.W, pady=(0, 10))
+
+        var = tk.StringVar()
+        entry = ttk.Entry(frame, textvariable=var, font=("Segoe UI", 10))
+        entry.pack(fill=tk.X, pady=(0, 15))
+        entry.focus_set()
+        entry.selection_range(0, tk.END)
+
+        result = {"value": None}
+
+        def confirm():
+            result["value"] = var.get()
+            dialog.destroy()
+
+        def cancel():
+            dialog.destroy()
+
+        entry.bind("<Return>", lambda e: confirm())
+        entry.bind("<Escape>", lambda e: cancel())
+
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(fill=tk.X)
+
+        ttk.Button(btn_frame, text="Cancel", command=cancel, width=10).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(btn_frame, text="Create", command=confirm, width=10).pack(side=tk.RIGHT)
+
+        dialog.deiconify()
+        dialog.grab_set()
+        dialog.wait_window()
+
+        return result["value"]
+
+    def create_new_album(self):
+        """Create a new album folder under Documents/Bandcamp Auto Uploader/Albums/."""
+        if self.is_upload_in_progress():
+            self.show_toast("Upload in progress", 1600, "warning")
+            return
+
+        name = self._ask_album_name_dialog()
+        if not name:
+            return
+        name = name.strip()
+        if not name:
+            return
+
+        base = Path.home() / "Documents" / "Bandcamp Auto Uploader" / "Albums"
+        album_dir = base / name
+
+        try:
+            album_dir.mkdir(parents=True, exist_ok=False)
+        except FileExistsError:
+            messagebox.showerror("New Album", "An album with this name already exists.")
+            return
+        except OSError as e:
+            messagebox.showerror("New Album", f"Could not create album folder:\n{e}")
+            return
+
+        self.album_path_var.set(str(album_dir))
+        self.upload_btn['state'] = tk.NORMAL if self.selected_artist_url else tk.DISABLED
+        self.on_album_selection_changed()
+        self.clear_album_load_fields()
+        self.album_name_var.set(name)
+        self.preview_album()
+        self.show_toast("New album created", 2000, "success")
 
     def browse_album(self):
         """Browse for album directory"""
@@ -8519,9 +8607,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                             from bandcamp_auto_uploader.upload import CoverArt
                             album.cover_art = CoverArt(data=img_bytes.read(), file_name="cover.jpg")
                             logger.info(f"Cover art scaled to {size_str}")
+
+                            # Save converted cover to album folder
+                            album_path = self.album_path_var.get()
+                            if album_path:
+                                cover_dest = Path(album_path) / "cover.jpg"
+                                img.save(str(cover_dest), format='JPEG', quality=95)
+                                logger.info(f"Saved scaled cover to {cover_dest}")
                         else:
                             from bandcamp_auto_uploader.upload import CoverArt
                             album.cover_art = CoverArt(path=cover_file)
+
+                            # Save normalized copy to album folder
+                            album_path = self.album_path_var.get()
+                            if album_path:
+                                img = self.normalize_cover_image(cover_file, "#ffffff")
+                                cover_dest = Path(album_path) / "cover.jpg"
+                                img.save(str(cover_dest), format='JPEG', quality=95)
+                                logger.info(f"Saved normalized cover to {cover_dest}")
                 
                 self.update_status("Uploading to Bandcamp...", 60)
 
@@ -8666,6 +8769,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "album_browse_btn": state,
             "open_folder_btn": state,
             "reload_album_btn": state,
+            "new_album_btn": state,
             "album_path_entry": state,
             "guess_case_btn": state,
             "extract_filename_btn": state,
