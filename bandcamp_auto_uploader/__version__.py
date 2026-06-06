@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import re
 
-__version__ = "3.0.0b"
-__version_label__ = "3.0.0b (beta)"
+__version__ = "3.0.0"
+__version_label__ = "3.0.0"
 
 _VERSION_RE = re.compile(r"^\d+(?:\.\d+)*(?:(?:[ab]|rc)\d*)?$")
 
