@@ -141,11 +141,35 @@ def _generate_spec(arch: str) -> Path:
     return TEMP_SPEC
 
 
+def _check_upx():
+    """Check whether UPX is available and return (found, version, path)."""
+    upx_path = shutil.which("upx")
+    if not upx_path:
+        return False, None, None
+    try:
+        result = subprocess.run(
+            [upx_path, "--version"],
+            capture_output=True, text=True, timeout=10
+        )
+        ver = (result.stdout or result.stderr).strip().splitlines()[0]
+    except Exception:
+        ver = "unknown"
+    return True, ver, upx_path
+
+
 def build_exe(arch: str = "x64") -> int:
     """Build the executable using PyInstaller for the given architecture."""
     print("=" * 60)
     print(f"Building Bandcamp Auto Uploader GUI Executable  (arch={arch})")
     print("=" * 60)
+
+    # UPX check
+    upx_found, upx_ver, upx_path = _check_upx()
+    if upx_found:
+        print(f"[i] UPX: {upx_ver}  ({upx_path})")
+    else:
+        print("[!] UPX not found — EXE will be ~70 MB instead of ~30 MB")
+        print("    Install via: winget install upx  or  https://upx.github.io")
 
     py = _py_for_arch(arch)
     print(f"[i] Using Python: {' '.join(py)}")
@@ -179,10 +203,12 @@ def build_exe(arch: str = "x64") -> int:
     shutil.move(str(src), str(dst))
     shutil.rmtree(INTERMEDIATE_DIR, ignore_errors=True)
 
+    size_mb = dst.stat().st_size / (1024 * 1024)
     print(f"\n{'=' * 60}")
     print(f"[OK] Build completed successfully!  (arch={arch})")
     print(f"{'=' * 60}")
     print(f"\nStandalone: {dst.relative_to(ROOT)}")
+    print(f"EXE size:   {size_mb:.1f} MB{'  (with UPX)' if upx_found else ''}")
     return 0
 
 
