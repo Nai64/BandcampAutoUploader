@@ -121,7 +121,7 @@ def _detect_installed_archs():
 
 
 def _generate_spec(arch: str) -> Path:
-    """Copy the tracked spec to a temp file with target_arch injected."""
+    """Copy the tracked spec to a temp file with target_arch injected and UPX disabled."""
     if not SPEC_TEMPLATE.exists():
         raise FileNotFoundError(f"Spec file not found: {SPEC_TEMPLATE}")
     content = SPEC_TEMPLATE.read_text(encoding="utf-8")
@@ -136,25 +136,15 @@ def _generate_spec(arch: str) -> Path:
             "Could not inject target_arch into spec file "
             "(expected exactly one 'target_arch=None' line)."
         )
+    new_content, _ = re.subn(
+        r"upx\s*=\s*True",
+        "upx=False",
+        new_content,
+        count=1,
+    )
     TEMP_SPEC.write_text(new_content, encoding="utf-8")
     print(f"[OK] Generated spec for arch '{arch}': {TEMP_SPEC}")
     return TEMP_SPEC
-
-
-def _check_upx():
-    """Check whether UPX is available and return (found, version, path)."""
-    upx_path = shutil.which("upx")
-    if not upx_path:
-        return False, None, None
-    try:
-        result = subprocess.run(
-            [upx_path, "--version"],
-            capture_output=True, text=True, timeout=10
-        )
-        ver = (result.stdout or result.stderr).strip().splitlines()[0]
-    except Exception:
-        ver = "unknown"
-    return True, ver, upx_path
 
 
 def build_exe(arch: str = "x64") -> int:
@@ -164,13 +154,6 @@ def build_exe(arch: str = "x64") -> int:
     print("=" * 60)
 
     # UPX check
-    upx_found, upx_ver, upx_path = _check_upx()
-    if upx_found:
-        print(f"[i] UPX: {upx_ver}  ({upx_path})")
-    else:
-        print("[!] UPX not found — EXE will be ~70 MB instead of ~30 MB")
-        print("    Install via: winget install upx  or  https://upx.github.io")
-
     py = _py_for_arch(arch)
     print(f"[i] Using Python: {' '.join(py)}")
 
@@ -208,7 +191,7 @@ def build_exe(arch: str = "x64") -> int:
     print(f"[OK] Build completed successfully!  (arch={arch})")
     print(f"{'=' * 60}")
     print(f"\nStandalone: {dst.relative_to(ROOT)}")
-    print(f"EXE size:   {size_mb:.1f} MB{'  (with UPX)' if upx_found else ''}")
+    print(f"EXE size:   {size_mb:.1f} MB")
     return 0
 
 

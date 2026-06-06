@@ -3,8 +3,6 @@ import json
 import os
 from pathlib import Path
 
-from InquirerPy import inquirer
-
 
 @dataclasses.dataclass
 class Config:
@@ -249,6 +247,8 @@ def save_config(config: Config):
 
 
 def init_config():
+    from InquirerPy import inquirer
+
     def price_validator(price):
         try:
             price = float(price)

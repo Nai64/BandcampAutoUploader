@@ -20,13 +20,17 @@ from mutagen.mp4 import MP4
 from mutagen.oggvorbis import OggVorbis
 from mutagen.oggopus import OggOpus
 from mutagen.wave import WAVE
-from rich.logging import RichHandler
+try:
+    from rich.logging import RichHandler
+    _rich_handler = RichHandler()
+except ImportError:
+    _rich_handler = None
 
 from bandcamp_auto_uploader.config import Config
 
 logger = logging.getLogger("bandcamp-auto-uploader")
 logger.setLevel(logging.INFO)
-logger.addHandler(RichHandler())
+logger.addHandler(_rich_handler or logging.StreamHandler())
 
 
 class UploadCancelled(RuntimeError):
