@@ -2469,7 +2469,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
                 # Check for updates on startup
                 if getattr(self.config, 'check_for_updates', True):
-                    self.root.after(2000, self.check_for_updates_now)
+                    self.root.after(2000, lambda: self.check_for_updates_now(silent=True))
 
                 self.update_status("Ready", 100)
             except Exception as e:

@@ -1355,22 +1355,14 @@ class SettingsMixin:
             return
         vars_dict = info["vars"]
 
-        if vars_dict.get(f"{config_key}_type") == "disabled_bool":
+        setting_type = vars_dict.get(f"{config_key}_type")
+        if setting_type in ("disabled_bool", "action"):
             return
         if config_key == "description_auto_fill_mode":
             self.root.after_idle(lambda: self.open_description_autofill_dialog(
                 tree, item_id, 'value',
                 vars_dict[config_key].get(),
                 lambda v: self._apply_std_str_setting(config_key, v)))
-            return "break"
-        if config_key == "preview_description":
-            self.root.after_idle(self.open_description_preview_dialog)
-            return "break"
-        if config_key == "check_updates_now":
-            self.root.after_idle(self.check_for_updates_now)
-            return "break"
-        if config_key == "remove_all_custom_templates":
-            self.root.after_idle(self._remove_all_custom_templates)
             return "break"
 
     def _on_std_tree_double_click(self, event):
@@ -3825,7 +3817,7 @@ class SettingsMixin:
         dialog.deiconify()
         dialog.grab_set()
 
-    def check_for_updates_now(self):
+    def check_for_updates_now(self, silent=False):
         """Check for new releases on GitHub. Only alerts if a newer version exists."""
         import json
         import re
@@ -3863,9 +3855,12 @@ class SettingsMixin:
                 )
                 if result:
                     webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
+            elif not silent:
+                self.show_toast("You're on the latest version", 2000, "success")
 
         except Exception:
-            pass
+            if not silent:
+                self.show_toast("Failed to check for updates", 2000, "error")
 
     def restart_application(self):
         """Restart the application"""
