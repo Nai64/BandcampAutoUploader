@@ -3905,7 +3905,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         generated_description = self.build_auto_description_from_mode(rows).strip()
         mode = getattr(self.config, 'description_auto_fill_mode', "Off")
-        if not generated_description and mode == "Off":
+        if not generated_description and mode != "Off":
             generated_description = self.build_tracklist_description(rows).strip()
 
         if generated_description:
