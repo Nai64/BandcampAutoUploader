@@ -1023,7 +1023,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         desc_frame.pack(fill=tk.X, pady=(0, 2))
         self.desc_text.insert("1.0", self.album_description_var.get())
-        self.desc_text.bind('<KeyRelease>', lambda e: self.album_description_var.set(self.desc_text.get("1.0", "end-1c")))
+        self.desc_char_label = ttk.Label(self.details_frame, text="0/1200", font=("Segoe UI", 7))
+        self.desc_char_label.pack(anchor=tk.E, pady=(0, 2))
+        self.desc_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
+            self.desc_text, self.desc_char_label, 1200, self.album_description_var))
 
         # Credits
         ttk.Label(self.details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
@@ -1180,6 +1183,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             font=("Segoe UI", 8),
         )
         td_desc_frame.pack(fill=tk.X, pady=(0, 2))
+        self.td_desc_char_label = ttk.Label(self.track_details_frame, text="0/1200", font=("Segoe UI", 7))
+        self.td_desc_char_label.pack(anchor=tk.E, pady=(0, 2))
+        self.td_desc_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
+            self.td_desc_text, self.td_desc_char_label, 1200))
 
         ttk.Label(self.track_details_frame, text="Lyrics:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         td_lyrics_frame, self.td_lyrics_text = create_rounded_text_editbox(
@@ -3013,6 +3020,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.track_details_frame.pack_forget()
             self.details_frame.pack(fill=tk.BOTH, expand=True)
 
+    def _update_desc_counter(self, text_widget, label, max_chars, var=None):
+        """Enforce char limit on a description text widget and update counter."""
+        content = text_widget.get("1.0", "end-1c")
+        if len(content) > max_chars:
+            text_widget.delete("1.0", tk.END)
+            text_widget.insert("1.0", content[:max_chars])
+            content = content[:max_chars]
+        label.config(text=f"{len(content)}/{max_chars}")
+        if var is not None:
+            var.set(content)
+
     def get_album_description_text(self):
         """Return current album description text from the widget when available."""
         if hasattr(self, 'desc_text'):
@@ -3030,6 +3048,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.desc_text.insert("1.0", text)
             if original_state == tk.DISABLED:
                 self.desc_text.configure(state=tk.DISABLED)
+        if hasattr(self, 'desc_char_label'):
+            self.desc_char_label.config(text=f"{len(text)}/1200")
 
     def setup_album_session_autosave(self):
         """Track album-detail changes for the per-folder session file."""
@@ -4652,6 +4672,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.td_desc_text.delete("1.0", tk.END)
         self.td_desc_text.insert("1.0", data.get('description', ""))
+        if hasattr(self, 'td_desc_char_label'):
+            desc = data.get('description', "")
+            self.td_desc_char_label.config(text=f"{len(desc)}/1200")
         self.td_lyrics_text.delete("1.0", tk.END)
         self.td_lyrics_text.insert("1.0", data.get('lyrics', ""))
         self.td_credits_text.delete("1.0", tk.END)
