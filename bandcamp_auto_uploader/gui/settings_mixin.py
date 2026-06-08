@@ -1040,28 +1040,6 @@ class SettingsMixin:
         self.config.windows_notifications = new_value
         save_config(self.config)
     
-    def test_windows_notification(self):
-        """Test Windows notification by sending a test notification"""
-        if sys.platform != "win32":
-            messagebox.showinfo("Test Notification", "Windows notifications are only available on Windows.")
-            return
-
-        if not self.windows_toasts_available:
-            messagebox.showerror("Test Failed", "windows-toasts package is not installed. Please install it with: pip install windows-toasts")
-            return
-        
-        try:
-            from windows_toasts import Toast, WindowsToaster
-            toaster = WindowsToaster('Bandcamp Auto Uploader')
-            
-            newToast = Toast()
-            newToast.text_fields = ["This is a test notification to verify Windows notifications are working correctly."]
-            
-            toaster.show_toast(newToast)
-            self.show_toast("Test notification sent", 2000, "success")
-        except Exception as e:
-            messagebox.showerror("Test Failed", f"Failed to send test notification:\n{e}")
-    
     def test_toast_notification(self):
         """Test toast notification by sending a test notification"""
         # Force show the test notification regardless of trigger settings
@@ -2307,25 +2285,6 @@ class SettingsMixin:
             main_key = pretty.get(keysym, keysym)
         parts.append(main_key)
         return '+'.join(parts)
-
-    def _reset_hotkey_defaults(self):
-        """Reset all hotkey settings to their default values."""
-        for config_key, default_value in self._hotkey_defaults.items():
-            self.hotkey_vars[config_key].set(default_value)
-            setattr(self.config, config_key, default_value)
-            for item_id, key in self.hotkey_item_mapping.items():
-                if key == config_key:
-                    self.hotkey_tree.set(item_id, 'value', default_value)
-                    break
-        try:
-            from bandcamp_auto_uploader.config import save_config
-            save_config(self.config)
-        except Exception as e:
-            logger.debug(f"Failed to save hotkey config: {e}")
-        if hasattr(self, 'apply_hotkey_bindings'):
-            self.apply_hotkey_bindings()
-        if hasattr(self, 'show_toast'):
-            self.show_toast("Hotkeys reset to defaults", 1500, "success")
 
     def _hotkey_string_to_tk_binding(self, hotkey_str):
         """Convert a hotkey string like 'Ctrl+Shift+Z' to a Tk binding.

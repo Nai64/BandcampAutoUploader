@@ -9,7 +9,6 @@ import logging
 import queue
 import threading
 import tkinter as tk
-import dataclasses
 import os
 import subprocess
 import sys
