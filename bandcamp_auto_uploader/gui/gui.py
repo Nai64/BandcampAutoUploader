@@ -1031,7 +1031,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.desc_text, self.desc_char_label, 1200, self.album_description_var))
 
         # Credits
-        ttk.Label(self.details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        credits_header = ttk.Frame(self.details_frame)
+        credits_header.pack(fill=tk.X, pady=(0, 1))
+        ttk.Label(credits_header, text="Credits:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        self.credits_char_label = ttk.Label(credits_header, text="0/1200", font=("Segoe UI", 7))
+        self.credits_char_label.pack(side=tk.RIGHT)
         credits_frame, self.credits_text = create_rounded_text_editbox(
             self.details_frame,
             height=2,
@@ -1040,7 +1044,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         credits_frame.pack(fill=tk.X, pady=(0, 2))
         self.credits_text.insert("1.0", self.album_credits_var.get())
-        self.credits_text.bind('<KeyRelease>', lambda e: self.album_credits_var.set(self.credits_text.get("1.0", "end-1c")))
+        self.credits_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
+            self.credits_text, self.credits_char_label, 1200, self.album_credits_var))
 
         # License
         ttk.Label(self.details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
@@ -1201,7 +1206,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         td_lyrics_frame.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.track_details_frame, text="Credits:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        td_credits_header = ttk.Frame(self.track_details_frame)
+        td_credits_header.pack(fill=tk.X, pady=(0, 1))
+        ttk.Label(td_credits_header, text="Credits:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        self.td_credits_char_label = ttk.Label(td_credits_header, text="0/1200", font=("Segoe UI", 7))
+        self.td_credits_char_label.pack(side=tk.RIGHT)
         td_credits_frame, self.td_credits_text = create_rounded_text_editbox(
             self.track_details_frame,
             height=2,
@@ -1209,6 +1218,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             font=("Segoe UI", 8),
         )
         td_credits_frame.pack(fill=tk.X, pady=(0, 2))
+        self.td_credits_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
+            self.td_credits_text, self.td_credits_char_label, 1200))
 
         ttk.Label(self.track_details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_license_var = tk.StringVar(value="All Rights Reserved")
@@ -2997,9 +3008,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.tag_entry.delete(0, tk.END)
 
         self.set_album_description_text("")
-        self.album_credits_var.set("")
-        if hasattr(self, 'credits_text'):
-            self.credits_text.delete("1.0", tk.END)
+        self.set_album_credits_text("")
 
         self.cover_path_var.set("")
         self.album_publish_date_var.set("")
@@ -3054,6 +3063,20 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.desc_text.configure(state=tk.DISABLED)
         if hasattr(self, 'desc_char_label'):
             self.desc_char_label.config(text=f"{len(text)}/1200")
+
+    def set_album_credits_text(self, text):
+        """Set album credits text and backing variable together."""
+        self.album_credits_var.set(text)
+        if hasattr(self, 'credits_text'):
+            original_state = str(self.credits_text.cget("state"))
+            if original_state == tk.DISABLED:
+                self.credits_text.configure(state=tk.NORMAL)
+            self.credits_text.delete("1.0", tk.END)
+            self.credits_text.insert("1.0", text)
+            if original_state == tk.DISABLED:
+                self.credits_text.configure(state=tk.DISABLED)
+        if hasattr(self, 'credits_char_label'):
+            self.credits_char_label.config(text=f"{len(text)}/1200")
 
     def setup_album_session_autosave(self):
         """Track album-detail changes for the per-folder session file."""
@@ -3280,10 +3303,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.validate_tag_limit()
 
         self.set_album_description_text(details.get("description", ""))
-        self.album_credits_var.set(details.get("credits", ""))
-        if hasattr(self, 'credits_text'):
-            self.credits_text.delete("1.0", tk.END)
-            self.credits_text.insert("1.0", details.get("credits", ""))
+        self.set_album_credits_text(details.get("credits", ""))
 
         self.album_license_var.set(details.get("license", "All Rights Reserved"))
         self.album_download_desc_var.set(details.get("download_description", ""))
@@ -4483,10 +4503,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.album_tags_var.set("")
             if hasattr(self, 'tag_entry'):
                 self.tag_entry.delete(0, tk.END)
-            self.album_description_var.set("")
-            self.album_credits_var.set("")
-            self.desc_text.delete("1.0", "end")
-            self.credits_text.delete("1.0", "end")
+            self.set_album_description_text("")
+            self.set_album_credits_text("")
             self.cover_path_var.set("")
             self.album_publish_date_var.set("")
             self.album_record_label_var.set("")
@@ -4683,6 +4701,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_lyrics_text.insert("1.0", data.get('lyrics', ""))
         self.td_credits_text.delete("1.0", tk.END)
         self.td_credits_text.insert("1.0", data.get('credits', ""))
+        if hasattr(self, 'td_credits_char_label'):
+            credits = data.get('credits', "")
+            self.td_credits_char_label.config(text=f"{len(credits)}/1200")
 
     def _show_album_details(self):
         self.td_save_current_track()
@@ -8259,6 +8280,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.td_desc_text.delete("1.0", tk.END)
                 self.td_lyrics_text.delete("1.0", tk.END)
                 self.td_credits_text.delete("1.0", tk.END)
+                if hasattr(self, 'td_credits_char_label'):
+                    self.td_credits_char_label.config(text="0/1200")
+                if hasattr(self, 'td_desc_char_label'):
+                    self.td_desc_char_label.config(text="0/1200")
 
             self.sync_track_table_to_current_album()
             self.show_toast("Track reverted to original metadata", 1800, "success")
