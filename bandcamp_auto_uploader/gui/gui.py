@@ -1197,7 +1197,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_desc_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
             self.td_desc_text, self.td_desc_char_label, 1200))
 
-        ttk.Label(self.track_details_frame, text="Lyrics:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        td_lyrics_header = ttk.Frame(self.track_details_frame)
+        td_lyrics_header.pack(fill=tk.X, pady=(0, 1))
+        ttk.Label(td_lyrics_header, text="Lyrics:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        self.td_lyrics_char_label = ttk.Label(td_lyrics_header, text="0/10000", font=("Segoe UI", 7))
+        self.td_lyrics_char_label.pack(side=tk.RIGHT)
         td_lyrics_frame, self.td_lyrics_text = create_rounded_text_editbox(
             self.track_details_frame,
             height=2,
@@ -1205,6 +1209,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             font=("Segoe UI", 8),
         )
         td_lyrics_frame.pack(fill=tk.X, pady=(0, 2))
+        self.td_lyrics_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
+            self.td_lyrics_text, self.td_lyrics_char_label, 10000))
 
         td_credits_header = ttk.Frame(self.track_details_frame)
         td_credits_header.pack(fill=tk.X, pady=(0, 1))
@@ -4699,6 +4705,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.td_desc_char_label.config(text=f"{len(desc)}/1200")
         self.td_lyrics_text.delete("1.0", tk.END)
         self.td_lyrics_text.insert("1.0", data.get('lyrics', ""))
+        if hasattr(self, 'td_lyrics_char_label'):
+            lyrics = data.get('lyrics', "")
+            self.td_lyrics_char_label.config(text=f"{len(lyrics)}/10000")
         self.td_credits_text.delete("1.0", tk.END)
         self.td_credits_text.insert("1.0", data.get('credits', ""))
         if hasattr(self, 'td_credits_char_label'):
@@ -8284,6 +8293,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     self.td_credits_char_label.config(text="0/1200")
                 if hasattr(self, 'td_desc_char_label'):
                     self.td_desc_char_label.config(text="0/1200")
+                if hasattr(self, 'td_lyrics_char_label'):
+                    self.td_lyrics_char_label.config(text="0/10000")
 
             self.sync_track_table_to_current_album()
             self.show_toast("Track reverted to original metadata", 1800, "success")
