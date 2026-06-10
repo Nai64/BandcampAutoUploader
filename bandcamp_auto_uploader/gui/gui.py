@@ -8452,6 +8452,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     break
 
         def upload():
+            nonlocal album_path
             try:
                 logger.info("Starting upload process")
 
