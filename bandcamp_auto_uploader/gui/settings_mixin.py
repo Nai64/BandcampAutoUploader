@@ -552,6 +552,10 @@ class SettingsMixin:
             ("Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
             ("Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
             ("Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
+            ("Ignore all metadata", "ignore_all_metadata", "bool"),
+            ("Use filename as track title", "use_filename_as_title", "bool"),
+            ("Ignore artist name from metadata", "ignore_artist_name", "bool"),
+            ("Remove splash art", "remove_splash_art", "disabled_bool"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.metadata_tree = tree

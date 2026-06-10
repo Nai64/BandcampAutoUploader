@@ -69,6 +69,12 @@ class Config:
     auto_tag_duration: bool = False  # Auto add track duration to tags from metadata
     auto_tag_bitrate: bool = False  # Auto add bitrate to tags from metadata
     auto_tag_release_type: bool = False  # Auto add release type (Single/EP/Album) to tags
+    # Metadata processing controls
+    ignore_all_metadata: bool = False  # Ignore all metadata and use filenames only
+    use_filename_as_title: bool = False  # Use filename as track title instead of metadata
+    ignore_artist_name: bool = False  # Ignore artist name from metadata
+    remove_splash_art: bool = False  # Remove splash art from cover art
+
     # Log visual customization
     log_font_family: str = "Segoe UI"  # Log font family
     log_font_size: int = 9  # Log font size
