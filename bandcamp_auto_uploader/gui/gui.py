@@ -750,7 +750,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             cover_path = self.cover_path_var.get()
             if cover_path and Path(cover_path).exists():
-                self.view_cover_art(fullscreen=True)
+                self.view_cover_art()
         except Exception as e:
             logger.debug(f"Cover fullscreen hotkey failed: {e}")
         return "break"
@@ -6241,8 +6241,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.cover_path_var.set(filename)
             self.add_to_cover_library(filename)
 
-    def view_cover_art(self, fullscreen=False):
-        """View cover art in a resizable 1:1 dialog (or fullscreen)."""
+    def view_cover_art(self):
+        """View cover art in a resizable 1:1 dialog"""
         if self.is_upload_in_progress():
             self.show_toast("Upload in progress", 1600, "warning")
             return
@@ -6265,37 +6265,28 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             # Create dialog
             dialog = tk.Toplevel(self.root)
-            if fullscreen:
-                dialog.overrideredirect(True)
-                dialog.attributes("-fullscreen", True)
-                dialog.attributes("-topmost", True)
+            dialog.title(f"Cover Art ({width}x{height})")
+            dialog.transient(self.root)
+            dialog.grab_set()
+
+            # Calculate initial size (max 800x800, maintain 1:1)
+            max_size = 800
+            if width > max_size or height > max_size:
+                scale = max_size / max(width, height)
+                display_width = int(width * scale)
+                display_height = int(height * scale)
             else:
-                dialog.title(f"Cover Art ({width}x{height})")
-                dialog.transient(self.root)
-                dialog.grab_set()
+                display_width = width
+                display_height = height
 
-            if not fullscreen:
-                # Calculate initial size (max 800x800, maintain 1:1)
-                max_size = 800
-                if width > max_size or height > max_size:
-                    scale = max_size / max(width, height)
-                    display_width = int(width * scale)
-                    display_height = int(height * scale)
-                else:
-                    display_width = width
-                    display_height = height
+            # Set initial geometry
+            dialog.geometry(f"{display_width}x{display_height}")
 
-                # Set initial geometry
-                dialog.geometry(f"{display_width}x{display_height}")
-
-                # Center on parent
-                dialog.update_idletasks()
-                x = self.root.winfo_x() + (self.root.winfo_width() - display_width) // 2
-                y = self.root.winfo_y() + (self.root.winfo_height() - display_height) // 2
-                dialog.geometry(f"+{x}+{y}")
-            else:
-                display_width = dialog.winfo_screenwidth()
-                display_height = dialog.winfo_screenheight()
+            # Center on parent
+            dialog.update_idletasks()
+            x = self.root.winfo_x() + (self.root.winfo_width() - display_width) // 2
+            y = self.root.winfo_y() + (self.root.winfo_height() - display_height) // 2
+            dialog.geometry(f"+{x}+{y}")
 
             # Main frame
             main_frame = ttk.Frame(dialog)
@@ -6335,9 +6326,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             canvas.bind('<Configure>', on_resize)
 
             dialog.bind('<Escape>', lambda e: dialog.destroy())
-            if fullscreen:
-                dialog.bind('<Button-1>', lambda e: dialog.destroy())
-                dialog.bind('<Key-space>', lambda e: dialog.destroy())
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to view cover art:\n{e}")
