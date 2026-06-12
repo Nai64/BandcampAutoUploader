@@ -4875,8 +4875,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         def common_or_multi(vals):
             if not vals:
                 return ""
-            first = vals[0]
-            if all(str(v) == str(first) for v in vals):
+            normalized = ["" if v is None else v for v in vals]
+            first = normalized[0]
+            if all(str(v) == str(first) for v in normalized):
                 return first
             return MULTI
 
