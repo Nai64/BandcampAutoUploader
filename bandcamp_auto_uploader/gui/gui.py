@@ -655,7 +655,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """
         if not hasattr(self, 'root'):
             return
-        for tag in ('hotkey_undo', 'hotkey_redo', 'hotkey_upload', 'hotkey_cancel'):
+        for tag in ('hotkey_undo', 'hotkey_redo', 'hotkey_upload', 'hotkey_cancel', 'hotkey_cover_fullscreen'):
             try:
                 self.root.unbind(tag)
             except tk.TclError:
@@ -666,6 +666,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             ('hotkey_redo', 'redo_hotkey', 'Ctrl+Y', self._on_redo_hotkey),
             ('hotkey_upload', 'upload_hotkey', 'Ctrl+Enter', self._on_upload_hotkey),
             ('hotkey_cancel', 'cancel_hotkey', 'Ctrl+Space+Enter', self._on_cancel_hotkey),
+            ('hotkey_cover_fullscreen', 'cover_fullscreen_hotkey', 'F11', self._on_cover_fullscreen_hotkey),
         ]
         for tag, attr, default, handler in bindings:
             hotkey = getattr(self.config, attr, default)
@@ -741,6 +742,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.cancel_upload()
         except Exception as e:
             logger.debug(f"Cancel hotkey failed: {e}")
+        return "break"
+
+    def _on_cover_fullscreen_hotkey(self, event):
+        if self._hotkey_focus_is_text_widget():
+            return None
+        try:
+            cover_path = self.cover_path_var.get()
+            if cover_path and Path(cover_path).exists():
+                self.view_cover_art_fullscreen()
+        except Exception as e:
+            logger.debug(f"Cover fullscreen hotkey failed: {e}")
         return "break"
 
     def load_context_menu_icons(self):
@@ -6319,6 +6331,59 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to view cover art:\n{e}")
             logger.exception(e)
+
+    def view_cover_art_fullscreen(self):
+        """View cover art in fullscreen mode"""
+        cover_path = self.cover_path_var.get()
+        if not cover_path or not Path(cover_path).exists():
+            return
+
+        try:
+            from PIL import Image, ImageTk
+
+            img = self.normalize_cover_image(cover_path, "#ffffff")
+            fit_mode = self.cover_fit_mode_var.get() if hasattr(self, 'cover_fit_mode_var') else "Crop (fill)"
+            img = self.apply_fit_mode(img, 2000, fit_mode)
+            width, height = img.size
+
+            dialog = tk.Toplevel(self.root)
+            dialog.overrideredirect(True)
+            dialog.attributes("-fullscreen", True)
+            dialog.attributes("-topmost", True)
+
+            canvas = tk.Canvas(dialog, bg="black", highlightthickness=0)
+            canvas.pack(fill=tk.BOTH, expand=True)
+
+            screen_width = dialog.winfo_screenwidth()
+            screen_height = dialog.winfo_screenheight()
+
+            scale = min(screen_width / width, screen_height / height)
+            new_width = int(width * scale)
+            new_height = int(height * scale)
+            resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(resized)
+            canvas.create_image(screen_width // 2, screen_height // 2, image=photo, anchor=tk.CENTER)
+            dialog.photo = photo
+
+            def on_resize(event):
+                cw, ch = event.width, event.height
+                s = min(cw / width, ch / height)
+                r = img.resize((int(width * s), int(height * s)), Image.Resampling.LANCZOS)
+                p = ImageTk.PhotoImage(r)
+                canvas.delete("all")
+                canvas.create_image(cw // 2, ch // 2, image=p, anchor=tk.CENTER)
+                dialog.photo = p
+
+            canvas.bind('<Configure>', on_resize)
+
+            def close(ev=None):
+                dialog.destroy()
+
+            dialog.bind('<Escape>', close)
+            dialog.bind('<Button-1>', close)
+            dialog.bind('<Key-space>', close)
+        except Exception:
+            pass
 
     def show_cover_context_menu(self, event):
         """Show context menu for cover art"""

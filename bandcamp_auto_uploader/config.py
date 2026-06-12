@@ -123,6 +123,7 @@ class Config:
     redo_hotkey: str = "Ctrl+Y"  # Hotkey for the Redo action on the track table
     upload_hotkey: str = "Ctrl+Enter"  # Hotkey for the Upload Album action
     cancel_hotkey: str = "Ctrl+Space+Enter"  # Hotkey for the Cancel Upload action
+    cover_fullscreen_hotkey: str = "F11"  # Hotkey to open cover art in fullscreen
     locked_track_highlight_color: str = "#fff4ce"  # Track table row highlight for locked tracks
     highlight_corrupted_tracks: bool = True  # Highlight rows whose file mutagen cannot parse
     corrupted_track_highlight_color: str = "#ffd6d6"  # Track table row highlight for corrupted/unrecognized tracks

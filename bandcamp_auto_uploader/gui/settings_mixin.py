@@ -2053,12 +2053,14 @@ class SettingsMixin:
             "redo_hotkey": "Ctrl+Y",
             "upload_hotkey": "Ctrl+Enter",
             "cancel_hotkey": "Ctrl+Space+Enter",
+            "cover_fullscreen_hotkey": "F11",
         }
         settings = [
             ("Undo", "undo_hotkey", "hotkey", defaults["undo_hotkey"]),
             ("Redo", "redo_hotkey", "hotkey", defaults["redo_hotkey"]),
             ("Upload album", "upload_hotkey", "hotkey", defaults["upload_hotkey"]),
             ("Cancel album", "cancel_hotkey", "hotkey", defaults["cancel_hotkey"]),
+            ("Cover art fullscreen", "cover_fullscreen_hotkey", "hotkey", defaults["cover_fullscreen_hotkey"]),
         ]
 
         self.hotkey_tree = ttk.Treeview(
