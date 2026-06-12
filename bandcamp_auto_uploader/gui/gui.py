@@ -92,6 +92,103 @@ def set_windows_app_user_model_id():
         logger.debug(f"Failed to set Windows app identity: {e}")
 
 
+class TaskbarProgress:
+    """Windows taskbar progress via ITaskbarList3 COM interface."""
+    TBPF_NOPROGRESS = 0
+    TBPF_INDETERMINATE = 1
+    TBPF_NORMAL = 2
+    TBPF_ERROR = 4
+    TBPF_PAUSED = 8
+
+    def __init__(self, hwnd):
+        self._hwnd = hwnd
+        self._obj = None
+        self._vtable = None
+        self._init_com()
+
+    def _init_com(self):
+        if sys.platform != "win32":
+            return
+        try:
+            import ctypes
+            import ctypes.wintypes
+
+            class GUID(ctypes.Structure):
+                _fields_ = [
+                    ('Data1', ctypes.wintypes.DWORD),
+                    ('Data2', ctypes.wintypes.WORD),
+                    ('Data3', ctypes.wintypes.WORD),
+                    ('Data4', ctypes.wintypes.BYTE * 8),
+                ]
+
+            CLSID = GUID(
+                0x56FDF344, 0xFD6D, 0x11d0,
+                (ctypes.wintypes.BYTE * 8)(0x95, 0x8A, 0x00, 0x60, 0x97, 0xC9, 0xA0, 0x90)
+            )
+            IID = GUID(
+                0xEA1AFB91, 0x9E28, 0x4B86,
+                (ctypes.wintypes.BYTE * 8)(0x90, 0xE9, 0x9E, 0x9F, 0x8A, 0x5E, 0xEF, 0xAF)
+            )
+            obj = ctypes.POINTER(ctypes.c_void_p)()
+            hr = ctypes.windll.ole32.CoCreateInstance(
+                ctypes.byref(CLSID), None, 1, ctypes.byref(IID), ctypes.byref(obj)
+            )
+            if hr != 0:
+                return
+            vtable = ctypes.cast(obj[0], ctypes.POINTER(ctypes.c_void_p))
+            hr_init = ctypes.cast(vtable[3], ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p))
+            hr_init(obj)
+            self._obj = obj
+            self._vtable = vtable
+            self._ctypes = ctypes
+        except Exception:
+            pass
+
+    def set_progress(self, completed, total):
+        if self._obj is None:
+            return
+        try:
+            ctypes = self._ctypes
+            fn = ctypes.cast(
+                self._vtable[9],
+                ctypes.WINFUNCTYPE(
+                    ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
+                    ctypes.c_uint64, ctypes.c_uint64
+                )
+            )
+            fn(self._obj, self._hwnd, completed, total)
+        except Exception:
+            pass
+
+    def set_state(self, state):
+        if self._obj is None:
+            return
+        try:
+            ctypes = self._ctypes
+            fn = ctypes.cast(
+                self._vtable[10],
+                ctypes.WINFUNCTYPE(
+                    ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int
+                )
+            )
+            fn(self._obj, self._hwnd, state)
+        except Exception:
+            pass
+
+    def set_upload_progress(self, completed, total):
+        self.set_state(self.TBPF_NORMAL)
+        self.set_progress(completed, total)
+
+    def set_error(self):
+        self.set_state(self.TBPF_ERROR)
+
+    def set_indeterminate(self):
+        self.set_state(self.TBPF_INDETERMINATE)
+
+    def clear(self):
+        self.set_state(self.TBPF_NOPROGRESS)
+
+
 def create_canvas_round_rect(canvas, x1, y1, x2, y2, radius, **kwargs):
     points = [
         x1 + radius, y1,
@@ -390,6 +487,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Start log monitor
         self.monitor_logs()
         
+        # Initialize Windows taskbar progress
+        self._taskbar_progress = None
+        self.root.after(500, self._init_taskbar_progress)
+        
     def setup_logging(self):
         """Configure logging to capture output for GUI display"""
         logger.setLevel(logging.DEBUG if (self.config.debug or getattr(self.config, 'log_to_file', True)) else logging.INFO)
@@ -534,6 +635,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             user32.SendMessageW(hwnd, WM_SETICON, ICON_SMALL, hicon)
         except Exception as e:
             logger.debug(f"Failed to set Windows taskbar icon {icon_path}: {e}")
+
+    def _init_taskbar_progress(self):
+        if sys.platform != "win32":
+            return
+        hwnd = self.root.winfo_id()
+        self._taskbar_progress = TaskbarProgress(hwnd)
 
     def apply_hotkey_bindings(self):
         """Bind the configured hotkeys on the root window.
@@ -2101,6 +2208,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.upload_progress_total = int(payload.get("total", len(getattr(self, 'upload_progress_rows', []))) or 0)
             self.update_upload_progress_title_remaining("remaining calculating...")
             self.start_upload_progress_timer()
+            if self._taskbar_progress:
+                self._taskbar_progress.set_indeterminate()
             return
 
         if event == "album_done":
@@ -2111,6 +2220,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             total = payload.get("total", 0)
             skipped = payload.get("skipped", 0)
             self.update_status(f"Tracks uploaded: {successful}/{total} (skipped {skipped})", 100)
+            if self._taskbar_progress:
+                self._taskbar_progress.set_upload_progress(total or 1, total or 1)
+                self.root.after(1500, self._taskbar_progress.clear)
             return
 
         if event == "album_cancelled":
@@ -2121,6 +2233,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if int(row["progress"]["value"]) < 100:
                     row["base_status"] = "Cancelled"
                     row["status"].configure(text="Cancelled")
+            if self._taskbar_progress:
+                self._taskbar_progress.clear()
             return
 
         index = payload.get("index")
@@ -2155,6 +2269,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 len(self.upload_progress_rows),
                 self.upload_progress_completed_count + 1
             )
+            if self._taskbar_progress:
+                total = self.upload_progress_total or len(self.upload_progress_rows)
+                completed = self.upload_progress_completed_count
+                self._taskbar_progress.set_upload_progress(completed, total)
             if self.upload_progress_active_index == index:
                 self.upload_progress_active_index = None
 
@@ -8781,6 +8899,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     )
                 )
                 self.root.after(100, lambda: self.show_toast("Upload failed - check logs", 3000, "error", trigger="upload_error"))
+                if self._taskbar_progress:
+                    self._taskbar_progress.set_error()
+                    self.root.after(3000, self._taskbar_progress.clear)
             finally:
                 self.root.after(0, self.upload_finished)
                 self.root.after(1000, lambda: self.update_status("Ready", None))
