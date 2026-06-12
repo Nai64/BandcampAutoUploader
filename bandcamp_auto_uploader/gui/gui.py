@@ -1481,7 +1481,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 "album_artist_metadata", "composer", "isrc"
             ),
             show="headings",
-            selectmode="browse"
+            selectmode="extended"
         )
         self.track_table.pack(fill=tk.BOTH, expand=True)
         self.track_table.bind('<Configure>', self.on_track_table_configure)
@@ -5500,6 +5500,188 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.sync_track_table_to_current_album()
         self.show_toast(f"Updated {label} for {changed} track(s)", 1800, "success")
 
+    def batch_edit_tracks(self):
+        sel = self.track_table.selection()
+        if len(sel) < 2:
+            self.show_toast("Select at least 2 tracks to batch edit", 1800, "warning")
+            return
+        if self.is_upload_in_progress():
+            self.show_toast("Upload in progress", 1600, "warning")
+            return
+
+        track_count = len(sel)
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Batch Edit Tracks ({track_count} selected)")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        self.center_dialog(dialog, 550, 520)
+
+        main_frame = ttk.Frame(dialog, padding=12)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        canvas = tk.Canvas(main_frame, borderwidth=0, highlightthickness=0)
+        scrollbar = ttk.Scrollbar(main_frame, orient=tk.VERTICAL, command=canvas.yview)
+        scroll_frame = ttk.Frame(canvas)
+
+        scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        apply_vars = {}
+        value_vars = {}
+
+        field_configs = [
+            ("artist", "Artist", "entry"),
+            ("tags", "Tags", "entry"),
+            ("price", "Price ($)", "price"),
+            ("nyp", "Name Your Price", "bool"),
+            ("release_date", "Release Date", "entry"),
+            ("license", "License", "license"),
+            ("streaming", "Streaming", "bool"),
+            ("enable_download", "Allow Download", "bool"),
+            ("private", "Bonus Track", "bool"),
+            ("featured", "Featured", "bool"),
+            ("isrc", "ISRC", "entry"),
+            ("iswc", "ISWC", "entry"),
+            ("download_desc", "Download Desc.", "entry"),
+            ("video_id", "Video ID", "entry"),
+            ("video_caption", "Video Caption", "entry"),
+        ]
+
+        for i, (key, label, ftype) in enumerate(field_configs):
+            row_frame = ttk.Frame(scroll_frame)
+            row_frame.pack(fill=tk.X, pady=2)
+
+            apply_var = tk.BooleanVar(value=False)
+            apply_vars[key] = apply_var
+            cb = ttk.Checkbutton(row_frame, variable=apply_var, width=3)
+            cb.pack(side=tk.LEFT)
+
+            lbl = ttk.Label(row_frame, text=label, width=22, anchor=tk.W)
+            lbl.pack(side=tk.LEFT, padx=(0, 6))
+
+            if ftype == "entry":
+                var = tk.StringVar()
+                entry = ttk.Entry(row_frame, textvariable=var)
+                entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
+                value_vars[key] = var
+            elif ftype == "price":
+                var = tk.StringVar()
+                entry = ttk.Entry(row_frame, textvariable=var, width=12)
+                entry.pack(side=tk.LEFT)
+                value_vars[key] = var
+            elif ftype == "bool":
+                var = tk.StringVar(value="leave")
+                combo = ttk.Combobox(row_frame, textvariable=var, values=["leave", "yes", "no"], state="readonly", width=14)
+                combo.pack(side=tk.LEFT)
+                value_vars[key] = var
+            elif ftype == "license":
+                var = tk.StringVar(value="leave")
+                combo = ttk.Combobox(row_frame, textvariable=var, values=[
+                    "leave", "All Rights Reserved", "CC-BY", "CC-BY-NC",
+                    "CC-BY-NC-ND", "CC-BY-NC-SA", "CC-BY-ND", "CC-BY-SA",
+                    "Public Domain"
+                ], state="readonly", width=22)
+                combo.pack(side=tk.LEFT)
+                value_vars[key] = var
+
+            def on_set_toggled(k=key, cb_widget=cb):
+                pass
+            cb.config(command=on_set_toggled)
+
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+        btn_frame = ttk.Frame(main_frame)
+        btn_frame.pack(fill=tk.X, pady=(10, 0))
+
+        count_label = ttk.Label(btn_frame, text=f"Applying to {track_count} track(s)")
+        count_label.pack(side=tk.LEFT)
+
+        def do_apply():
+            changes = {}
+            for key, ftype in [(k, ft) for k, _, ft in field_configs]:
+                if not apply_vars[key].get():
+                    continue
+                val = value_vars[key].get()
+                if ftype == "bool":
+                    if val == "leave":
+                        continue
+                    changes[key] = val == "yes"
+                elif ftype == "license":
+                    if val == "leave":
+                        continue
+                    changes[key] = val
+                else:
+                    if not val.strip():
+                        continue
+                    changes[key] = val.strip()
+
+            if not changes:
+                self.show_toast("No fields selected to change", 1800, "warning")
+                return
+
+            self.push_undo_state("Batch Edit Tracks")
+            changed_count = 0
+            for row_id in sel:
+                if self.is_track_item_locked(row_id):
+                    continue
+                values = list(self.track_table.item(row_id).get("values", ()))
+                file_path = str(values[12]) if len(values) > 12 else ""
+                if file_path not in self.track_editor_data:
+                    self.track_editor_data[file_path] = {}
+                data = self.track_editor_data[file_path]
+
+                for key, val in changes.items():
+                    data[key] = val
+                    col_id = {
+                        "artist": "artist",
+                        "tags": "genre",
+                        "price": "price",
+                        "nyp": "nyp",
+                        "isrc": "isrc",
+                        "download_desc": "comment",
+                    }.get(key)
+                    if col_id:
+                        col_idx = self.get_track_table_column_index(col_id)
+                        if col_idx is not None and col_idx < len(values):
+                            if key == "price":
+                                values[col_idx] = self.format_price_display(val)
+                            elif key == "nyp":
+                                values[col_idx] = "Yes" if val else "No"
+                            else:
+                                values[col_idx] = val
+
+                self.track_table.item(row_id, values=tuple(values))
+                changed_count += 1
+
+            if "featured" in changes:
+                featured_set = False
+                for row_id in sel:
+                    if self.is_track_item_locked(row_id):
+                        continue
+                    values = list(self.track_table.item(row_id).get("values", ()))
+                    file_path = str(values[12]) if len(values) > 12 else ""
+                    data = self.track_editor_data.get(file_path, {})
+                    if changes["featured"] and not featured_set:
+                        data["featured"] = True
+                        featured_set = True
+                    else:
+                        data["featured"] = False
+
+            self.maybe_auto_fit_track_columns()
+            self.sync_track_table_to_current_album()
+            dialog.destroy()
+            self.show_toast(f"Updated {changed_count} track(s)", 1800, "success")
+
+        def do_cancel():
+            dialog.destroy()
+
+        ttk.Button(btn_frame, text="Apply", command=do_apply).pack(side=tk.RIGHT, padx=(6, 0))
+        ttk.Button(btn_frame, text="Cancel", command=do_cancel).pack(side=tk.RIGHT)
+
+        dialog.wait_window()
+
     def on_table_double_click(self, event):
         """Handle double-click on table cell to edit"""
         # Get the item and column that was clicked
@@ -7772,6 +7954,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 for option in enabled_metadata_options:
                     _enabled, label, command, icon_label, *undo_label = option
                     add_menu_command(label, command, icon_label, undo_label=undo_label[0] if undo_label else None)
+
+            if len(self.track_table.selection()) >= 2:
+                add_separator_if_needed()
+                add_menu_command("Batch Edit Selected Tracks", self.batch_edit_tracks, "Edit")
 
             if getattr(self.config, 'context_menu_upload_as_single', True):
                 add_separator_if_needed()
