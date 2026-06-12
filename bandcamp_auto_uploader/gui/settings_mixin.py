@@ -2853,6 +2853,7 @@ class SettingsMixin:
         self.config.retry_failed_uploads = self.upload_vars['retry_failed_uploads'].get()
         self.config.retry_attempts = self.upload_vars['retry_attempts'].get()
         self.config.retry_delay = self.upload_vars['retry_delay'].get()
+        self.config.enable_flac_conversion = self.upload_vars['enable_flac_conversion'].get()
         save_config(self.config)
     
     def create_general_combined_settings(self, parent):
