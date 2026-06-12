@@ -531,11 +531,13 @@ class Track:
         path: Path,
         track_data: BandcampTrackData,
         cover_art: Optional[CoverArt] = None,
+        config: Optional[Config] = None,
     ):
         self.path = path
         self.file_name = self.path.name  # Keep extension for upload
         self.track_data = track_data
         self.cover_art = cover_art
+        self.config = config
         self.converted_file_path = None  # Track converted MP3->FLAC files for cleanup
 
     @classmethod
@@ -557,7 +559,7 @@ class Track:
                     streaming=int(config.track_streaming),
                 )
                 track_data.title = path.stem
-                return cls(path=path, track_data=track_data, cover_art=None)
+                return cls(path=path, track_data=track_data, cover_art=None, config=config)
             return None
         
         track_data = BandcampTrackData(
@@ -577,8 +579,8 @@ class Track:
             track_data.title = path.stem
             # NEVER extract embedded artwork - use only manually added cover art
             cover_art = None
-            return cls(path=path, track_data=track_data, cover_art=cover_art)
-        
+            return cls(path=path, track_data=track_data, cover_art=cover_art, config=config)
+
         if file_data.__class__ == FLAC:
             # FLAC Vorbis comment tags
             if getattr(config, 'use_filename_as_title', False):
@@ -741,7 +743,7 @@ class Track:
                 track_data.track_number = int(track_data.track_number.split("/")[0])
             except (ValueError, AttributeError):
                 track_data.track_number = 0
-        return cls(path, track_data, cover_art)
+        return cls(path, track_data, cover_art, config=config)
 
     def upload(
         self,
@@ -760,7 +762,7 @@ class Track:
         upload_path = self.path
         
         # Convert to FLAC 16-bit 44.1kHz if needed
-        if needs_conversion_to_flac(self.path):
+        if getattr(self.config, 'enable_flac_conversion', False) and needs_conversion_to_flac(self.path):
             logger.info(f"Converting to FLAC 16-bit 44.1kHz before upload - {self.path.name}")
             try:
                 upload_path = convert_to_flac_16bit_44khz(self.path)

@@ -8690,6 +8690,25 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                                 img.save(str(cover_dest), format='JPEG', quality=95)
                                 logger.info(f"Saved normalized cover to {cover_dest}")
                 
+                # Check for non-FLAC tracks and prompt to enable conversion
+                if not self.config.enable_flac_conversion:
+                    non_flac = [t for t in album.tracks if t.path.suffix.lower() != '.flac']
+                    if non_flac:
+                        from queue import Queue
+                        result_q = Queue()
+                        self.root.after(0, lambda: result_q.put(
+                            messagebox.askyesno(
+                                "FLAC Conversion Required",
+                                f"{len(non_flac)} track(s) are not in FLAC format.\n\n"
+                                "Would you like to enable automatic conversion to FLAC?"
+                            )
+                        ))
+                        if result_q.get():
+                            self.root.after(0, lambda: self.open_preferences_to_section('upload_settings'))
+                            raise UploadCancelled("User chose to enable FLAC conversion in Preferences")
+                        else:
+                            raise UploadCancelled("User cancelled upload - FLAC conversion required")
+                
                 self.update_status("Uploading to Bandcamp...", 60)
 
                 self.td_save_current_track()

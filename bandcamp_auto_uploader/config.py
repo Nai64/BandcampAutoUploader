@@ -74,6 +74,7 @@ class Config:
     use_filename_as_title: bool = False  # Use filename as track title instead of metadata
     ignore_artist_name: bool = False  # Ignore artist name from metadata
     remove_splash_art: bool = False  # Remove splash art from cover art
+    enable_flac_conversion: bool = False  # Convert non-FLAC tracks to FLAC 16-bit 44.1kHz on upload
 
     # Log visual customization
     log_font_family: str = "Segoe UI"  # Log font family

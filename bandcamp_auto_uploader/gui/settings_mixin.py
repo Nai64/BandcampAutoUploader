@@ -2743,7 +2743,8 @@ class SettingsMixin:
             ("Upload timeout (seconds)", "upload_timeout", "int", 30, 600),
             ("Retry failed uploads", "retry_failed_uploads", "bool"),
             ("Retry attempts", "retry_attempts", "int", 1, 10),
-            ("Retry delay (seconds)", "retry_delay", "int", 1, 60)
+            ("Retry delay (seconds)", "retry_delay", "int", 1, 60),
+            ("Enable conversion to FLAC", "enable_flac_conversion", "bool"),
         ]
         
         # Create treeview for upload settings (no headings)
@@ -3877,4 +3878,19 @@ class SettingsMixin:
         close_frame.pack(fill=tk.X, padx=15, pady=15)
         
         ttk.Button(close_frame, text="Close", command=close_preferences).pack(side=tk.RIGHT)
+
+    def open_preferences_to_section(self, section_id):
+        """Open preferences dialog and navigate to a specific section."""
+        if getattr(self, 'preferences_dialog', None) is None or not self.preferences_dialog.winfo_exists():
+            self.open_preferences_dialog()
+        self.root.after(100, lambda: self._navigate_settings_to(section_id))
+
+    def _navigate_settings_to(self, section_id):
+        """Select a section in the settings tree after preferences are open."""
+        if not hasattr(self, 'settings_tree'):
+            return
+        self.settings_tree.selection_set(section_id)
+        self.settings_tree.focus(section_id)
+        self.settings_tree.see(section_id)
+        self.on_settings_tree_select(None)
 
