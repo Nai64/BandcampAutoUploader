@@ -4880,31 +4880,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 return first
             return MULTI
 
-        # Capture initial values for ALL vars before touching them
-        self._batch_initial = {
-            "name": self.td_name_var.get(),
-            "artist": self.td_artist_var.get(),
-            "tags": self.td_tags_var.get(),
-            "isrc": self.td_isrc_var.get(),
-            "iswc": self.td_iswc_var.get(),
-            "download_desc": self.td_download_desc_var.get(),
-            "release_date": self.td_release_date_var.get(),
-            "license": self.td_license_var.get(),
-            "streaming": self.td_streaming_var.get(),
-            "enable_download": self.td_enable_dl_var.get(),
-            "private": self.td_private_var.get(),
-            "featured": self.td_featured_var.get(),
-            "price": self.td_price_var.get(),
-            "nyp": self.td_nyp_var.get(),
-            "video_id": self.td_video_id_var.get(),
-            "video_caption": self.td_video_caption_var.get(),
-            "description": self.td_desc_text.get("1.0", "end-1c"),
-            "lyrics": self.td_lyrics_text.get("1.0", "end-1c"),
-            "credits": self.td_credits_text.get("1.0", "end-1c"),
-        }
+        # Compute and store display values, then capture initial from widgets
+        display = {}
 
         # Text/string fields
-        text_fields = [
+        for key, var, src_list in [
             ("name", self.td_name_var, ["track_name"]),
             ("artist", self.td_artist_var, ["artist"]),
             ("tags", self.td_tags_var, ["genre"]),
@@ -4914,26 +4894,25 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             ("release_date", self.td_release_date_var, None),
             ("video_id", self.td_video_id_var, None),
             ("video_caption", self.td_video_caption_var, None),
-        ]
-        for key, var, src_list in text_fields:
+        ]:
             vals = collect(key, src_list)
-            var.set(common_or_multi(vals))
+            display[key] = common_or_multi(vals)
+            var.set(display[key])
 
         # Price (special formatting)
         price_vals = collect("price", ["price"])
-        common_price = common_or_multi(price_vals)
-        if common_price == MULTI:
+        display["price"] = common_or_multi(price_vals)
+        if display["price"] == MULTI:
             self.td_price_var.set("")
         else:
-            self.td_price_var.set(self.format_price_display(common_price))
+            self.td_price_var.set(self.format_price_display(display["price"]))
 
         # License
         lic_vals = collect("license", None)
-        common_lic = common_or_multi(lic_vals)
-        self.td_license_var.set(common_lic if common_lic != MULTI else "All Rights Reserved")
+        display["license"] = common_or_multi(lic_vals)
+        self.td_license_var.set(display["license"] if display["license"] != MULTI else "All Rights Reserved")
 
         # Boolean/checkbox fields
-        bool_fields = ["streaming", "enable_download", "private", "featured", "nyp"]
         bool_vars = {
             "streaming": self.td_streaming_var,
             "enable_download": self.td_enable_dl_var,
@@ -4941,9 +4920,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "featured": self.td_featured_var,
             "nyp": self.td_nyp_var,
         }
-        for key in bool_fields:
+        for key in ["streaming", "enable_download", "private", "featured", "nyp"]:
             vals = collect(key, None)
             common = common_or_multi(vals)
+            display[key] = common
             if common != MULTI:
                 bool_vars[key].set(bool(common))
 
@@ -4955,14 +4935,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ]:
             vals = collect(key, None)
             common = common_or_multi(vals)
+            display[key] = common if common != MULTI else ""
             text_widget.delete("1.0", tk.END)
-            text_widget.insert("1.0", common if common != MULTI else "")
+            text_widget.insert("1.0", display[key])
             if key == "description" and hasattr(self, 'td_desc_char_label'):
                 self.td_desc_char_label.config(text=f"{'(multiple)' if common == MULTI else len(common)}/1200")
             elif key == "lyrics" and hasattr(self, 'td_lyrics_char_label'):
                 self.td_lyrics_char_label.config(text=f"{'(multiple)' if common == MULTI else len(common)}/10000")
             elif key == "credits" and hasattr(self, 'td_credits_char_label'):
                 self.td_credits_char_label.config(text=f"{'(multiple)' if common == MULTI else len(common)}/1200")
+
+        # Capture initial from what widgets actually show now
+        self._batch_initial = dict(display)
 
     def _show_album_details(self):
         self.td_save_current_track()
@@ -5025,12 +5009,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 "nyp": lambda: self.td_nyp_var.get(),
                 "video_id": lambda: self.td_video_id_var.get(),
                 "video_caption": lambda: self.td_video_caption_var.get(),
+                "description": lambda: self.td_desc_text.get("1.0", "end-1c"),
+                "lyrics": lambda: self.td_lyrics_text.get("1.0", "end-1c"),
+                "credits": lambda: self.td_credits_text.get("1.0", "end-1c"),
             }
 
             changes = {}
             for key, reader in field_readers.items():
                 current = reader()
                 initial = self._batch_initial.get(key)
+                if current == "<<multiple values>>":
+                    continue
                 if str(current) != str(initial):
                     changes[key] = current
 
