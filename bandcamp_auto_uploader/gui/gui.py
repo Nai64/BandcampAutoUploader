@@ -103,7 +103,7 @@ class TaskbarProgress:
     def __init__(self, hwnd):
         self._hwnd = hwnd
         self._obj = None
-        self._vtable = None
+        self._vtbl = None
         self._init_com()
 
     def _init_com(self):
@@ -111,36 +111,40 @@ class TaskbarProgress:
             return
         try:
             import ctypes
-            import ctypes.wintypes
+            from ctypes import wintypes
+
+            ole32 = ctypes.OleDLL("ole32")
+            ole32.CoInitializeEx(None, 2)
 
             class GUID(ctypes.Structure):
                 _fields_ = [
-                    ('Data1', ctypes.wintypes.DWORD),
-                    ('Data2', ctypes.wintypes.WORD),
-                    ('Data3', ctypes.wintypes.WORD),
-                    ('Data4', ctypes.wintypes.BYTE * 8),
+                    ('Data1', wintypes.DWORD),
+                    ('Data2', wintypes.WORD),
+                    ('Data3', wintypes.WORD),
+                    ('Data4', wintypes.BYTE * 8),
                 ]
 
             CLSID = GUID(
                 0x56FDF344, 0xFD6D, 0x11d0,
-                (ctypes.wintypes.BYTE * 8)(0x95, 0x8A, 0x00, 0x60, 0x97, 0xC9, 0xA0, 0x90)
+                (wintypes.BYTE * 8)(0x95, 0x8A, 0x00, 0x60, 0x97, 0xC9, 0xA0, 0x90)
             )
             IID = GUID(
                 0xEA1AFB91, 0x9E28, 0x4B86,
-                (ctypes.wintypes.BYTE * 8)(0x90, 0xE9, 0x9E, 0x9F, 0x8A, 0x5E, 0xEF, 0xAF)
+                (wintypes.BYTE * 8)(0x90, 0xE9, 0x9E, 0x9F, 0x8A, 0x5E, 0xEF, 0xAF)
             )
-            obj = ctypes.POINTER(ctypes.c_void_p)()
-            hr = ctypes.windll.ole32.CoCreateInstance(
-                ctypes.byref(CLSID), None, 1, ctypes.byref(IID), ctypes.byref(obj)
+
+            obj_ptr = ctypes.c_void_p()
+            hr = ole32.CoCreateInstance(
+                ctypes.byref(CLSID), None, 1, ctypes.byref(IID), ctypes.byref(obj_ptr)
             )
             if hr != 0:
                 return
-            vtable = ctypes.cast(obj[0], ctypes.POINTER(ctypes.c_void_p))
-            hr_init = ctypes.cast(vtable[3], ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p))
-            hr_init(obj)
-            self._obj = obj
-            self._vtable = vtable
-            self._ctypes = ctypes
+
+            vtbl = ctypes.cast(obj_ptr.value, ctypes.POINTER(ctypes.c_void_p))
+            hr_init = ctypes.cast(vtbl[3], ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p))
+            hr_init(obj_ptr)
+            self._obj = obj_ptr
+            self._vtbl = vtbl
         except Exception:
             pass
 
@@ -148,12 +152,12 @@ class TaskbarProgress:
         if self._obj is None:
             return
         try:
-            ctypes = self._ctypes
+            import ctypes
             fn = ctypes.cast(
-                self._vtable[9],
+                self._vtbl[9],
                 ctypes.WINFUNCTYPE(
                     ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p,
-                    ctypes.c_uint64, ctypes.c_uint64
+                    ctypes.c_ulonglong, ctypes.c_ulonglong
                 )
             )
             fn(self._obj, self._hwnd, completed, total)
@@ -164,9 +168,9 @@ class TaskbarProgress:
         if self._obj is None:
             return
         try:
-            ctypes = self._ctypes
+            import ctypes
             fn = ctypes.cast(
-                self._vtable[10],
+                self._vtbl[10],
                 ctypes.WINFUNCTYPE(
                     ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_int
                 )
@@ -2263,6 +2267,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             row["finished_at"] = None
             self.upload_progress_active_index = index
             self.start_upload_progress_timer()
+            if self._taskbar_progress and self.upload_progress_completed_count == 0:
+                total = self.upload_progress_total or 1
+                self._taskbar_progress.set_upload_progress(0, total)
         elif event in ("track_done", "track_skipped"):
             row["finished_at"] = time.monotonic()
             self.upload_progress_completed_count = min(
