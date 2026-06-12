@@ -4612,7 +4612,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def select_date(self, date_str):
         """Select a date from calendar"""
-        target = getattr(self, '_calendar_target_var', self.album_publish_date_var)
+        target = getattr(self, '_calendar_target_var', None) or self.album_publish_date_var
         target.set(date_str)
         self.cal_dialog.destroy()
 
@@ -4620,7 +4620,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Select today's date"""
         from datetime import datetime
         today = datetime.now().strftime("%Y-%m-%d")
-        target = getattr(self, '_calendar_target_var', self.album_publish_date_var)
+        target = getattr(self, '_calendar_target_var', None) or self.album_publish_date_var
         target.set(today)
         self.cal_dialog.destroy()
 
@@ -4700,7 +4700,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             self.show_release_date_calendar()
         finally:
-            self._calendar_target_var = None
+            try:
+                del self._calendar_target_var
+            except AttributeError:
+                pass
 
     def validate_price_change(self, proposed):
         if proposed == "":
