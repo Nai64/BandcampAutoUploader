@@ -193,6 +193,7 @@ class Config:
     filename_track_patterns: list = dataclasses.field(default_factory=list)  # Custom regex patterns for filename parsing
     detailed_progress_track_info: bool = False  # Show detailed track info in upload progress
     show_progress_timing_details: bool = False  # Show elapsed/ETA suffixes in per-track progress
+    language: str = "en"  # UI language (e.g. "en", "ru")
     # Notification triggers
     notify_on_upload_success: bool = True  # Notify when album upload succeeds
     notify_on_upload_error: bool = True  # Notify when album upload fails

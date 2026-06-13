@@ -108,36 +108,36 @@ class SettingsMixin:
         self.settings_tree.heading('#0', text='')
         
         # Populate tree with sections and sub-items
-        general_id = self.settings_tree.insert('', 'end', 'General', text='General')
-        self.settings_tree.insert(general_id, 'end', 'interface', text='Interface')
-        self.settings_tree.insert(general_id, 'end', 'metadata', text='Metadata')
-        self.settings_tree.insert(general_id, 'end', 'cover_art', text='Cover Art')
-        self.settings_tree.insert(general_id, 'end', 'description', text='Description')
-        self.settings_tree.insert(general_id, 'end', 'track_table', text='Track Table')
-        self.settings_tree.insert(general_id, 'end', 'files_sessions', text='Files & Sessions')
-        self.settings_tree.insert(general_id, 'end', 'startup_updates', text='Startup & Updates')
-        self.settings_tree.insert(general_id, 'end', 'context_menu', text='Context Menu')
-        self.settings_tree.insert(general_id, 'end', 'sort_methods', text='Sort Methods')
-        self.settings_tree.insert(general_id, 'end', 'auto_tagging', text='Auto Tagging')
+        general_id = self.settings_tree.insert('', 'end', 'General', text=self.tr('General'))
+        self.settings_tree.insert(general_id, 'end', 'interface', text=self.tr('Interface'))
+        self.settings_tree.insert(general_id, 'end', 'metadata', text=self.tr('Metadata'))
+        self.settings_tree.insert(general_id, 'end', 'cover_art', text=self.tr('Cover Art'))
+        self.settings_tree.insert(general_id, 'end', 'description', text=self.tr('Description'))
+        self.settings_tree.insert(general_id, 'end', 'track_table', text=self.tr('Track Table'))
+        self.settings_tree.insert(general_id, 'end', 'files_sessions', text=self.tr('Files & Sessions'))
+        self.settings_tree.insert(general_id, 'end', 'startup_updates', text=self.tr('Startup & Updates'))
+        self.settings_tree.insert(general_id, 'end', 'context_menu', text=self.tr('Context Menu'))
+        self.settings_tree.insert(general_id, 'end', 'sort_methods', text=self.tr('Sort Methods'))
+        self.settings_tree.insert(general_id, 'end', 'auto_tagging', text=self.tr('Auto Tagging'))
         
-        notifications_id = self.settings_tree.insert('', 'end', 'Notifications', text='Notifications')
-        self.settings_tree.insert(notifications_id, 'end', 'toasts', text='Toast Notifications')
-        self.settings_tree.insert(notifications_id, 'end', 'windows_notifications', text='Windows Notifications')
-        self.settings_tree.insert(notifications_id, 'end', 'notification_triggers', text='Notification Triggers')
+        notifications_id = self.settings_tree.insert('', 'end', 'Notifications', text=self.tr('Notifications'))
+        self.settings_tree.insert(notifications_id, 'end', 'toasts', text=self.tr('Toast Notifications'))
+        self.settings_tree.insert(notifications_id, 'end', 'windows_notifications', text=self.tr('Windows Notifications'))
+        self.settings_tree.insert(notifications_id, 'end', 'notification_triggers', text=self.tr('Notification Triggers'))
         
-        upload_id = self.settings_tree.insert('', 'end', 'Upload', text='Upload')
-        self.settings_tree.insert(upload_id, 'end', 'upload_settings', text='Upload Settings')
+        upload_id = self.settings_tree.insert('', 'end', 'Upload', text=self.tr('Upload'))
+        self.settings_tree.insert(upload_id, 'end', 'upload_settings', text=self.tr('Upload Settings'))
         
         # Interface with sub-items
-        interface_id = self.settings_tree.insert('', 'end', 'Interface', text='Interface')
-        self.settings_tree.insert(interface_id, 'end', 'columns', text='Track Table Columns')
-        self.settings_tree.insert(interface_id, 'end', 'logs', text='Logs')
+        interface_id = self.settings_tree.insert('', 'end', 'Interface', text=self.tr('Interface'))
+        self.settings_tree.insert(interface_id, 'end', 'columns', text=self.tr('Track Table Columns'))
+        self.settings_tree.insert(interface_id, 'end', 'logs', text=self.tr('Logs'))
 
         # Hotkeys (top-level section, customizable key bindings)
-        self.settings_tree.insert('', 'end', 'hotkeys', text='Hotkeys')
+        self.settings_tree.insert('', 'end', 'hotkeys', text=self.tr('Hotkeys'))
 
-        self.settings_tree.insert('', 'end', 'Advanced', text='Advanced')
-        self.settings_tree.insert('', 'end', 'About', text='About')
+        self.settings_tree.insert('', 'end', 'Advanced', text=self.tr('Advanced'))
+        self.settings_tree.insert('', 'end', 'About', text=self.tr('About'))
         
         # Bind selection event
         self.settings_tree.bind('<<TreeviewSelect>>', self.on_settings_tree_select)
@@ -299,24 +299,24 @@ class SettingsMixin:
     def build_settings_search_index(self):
         """Index preference rows so search can jump to the real setting."""
         section_trees = [
-            ("Interface", "interface", "interface_tree"),
-            ("Metadata", "metadata", "metadata_tree"),
-            ("Cover Art", "cover_art", "cover_art_tree"),
-            ("Description", "description", "description_tree"),
-            ("Track Table", "track_table", "track_table_tree"),
-            ("Files & Sessions", "files_sessions", "files_sessions_tree"),
-            ("Startup & Updates", "startup_updates", "startup_updates_tree"),
-            ("Context Menu", "context_menu", "context_menu_tree"),
-            ("Sort Methods", "sort_methods", "sort_method_tree"),
-            ("Auto Tagging", "auto_tagging", "auto_tagging_tree"),
-            ("Toast Notifications", "toasts", "toast_tree"),
-            ("Windows Notifications", "windows_notifications", "windows_notifications_tree"),
-            ("Notification Triggers", "notification_triggers", "notification_triggers_tree"),
-            ("Upload Settings", "upload_settings", "upload_tree"),
-            ("Track Table Columns", "columns", "column_tree"),
-            ("Logs", "logs", "logs_tree"),
-            ("Advanced", "Advanced", "advanced_tree"),
-            ("Hotkeys", "hotkeys", "hotkey_tree"),
+            (self.tr("Interface"), "interface", "interface_tree"),
+            (self.tr("Metadata"), "metadata", "metadata_tree"),
+            (self.tr("Cover Art"), "cover_art", "cover_art_tree"),
+            (self.tr("Description"), "description", "description_tree"),
+            (self.tr("Track Table"), "track_table", "track_table_tree"),
+            (self.tr("Files & Sessions"), "files_sessions", "files_sessions_tree"),
+            (self.tr("Startup & Updates"), "startup_updates", "startup_updates_tree"),
+            (self.tr("Context Menu"), "context_menu", "context_menu_tree"),
+            (self.tr("Sort Methods"), "sort_methods", "sort_method_tree"),
+            (self.tr("Auto Tagging"), "auto_tagging", "auto_tagging_tree"),
+            (self.tr("Toast Notifications"), "toasts", "toast_tree"),
+            (self.tr("Windows Notifications"), "windows_notifications", "windows_notifications_tree"),
+            (self.tr("Notification Triggers"), "notification_triggers", "notification_triggers_tree"),
+            (self.tr("Upload Settings"), "upload_settings", "upload_tree"),
+            (self.tr("Track Table Columns"), "columns", "column_tree"),
+            (self.tr("Logs"), "logs", "logs_tree"),
+            (self.tr("Advanced"), "Advanced", "advanced_tree"),
+            (self.tr("Hotkeys"), "hotkeys", "hotkey_tree"),
         ]
 
         self.settings_search_index = []
@@ -361,7 +361,7 @@ class SettingsMixin:
         ][:30]
 
         if not matches:
-            item_id = self.settings_search_results.insert('', 'end', text='No settings found')
+            item_id = self.settings_search_results.insert('', 'end', text=self.tr('No settings found'))
             self.settings_search_result_items[item_id] = None
             self.place_settings_search_results()
             return
@@ -489,8 +489,18 @@ class SettingsMixin:
                 var = tk.BooleanVar(value=False)
                 display_value = "☐"
             elif setting_type == "str":
-                var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
+                var = tk.StringVar(value=getattr(self.config, config_key, self.tr("Off")))
                 display_value = var.get()
+                if config_key == "language":
+                    display_value = self.tr("English") if var.get() == "en" else self.tr("Russian")
+                elif config_key == "description_auto_fill_mode":
+                    display_value = self.tr(var.get())
+            elif setting_type == "choice":
+                choices = setting_data[3]
+                current = getattr(self.config, config_key, choices[0])
+                var = tk.StringVar(value=current)
+                display_value = current
+                vars_dict[f"{config_key}_choices"] = choices
             elif setting_type == "color":
                 var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
                 display_value = var.get()
@@ -503,7 +513,7 @@ class SettingsMixin:
                 display_value = str(var.get())
             elif setting_type == "action":
                 var = None
-                display_value = "Remove..." if config_key == "remove_all_custom_templates" else "Preview..."
+                display_value = self.tr("Remove...") if config_key == "remove_all_custom_templates" else self.tr("Preview...")
             else:
                 var = None
                 display_value = ""
@@ -524,17 +534,19 @@ class SettingsMixin:
         self._std_settings_registry[id(tree)] = {
             "vars": vars_dict,
             "mapping": item_mapping,
+            "tree": tree,
         }
         tree.bind('<Button-1>', self._on_std_tree_click)
         tree.bind('<Double-Button-1>', self._on_std_tree_double_click)
 
     def create_interface_settings(self, parent):
         settings = [
-            ("Apply settings immediately", "apply_settings_immediately", "bool"),
-            ("Maximize app on open", "maximize_on_open", "bool"),
-            ("Disable tooltips", "disable_tooltips", "bool"),
-            ("Remove splash art", "remove_splash_art", "disabled_bool"),
-            ("Remember Last Opened Album", "remember_last_album", "bool"),
+            (self.tr("Language"), "language", "str"),
+            (self.tr("Apply settings immediately"), "apply_settings_immediately", "bool"),
+            (self.tr("Maximize app on open"), "maximize_on_open", "bool"),
+            (self.tr("Disable tooltips"), "disable_tooltips", "bool"),
+            (self.tr("Remove splash art"), "remove_splash_art", "disabled_bool"),
+            (self.tr("Remember Last Opened Album"), "remember_last_album", "bool"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.interface_tree = tree
@@ -544,18 +556,18 @@ class SettingsMixin:
 
     def create_metadata_settings(self, parent):
         settings = [
-            ("Auto load metadata for album details", "auto_load_metadata", "bool"),
-            ("Use Album Artist metadata for Artist in Album details", "use_album_artist_in_album_details", "bool"),
-            ("Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
-            ("Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
-            ("Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
-            ("Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
-            ("Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
-            ("Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
-            ("Ignore all metadata", "ignore_all_metadata", "bool"),
-            ("Use filename as track title", "use_filename_as_title", "bool"),
-            ("Ignore artist name from metadata", "ignore_artist_name", "bool"),
-            ("Remove splash art", "remove_splash_art", "disabled_bool"),
+            (self.tr("Auto load metadata for album details"), "auto_load_metadata", "bool"),
+            (self.tr("Use Album Artist metadata for Artist in Album details"), "use_album_artist_in_album_details", "bool"),
+            (self.tr("Guess album title from track metadata"), "guess_album_title_from_track_metadata", "bool"),
+            (self.tr("Guess release date from track metadata"), "guess_release_date_from_track_metadata", "bool"),
+            (self.tr("Folder name if album tag missing"), "use_folder_name_when_album_missing", "bool"),
+            (self.tr("Extract track cover if cover missing"), "extract_track_cover_if_missing", "bool"),
+            (self.tr("Smart-randomize on album load"), "smart_randomize_on_album_load", "bool"),
+            (self.tr("Auto guess case tracks on album load"), "auto_guess_case_on_album_load", "bool"),
+            (self.tr("Ignore all metadata"), "ignore_all_metadata", "bool"),
+            (self.tr("Use filename as track title"), "use_filename_as_title", "bool"),
+            (self.tr("Ignore artist name from metadata"), "ignore_artist_name", "bool"),
+            (self.tr("Remove splash art"), "remove_splash_art", "disabled_bool"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.metadata_tree = tree
@@ -565,9 +577,9 @@ class SettingsMixin:
 
     def create_cover_art_settings(self, parent):
         settings = [
-            ("Always auto-scale cover art", "always_auto_scale_cover", "bool"),
-            ("Cover scaling method", "cover_scaling_method", "str"),
-            ("Cover fit mode", "cover_fit_mode", "str"),
+            (self.tr("Always auto-scale cover art"), "always_auto_scale_cover", "bool"),
+            (self.tr("Cover scaling method"), "cover_scaling_method", "str"),
+            (self.tr("Cover fit mode"), "cover_fit_mode", "str"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.cover_art_tree = tree
@@ -577,10 +589,10 @@ class SettingsMixin:
 
     def create_description_settings(self, parent):
         settings = [
-            ("Description auto-fill", "description_auto_fill_mode", "str"),
-            ("Preview Description", "preview_description", "action"),
-            ("Create description on upload", "description_auto_fill_on_upload", "bool"),
-            ("Remove All Custom Templates", "remove_all_custom_templates", "action"),
+            (self.tr("Description auto-fill"), "description_auto_fill_mode", "str"),
+            (self.tr("Preview Description"), "preview_description", "action"),
+            (self.tr("Create description on upload"), "description_auto_fill_on_upload", "bool"),
+            (self.tr("Remove All Custom Templates"), "remove_all_custom_templates", "action"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.description_tree = tree
@@ -590,12 +602,12 @@ class SettingsMixin:
 
     def create_track_table_settings(self, parent):
         settings = [
-            ("Auto Fit Columns", "auto_fit_columns", "bool"),
-            ("Lock Column Sizes", "lock_column_sizes", "bool"),
-            ("Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
-            ("Locked Track Highlight Color", "locked_track_highlight_color", "color"),
-            ("Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
-            ("Show Total Album Duration", "show_total_album_duration", "bool"),
+            (self.tr("Auto Fit Columns"), "auto_fit_columns", "bool"),
+            (self.tr("Lock Column Sizes"), "lock_column_sizes", "bool"),
+            (self.tr("Highlight Search Matches (hide non-matches instead)"), "highlight_search_matches", "bool"),
+            (self.tr("Locked Track Highlight Color"), "locked_track_highlight_color", "color"),
+            (self.tr("Highlight Corrupted Tracks"), "highlight_corrupted_tracks", "bool"),
+            (self.tr("Show Total Album Duration"), "show_total_album_duration", "bool"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.track_table_tree = tree
@@ -605,10 +617,10 @@ class SettingsMixin:
 
     def create_files_sessions_settings(self, parent):
         settings = [
-            ("Create session.txt files (Recommended)", "create_album_session_files", "bool"),
-            ("Clear progress on album change", "clear_progress_on_album_change", "bool"),
-            ("Limit Log Files", "log_file_limit", "int", 1, 99),
-            ("File Size Unit", "file_size_unit", "str"),
+            (self.tr("Create session.txt files (Recommended)"), "create_album_session_files", "bool"),
+            (self.tr("Clear progress on album change"), "clear_progress_on_album_change", "bool"),
+            (self.tr("Limit Log Files"), "log_file_limit", "int", 1, 99),
+            (self.tr("File Size Unit"), "file_size_unit", "str"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.files_sessions_tree = tree
@@ -618,9 +630,9 @@ class SettingsMixin:
 
     def create_startup_updates_settings(self, parent):
         settings = [
-            ("Auto load cookies on startup", "auto_load_cookies", "bool"),
-            ("Check for updates on startup", "check_for_updates", "bool"),
-            ("Check for updates now", "check_updates_now", "action"),
+            (self.tr("Auto load cookies on startup"), "auto_load_cookies", "bool"),
+            (self.tr("Check for updates on startup"), "check_for_updates", "bool"),
+            (self.tr("Check for updates now"), "check_updates_now", "action"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.startup_updates_tree = tree
@@ -633,34 +645,34 @@ class SettingsMixin:
         """Create Context Menu settings section using Treeview"""
         # Context menu settings treeview
         settings = [
-            ("Show Context Menu Icons", "show_context_menu_icons", "bool"),
-            ("Remove Dividers", "context_menu_remove_dividers", "bool"),
-            ("Play", "context_menu_play", "bool"),
-            ("Remove Track", "context_menu_remove_track", "bool"),
-            ("Move Up", "context_menu_move_up", "bool"),
-            ("Move Down", "context_menu_move_down", "bool"),
-            ("Move to Top", "context_menu_move_to_top", "bool"),
-            ("Move to Bottom", "context_menu_move_to_bottom", "bool"),
-            ("Open File Location", "context_menu_open_file", "bool"),
-            ("Replace File", "context_menu_replace_file", "bool"),
-            ("Extract Cover Art", "context_menu_extract_cover_art", "bool"),
-            ("Extract Tracklist", "context_menu_extract_tracklist", "bool"),
-            ("Open session.txt", "context_menu_open_session", "bool"),
-            ("Set Track Cover as Album Cover", "context_menu_set_track_cover_as_album_cover", "bool"),
-            ("Undo", "context_menu_undo", "bool"),
-            ("Redo", "context_menu_redo", "bool"),
-            ("Extract Track Information", "context_menu_extract_track_info", "bool"),
-            ("Copy Metadata", "context_menu_copy_metadata", "bool"),
-            ("Paste Metadata", "context_menu_paste_metadata", "bool"),
-            ("Revert to Original", "context_menu_revert_to_original", "bool"),
-            ("Lock/Unlock", "context_menu_lock_unlock", "bool"),
-            ("Randomize", "context_menu_randomize", "bool"),
-            ("Smart Randomize", "context_menu_smart_randomize", "bool"),
-            ("Sort By", "context_menu_sort_by", "bool"),
-            ("Clear Metadata", "context_menu_clear_metadata", "bool"),
-            ("Clear All Metadata", "context_menu_clear_all_metadata", "bool"),
-            ("Clear All Tracks", "context_menu_clear_all", "bool"),
-            ("Upload as Single", "context_menu_upload_as_single", "bool"),
+            (self.tr("Show Context Menu Icons"), "show_context_menu_icons", "bool"),
+            (self.tr("Remove Dividers"), "context_menu_remove_dividers", "bool"),
+            (self.tr("Play"), "context_menu_play", "bool"),
+            (self.tr("Remove Track"), "context_menu_remove_track", "bool"),
+            (self.tr("Move Up"), "context_menu_move_up", "bool"),
+            (self.tr("Move Down"), "context_menu_move_down", "bool"),
+            (self.tr("Move to Top"), "context_menu_move_to_top", "bool"),
+            (self.tr("Move to Bottom"), "context_menu_move_to_bottom", "bool"),
+            (self.tr("Open File Location"), "context_menu_open_file", "bool"),
+            (self.tr("Replace File"), "context_menu_replace_file", "bool"),
+            (self.tr("Extract Cover Art"), "context_menu_extract_cover_art", "bool"),
+            (self.tr("Extract Tracklist"), "context_menu_extract_tracklist", "bool"),
+            (self.tr("Open session.txt"), "context_menu_open_session", "bool"),
+            (self.tr("Set Track Cover as Album Cover"), "context_menu_set_track_cover_as_album_cover", "bool"),
+            (self.tr("Undo"), "context_menu_undo", "bool"),
+            (self.tr("Redo"), "context_menu_redo", "bool"),
+            (self.tr("Extract Track Information"), "context_menu_extract_track_info", "bool"),
+            (self.tr("Copy Metadata"), "context_menu_copy_metadata", "bool"),
+            (self.tr("Paste Metadata"), "context_menu_paste_metadata", "bool"),
+            (self.tr("Revert to Original"), "context_menu_revert_to_original", "bool"),
+            (self.tr("Lock/Unlock"), "context_menu_lock_unlock", "bool"),
+            (self.tr("Randomize"), "context_menu_randomize", "bool"),
+            (self.tr("Smart Randomize"), "context_menu_smart_randomize", "bool"),
+            (self.tr("Sort By"), "context_menu_sort_by", "bool"),
+            (self.tr("Clear Metadata"), "context_menu_clear_metadata", "bool"),
+            (self.tr("Clear All Metadata"), "context_menu_clear_all_metadata", "bool"),
+            (self.tr("Clear All Tracks"), "context_menu_clear_all", "bool"),
+            (self.tr("Upload as Single"), "context_menu_upload_as_single", "bool"),
         ]
 
         # Create treeview for context menu settings (no headings)
@@ -765,7 +777,7 @@ class SettingsMixin:
             display_value = "☑" if var.get() else "☐"
 
             self.sort_method_vars[config_key] = var
-            item_id = self.sort_method_tree.insert('', 'end', values=(setting_name, display_value))
+            item_id = self.sort_method_tree.insert('', 'end', values=(self.tr(setting_name), display_value))
             self.sort_method_item_mapping[item_id] = config_key
 
         self.sort_method_tree.bind('<Double-Button-1>', self.on_sort_method_tree_double_click)
@@ -800,22 +812,22 @@ class SettingsMixin:
         """Create Toast Notifications settings section using Treeview"""
         # Toast settings treeview
         settings = [
-            ("Enable Toast Notifications", "enable_toasts", "bool"),
-            ("Toast Duration (s)", "toast_duration", "int"),
-            ("Toast Position", "toast_position", "str"),
-            ("Test Toast Notification", "test_toast_notification", "action"),
-            ("Enable Fade Out Effect", "toast_fade_out", "bool"),
-            ("Enable Animations (slide/fade)", "toast_animations_enabled", "bool"),
-            ("Font Family", "toast_font_family", "str"),
-            ("Font Size", "toast_font_size", "int"),
-            ("Font Bold", "toast_font_bold", "bool"),
-            ("Text Color", "toast_text_color", "color"),
-            ("Background Color", "toast_bg_color", "color"),
-            ("Border Color", "toast_border_color", "color"),
-            ("Success Color", "toast_success_color", "color"),
-            ("Error Color", "toast_error_color", "color"),
-            ("Warning Color", "toast_warning_color", "color"),
-            ("Info Color", "toast_info_color", "color")
+            (self.tr("Enable Toast Notifications"), "enable_toasts", "bool"),
+            (self.tr("Toast Duration (s)"), "toast_duration", "int"),
+            (self.tr("Toast Position"), "toast_position", "str"),
+            (self.tr("Test Toast Notification"), "test_toast_notification", "action"),
+            (self.tr("Enable Fade Out Effect"), "toast_fade_out", "bool"),
+            (self.tr("Enable Animations (slide/fade)"), "toast_animations_enabled", "bool"),
+            (self.tr("Font Family"), "toast_font_family", "str"),
+            (self.tr("Font Size"), "toast_font_size", "int"),
+            (self.tr("Font Bold"), "toast_font_bold", "bool"),
+            (self.tr("Text Color"), "toast_text_color", "color"),
+            (self.tr("Background Color"), "toast_bg_color", "color"),
+            (self.tr("Border Color"), "toast_border_color", "color"),
+            (self.tr("Success Color"), "toast_success_color", "color"),
+            (self.tr("Error Color"), "toast_error_color", "color"),
+            (self.tr("Warning Color"), "toast_warning_color", "color"),
+            (self.tr("Info Color"), "toast_info_color", "color")
         ]
         
         # Create treeview for toast settings (no headings)
@@ -852,8 +864,8 @@ class SettingsMixin:
                 var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
                 display_value = var.get()
             elif setting_type == "action":
-                var = tk.StringVar(value="Test")
-                display_value = "Test"
+                var = tk.StringVar(value=self.tr("Test"))
+                display_value = self.tr("Test")
             
             self.toast_vars[config_key] = var
             self.toast_vars[f"{config_key}_type"] = setting_type
@@ -896,7 +908,7 @@ class SettingsMixin:
         elif setting_type == "str":
             # Inline dropdown for position and font family
             if config_key == "toast_position":
-                positions = ['top-right', 'top-left', 'bottom-right', 'bottom-left']
+                positions = [self.tr('top-right'), self.tr('top-left'), self.tr('bottom-right'), self.tr('bottom-left')]
                 self.edit_treeview_cell_dropdown(self.toast_tree, item_id, 'value',
                                                 positions, self.toast_vars[config_key].get(),
                                                 lambda v: self.apply_toast_str_setting(config_key, v))
@@ -911,7 +923,7 @@ class SettingsMixin:
                                        lambda v: self.apply_toast_str_setting(config_key, v))
         elif setting_type == "color":
             # Color picker
-            color = colorchooser.askcolor(title=f"Choose {config_key} color",
+            color = colorchooser.askcolor(title=self.tr("Choose {} color").format(config_key),
                                         initialcolor=self.toast_vars[config_key].get())
             if color[1]:
                 self.toast_vars[config_key].set(color[1])
@@ -961,8 +973,8 @@ class SettingsMixin:
         """Create Windows Notifications settings section using Treeview"""
         # Windows notifications settings treeview
         settings = [
-            ("Enable Windows Notifications", "windows_notifications", "bool"),
-            ("Test Notification", "test_notification", "action")
+            (self.tr("Enable Windows Notifications"), "windows_notifications", "bool"),
+            (self.tr("Test Notification"), "test_notification", "action")
         ]
         
         # Create treeview for windows notifications settings (no headings)
@@ -990,8 +1002,8 @@ class SettingsMixin:
                 var = tk.BooleanVar(value=getattr(self.config, config_key, False))
                 display_value = "☑" if var.get() else "☐"
             elif setting_type == "action":
-                var = tk.StringVar(value="Test")
-                display_value = "Test"
+                var = tk.StringVar(value=self.tr("Test"))
+                display_value = self.tr("Test")
             
             self.windows_notifications_vars[config_key] = var
             self.windows_notifications_vars[f"{config_key}_type"] = setting_type
@@ -1038,7 +1050,7 @@ class SettingsMixin:
         # Prevent enabling if library is not available
         if new_value and not self.windows_toasts_available:
             self.windows_notifications_vars['windows_notifications'].set(False)
-            messagebox.showerror("Error", "windows-toasts package is not installed. Please install it with: pip install windows-toasts")
+            messagebox.showerror(self.tr("Error"), self.tr("windows-toasts package is not installed. Please install it with: pip install windows-toasts"))
             return
         
         self.config.windows_notifications = new_value
@@ -1047,25 +1059,25 @@ class SettingsMixin:
     def test_toast_notification(self):
         """Test toast notification by sending a test notification"""
         # Force show the test notification regardless of trigger settings
-        self.toast_queue.put(("This is a test toast notification", 3000, "info"))
+        self.toast_queue.put((self.tr("This is a test toast notification"), 3000, "info"))
     
     def create_notification_triggers_settings(self, parent):
         """Create Notification Triggers settings section using Treeview"""
         # Notification trigger settings treeview
         settings = [
-            ("Notify on Upload Success", "notify_on_upload_success", "bool"),
-            ("Notify on Upload Error", "notify_on_upload_error", "bool"),
-            ("Notify on Track Error", "notify_on_track_error", "bool"),
-            ("Notify on Conversion Complete", "notify_on_conversion_complete", "bool"),
-            ("Notify on Metadata Load", "notify_on_metadata_load", "bool"),
-            ("Notify on File Add", "notify_on_file_add", "bool"),
-            ("Notify on Track Add", "notify_on_track_add", "bool"),
-            ("Notify on Track Remove", "notify_on_track_remove", "bool"),
-            ("Notify on Cover Load", "notify_on_cover_load", "bool"),
-            ("Notify on Album Save", "notify_on_album_save", "bool"),
-            ("Notify on Settings Save", "notify_on_settings_save", "bool"),
-            ("Notify on Artists Load", "notify_on_artists_load", "bool"),
-            ("Notify on Template Save", "notify_on_template_save", "bool")
+            (self.tr("Notify on Upload Success"), "notify_on_upload_success", "bool"),
+            (self.tr("Notify on Upload Error"), "notify_on_upload_error", "bool"),
+            (self.tr("Notify on Track Error"), "notify_on_track_error", "bool"),
+            (self.tr("Notify on Conversion Complete"), "notify_on_conversion_complete", "bool"),
+            (self.tr("Notify on Metadata Load"), "notify_on_metadata_load", "bool"),
+            (self.tr("Notify on File Add"), "notify_on_file_add", "bool"),
+            (self.tr("Notify on Track Add"), "notify_on_track_add", "bool"),
+            (self.tr("Notify on Track Remove"), "notify_on_track_remove", "bool"),
+            (self.tr("Notify on Cover Load"), "notify_on_cover_load", "bool"),
+            (self.tr("Notify on Album Save"), "notify_on_album_save", "bool"),
+            (self.tr("Notify on Settings Save"), "notify_on_settings_save", "bool"),
+            (self.tr("Notify on Artists Load"), "notify_on_artists_load", "bool"),
+            (self.tr("Notify on Template Save"), "notify_on_template_save", "bool")
         ]
         
         # Create treeview for notification trigger settings (no headings)
@@ -1143,40 +1155,37 @@ class SettingsMixin:
         """Create combined Notifications settings section that includes all sub-sections"""
         # Combined settings from all notification sub-sections
         settings = [
-            # Toast Notifications settings
-            ("Toast: Enable Toast Notifications", "enable_toasts", "bool"),
-            ("Toast: Toast Duration (s)", "toast_duration", "int"),
-            ("Toast: Toast Position", "toast_position", "str"),
-            ("Toast: Test Toast Notification", "test_toast_notification", "action"),
-            ("Toast: Enable Fade Out Effect", "toast_fade_out", "bool"),
-            ("Toast: Enable Animations (slide/fade)", "toast_animations_enabled", "bool"),
-            ("Toast: Font Family", "toast_font_family", "str"),
-            ("Toast: Font Size", "toast_font_size", "int"),
-            ("Toast: Font Bold", "toast_font_bold", "bool"),
-            ("Toast: Text Color", "toast_text_color", "color"),
-            ("Toast: Background Color", "toast_bg_color", "color"),
-            ("Toast: Border Color", "toast_border_color", "color"),
-            ("Toast: Success Color", "toast_success_color", "color"),
-            ("Toast: Error Color", "toast_error_color", "color"),
-            ("Toast: Warning Color", "toast_warning_color", "color"),
-            ("Toast: Info Color", "toast_info_color", "color"),
-            # Windows Notifications settings
-            ("Windows: Enable Windows Notifications", "windows_notifications", "bool"),
-            ("Windows: Test Notification", "test_notification", "action"),
-            # Notification Triggers settings
-            ("Trigger: Notify on Upload Success", "notify_on_upload_success", "bool"),
-            ("Trigger: Notify on Upload Error", "notify_on_upload_error", "bool"),
-            ("Trigger: Notify on Track Error", "notify_on_track_error", "bool"),
-            ("Trigger: Notify on Conversion Complete", "notify_on_conversion_complete", "bool"),
-            ("Trigger: Notify on Metadata Load", "notify_on_metadata_load", "bool"),
-            ("Trigger: Notify on File Add", "notify_on_file_add", "bool"),
-            ("Trigger: Notify on Track Add", "notify_on_track_add", "bool"),
-            ("Trigger: Notify on Track Remove", "notify_on_track_remove", "bool"),
-            ("Trigger: Notify on Cover Load", "notify_on_cover_load", "bool"),
-            ("Trigger: Notify on Album Save", "notify_on_album_save", "bool"),
-            ("Trigger: Notify on Settings Save", "notify_on_settings_save", "bool"),
-            ("Trigger: Notify on Artists Load", "notify_on_artists_load", "bool"),
-            ("Trigger: Notify on Template Save", "notify_on_template_save", "bool")
+            (self.tr("Toast: Enable Toast Notifications"), "enable_toasts", "bool"),
+            (self.tr("Toast: Toast Duration (s)"), "toast_duration", "int"),
+            (self.tr("Toast: Toast Position"), "toast_position", "str"),
+            (self.tr("Toast: Test Toast Notification"), "test_toast_notification", "action"),
+            (self.tr("Toast: Enable Fade Out Effect"), "toast_fade_out", "bool"),
+            (self.tr("Toast: Enable Animations (slide/fade)"), "toast_animations_enabled", "bool"),
+            (self.tr("Toast: Font Family"), "toast_font_family", "str"),
+            (self.tr("Toast: Font Size"), "toast_font_size", "int"),
+            (self.tr("Toast: Font Bold"), "toast_font_bold", "bool"),
+            (self.tr("Toast: Text Color"), "toast_text_color", "color"),
+            (self.tr("Toast: Background Color"), "toast_bg_color", "color"),
+            (self.tr("Toast: Border Color"), "toast_border_color", "color"),
+            (self.tr("Toast: Success Color"), "toast_success_color", "color"),
+            (self.tr("Toast: Error Color"), "toast_error_color", "color"),
+            (self.tr("Toast: Warning Color"), "toast_warning_color", "color"),
+            (self.tr("Toast: Info Color"), "toast_info_color", "color"),
+            (self.tr("Windows: Enable Windows Notifications"), "windows_notifications", "bool"),
+            (self.tr("Windows: Test Notification"), "test_notification", "action"),
+            (self.tr("Trigger: Notify on Upload Success"), "notify_on_upload_success", "bool"),
+            (self.tr("Trigger: Notify on Upload Error"), "notify_on_upload_error", "bool"),
+            (self.tr("Trigger: Notify on Track Error"), "notify_on_track_error", "bool"),
+            (self.tr("Trigger: Notify on Conversion Complete"), "notify_on_conversion_complete", "bool"),
+            (self.tr("Trigger: Notify on Metadata Load"), "notify_on_metadata_load", "bool"),
+            (self.tr("Trigger: Notify on File Add"), "notify_on_file_add", "bool"),
+            (self.tr("Trigger: Notify on Track Add"), "notify_on_track_add", "bool"),
+            (self.tr("Trigger: Notify on Track Remove"), "notify_on_track_remove", "bool"),
+            (self.tr("Trigger: Notify on Cover Load"), "notify_on_cover_load", "bool"),
+            (self.tr("Trigger: Notify on Album Save"), "notify_on_album_save", "bool"),
+            (self.tr("Trigger: Notify on Settings Save"), "notify_on_settings_save", "bool"),
+            (self.tr("Trigger: Notify on Artists Load"), "notify_on_artists_load", "bool"),
+            (self.tr("Trigger: Notify on Template Save"), "notify_on_template_save", "bool")
         ]
         
         # Create treeview for combined notifications settings (no headings)
@@ -1213,8 +1222,8 @@ class SettingsMixin:
                 var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
                 display_value = var.get()
             elif setting_type == "action":
-                var = tk.StringVar(value="Test")
-                display_value = "Test"
+                var = tk.StringVar(value=self.tr("Test"))
+                display_value = self.tr("Test")
             
             self.notifications_combined_vars[config_key] = var
             self.notifications_combined_vars[f"{config_key}_type"] = setting_type
@@ -1281,7 +1290,7 @@ class SettingsMixin:
         # Prevent enabling if library is not available
         if new_value and not self.windows_toasts_available:
             self.notifications_combined_vars['windows_notifications'].set(False)
-            messagebox.showerror("Error", "windows-toasts package is not installed. Please install it with: pip install windows-toasts")
+            messagebox.showerror(self.tr("Error"), self.tr("windows-toasts package is not installed. Please install it with: pip install windows-toasts"))
             return
         
         self.config.windows_notifications = new_value
@@ -1303,11 +1312,11 @@ class SettingsMixin:
     def test_windows_notification(self):
         """Test Windows notification by sending a test notification"""
         if sys.platform != "win32":
-            messagebox.showinfo("Test Notification", "Windows notifications are only available on Windows.")
+            messagebox.showinfo(self.tr("Test Notification"), self.tr("Windows notifications are only available on Windows."))
             return
 
         if not self.windows_toasts_available:
-            messagebox.showerror("Test Failed", "windows-toasts package is not installed. Please install it with: pip install windows-toasts")
+            messagebox.showerror(self.tr("Test Failed"), self.tr("windows-toasts package is not installed. Please install it with: pip install windows-toasts"))
             return
         
         try:
@@ -1318,9 +1327,9 @@ class SettingsMixin:
             newToast.text_fields = ["This is a test notification to verify Windows notifications are working correctly."]
             
             toaster.show_toast(newToast)
-            self.show_toast("Test notification sent", 2000, "success")
+            self.show_toast(self.tr("Test notification sent"), 2000, "success")
         except Exception as e:
-            messagebox.showerror("Test Failed", f"Failed to send test notification:\n{e}")
+            messagebox.showerror(self.tr("Test Failed"), self.tr("Failed to send test notification:") + f"\n{e}")
 
     def _on_std_tree_click(self, event):
         """Generic single-click handler for all standard settings pages."""
@@ -1449,11 +1458,19 @@ class SettingsMixin:
                 self.open_description_autofill_dialog(tree, item_id, 'value',
                     vars_dict[config_key].get(),
                     lambda v: self._apply_std_str_setting(config_key, v))
+            elif config_key == "language":
+                languages = [self.tr("English"), self.tr("Russian")]
+                self.edit_treeview_cell_dropdown(
+                    tree, item_id, 'value',
+                    languages,
+                    self.tr("English") if getattr(self.config, 'language', 'en') == 'en' else self.tr("Russian"),
+                    lambda v: self._apply_language_setting(v),
+                )
             elif config_key in ("cover_scaling_method", "cover_fit_mode", "file_size_unit"):
                 options = {
-                    "cover_scaling_method": SCALING_METHOD_OPTIONS,
-                    "cover_fit_mode": ["Crop (fill)", "Fit (contain)", "Stretch"],
-                    "file_size_unit": ["Auto", "MB", "GB", "KB", "Bytes"],
+                    "cover_scaling_method": [self.tr(m) for m in SCALING_METHOD_OPTIONS],
+                    "cover_fit_mode": [self.tr("Crop (fill)"), self.tr("Fit (contain)"), self.tr("Stretch")],
+                    "file_size_unit": [self.tr("Auto"), self.tr("MB"), self.tr("GB"), self.tr("KB"), self.tr("Bytes")],
                 }
                 self.edit_treeview_cell_dropdown(
                     tree, item_id, 'value',
@@ -1500,11 +1517,11 @@ class SettingsMixin:
         """Apply a string/dropdown setting from any standard settings page."""
         if config_key == "description_auto_fill_mode" and new_value not in DESCRIPTION_AUTO_FILL_MODES:
             return False
-        if config_key == "cover_scaling_method" and new_value not in SCALING_METHOD_OPTIONS:
+        if config_key == "cover_scaling_method" and new_value not in [self.tr(m) for m in SCALING_METHOD_OPTIONS]:
             return False
-        if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
+        if config_key == "cover_fit_mode" and new_value not in (self.tr("Crop (fill)"), self.tr("Fit (contain)"), self.tr("Stretch")):
             return False
-        if config_key == "file_size_unit" and new_value not in ("Auto", "MB", "GB", "KB", "Bytes"):
+        if config_key == "file_size_unit" and new_value not in (self.tr("Auto"), self.tr("MB"), self.tr("GB"), self.tr("KB"), self.tr("Bytes")):
             return False
 
         # Find the right vars dict from any registered section
@@ -1521,8 +1538,56 @@ class SettingsMixin:
             self.refresh_file_size_display()
         save_config(self.config)
         if config_key == "description_auto_fill_mode" and getattr(self.config, 'notify_on_template_save', False):
-            self.show_toast(f"Description template set to: {new_value}", 1800, "success", trigger="template_save")
+            self.show_toast(self.tr("Description template set to: {}").format(new_value), 1800, "success", trigger="template_save")
         return True
+
+    def _apply_language_setting(self, display_name):
+        """Map display name to language code and apply."""
+        from tkinter import messagebox
+        lang_map = {self.tr("English"): "en", self.tr("Russian"): "ru"}
+        old_code = getattr(self.config, "language", "en")
+        lang_code = lang_map.get(display_name, "en")
+        if lang_code == old_code:
+            return True
+        setattr(self.config, "language", lang_code)
+        save_config(self.config)
+
+        if not messagebox.askyesno(
+            self.tr("Change Language"),
+            self.tr("Changing the language will restart the application.\nContinue?"),
+            icon='question'
+        ):
+            setattr(self.config, "language", old_code)
+            save_config(self.config)
+            for info in getattr(self, '_std_settings_registry', {}).values():
+                if "language" in info["vars"]:
+                    old_display = self.tr("English") if old_code == "en" else self.tr("Russian")
+                    for item_id, key in info["mapping"].items():
+                        if key == "language":
+                            info["tree"].set(item_id, 'value', old_display)
+                            break
+                    break
+            return True
+
+        self.root.after_idle(self._restart_app)
+        return True
+
+    def _restart_app(self):
+        """Restart the application."""
+        import sys
+        save_config(self.config)
+        python = sys.executable
+        args = [python] + sys.argv
+        try:
+            if sys.platform == "win32":
+                import subprocess
+                subprocess.Popen(args, creationflags=subprocess.DETACHED_PROCESS)
+            else:
+                import os
+                os.spawnv(os.P_NOWAIT, python, args)
+        except Exception:
+            pass
+        self.root.destroy()
 
     def center_dialog(self, dialog, width=None, height=None, parent=None):
         """Center a dialog over its parent window, falling back to the screen."""
@@ -1556,10 +1621,10 @@ class SettingsMixin:
     def _remove_all_custom_templates(self):
         """Remove all custom description templates and built-in overrides."""
         if not messagebox.askyesno(
-            "Remove All Custom Templates",
-            "This will permanently delete all custom description templates\n"
+            self.tr("Remove All Custom Templates"),
+            self.tr("This will permanently delete all custom description templates\n"
             "and reset any built-in template overrides.\n\n"
-            "This action cannot be undone. Continue?",
+            "This action cannot be undone. Continue?"),
             icon='warning'
         ):
             return
@@ -1570,7 +1635,7 @@ class SettingsMixin:
         if self.config.description_templates:
             self.config.description_templates.clear()
             save_config(self.config)
-        self.show_toast(f"Removed {count} custom template{'s' if count != 1 else ''}", 2000, "success")
+        self.show_toast(self.tr("Removed {} custom template(s)").format(count), 2000, "success")
 
     def open_description_preview_dialog(self):
         """Preview the description generated by the selected template."""
@@ -1579,13 +1644,13 @@ class SettingsMixin:
         mode = getattr(self.config, 'description_auto_fill_mode', "Off")
         if not description:
             if mode == "Off":
-                description = "Description auto-fill is Off."
+                description = self.tr("Description auto-fill is Off.")
             else:
-                description = "No description could be generated from the current album preview."
+                description = self.tr("No description could be generated from the current album preview.")
 
         parent = self.get_preferences_dialog_parent()
         dialog = tk.Toplevel(parent)
-        dialog.title("Preview Description")
+        dialog.title(self.tr("Preview Description"))
         dialog.transient(parent)
         dialog.withdraw()
         dialog.resizable(True, True)
@@ -1623,16 +1688,16 @@ class SettingsMixin:
 
         def use_description():
             self.set_album_description_text(generated_description)
-            self.show_toast("Description applied", 1800, "success")
+            self.show_toast(self.tr("Description applied"), 1800, "success")
             close_preview()
 
         ttk.Button(
             button_frame,
-            text="Use Description",
+            text=self.tr("Use Description"),
             command=use_description,
             state=tk.NORMAL if generated_description else tk.DISABLED
         ).pack(side=tk.RIGHT, padx=(5, 0))
-        ttk.Button(button_frame, text="Close", command=close_preview).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text=self.tr("Close"), command=close_preview).pack(side=tk.RIGHT)
 
         self.center_dialog(dialog, 640, 460, parent)
         dialog.deiconify()
@@ -1674,21 +1739,21 @@ class SettingsMixin:
         if splash_label is not None:
             splash_label.pack(pady=(0, 10))
 
-        ttk.Label(container, text="Bandcamp Auto Uploader",
+        ttk.Label(container, text=self.tr("Bandcamp Auto Uploader"),
                   font=("Segoe UI", 16, "bold")).pack()
 
-        ttk.Label(container, text=f"Version {__version__}",
+        ttk.Label(container, text=self.tr("Version:") + f" {__version__}",
                   font=("Segoe UI", 10)).pack(pady=(5, 15))
 
-        ttk.Button(container, text="GitHub Repository",
+        ttk.Button(container, text=self.tr("GitHub Repository"),
                    command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"),
                    width=25).pack(pady=3)
-        ttk.Button(container, text="Original Project (7x11x13)",
+        ttk.Button(container, text=self.tr("Original Project (7x11x13)"),
                    command=lambda: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"),
                    width=25).pack(pady=3)
 
-        ttk.Label(container, text="Based on bandcamp-auto-uploader by 7x11x13\n"
-                                  "GUI fork and enhancements by Nai64",
+        ttk.Label(container, text=self.tr("Based on bandcamp-auto-uploader by 7x11x13\n"
+                                          "GUI fork and enhancements by Nai64"),
                   font=("Segoe UI", 8), justify=tk.CENTER,
                   foreground="gray").pack(pady=(15, 5))
 
@@ -1792,25 +1857,25 @@ class SettingsMixin:
         """Create Track Table Columns settings section using Treeview"""
         # Column visibility settings
         columns = [
-            ("Track No.", "show_track_no", "bool"),
-            ("Artist", "show_artist", "bool"),
-            ("Track Name", "show_track_name", "bool"),
-            ("Comment", "show_comment", "bool"),
-            ("Length", "show_length", "bool"),
-            ("Extension", "show_extension", "bool"),
-            ("Price", "show_price", "bool"),
-            ("NYP", "show_nyp", "bool"),
-            ("Year", "show_year", "bool"),
-            ("Genre", "show_genre", "bool"),
-            ("Bitrate", "show_bitrate", "bool"),
-            ("File Size", "show_file_size", "bool"),
-            ("Sample Rate", "show_sample_rate", "bool"),
-            ("Channels", "show_channels", "bool"),
-            ("Bit Depth", "show_bit_depth", "bool"),
-            ("Album Metadata", "show_album_metadata", "bool"),
-            ("Album Artist Metadata", "show_album_artist_metadata", "bool"),
-            ("Composer", "show_composer", "bool"),
-            ("ISRC", "show_isrc", "bool")
+            (self.tr("Track No."), "show_track_no", "bool"),
+            (self.tr("Artist"), "show_artist", "bool"),
+            (self.tr("Track Name"), "show_track_name", "bool"),
+            (self.tr("Comment"), "show_comment", "bool"),
+            (self.tr("Length"), "show_length", "bool"),
+            (self.tr("Extension"), "show_extension", "bool"),
+            (self.tr("Price"), "show_price", "bool"),
+            (self.tr("NYP"), "show_nyp", "bool"),
+            (self.tr("Year"), "show_year", "bool"),
+            (self.tr("Genre"), "show_genre", "bool"),
+            (self.tr("Bitrate"), "show_bitrate", "bool"),
+            (self.tr("File Size"), "show_file_size", "bool"),
+            (self.tr("Sample Rate"), "show_sample_rate", "bool"),
+            (self.tr("Channels"), "show_channels", "bool"),
+            (self.tr("Bit Depth"), "show_bit_depth", "bool"),
+            (self.tr("Album Metadata"), "show_album_metadata", "bool"),
+            (self.tr("Album Artist Metadata"), "show_album_artist_metadata", "bool"),
+            (self.tr("Composer"), "show_composer", "bool"),
+            (self.tr("ISRC"), "show_isrc", "bool")
         ]
         
         # Create treeview for column settings (no headings)
@@ -1855,28 +1920,24 @@ class SettingsMixin:
         """Create Logs visual customization settings section using Treeview"""
         # Logs settings treeview
         settings = [
-            # Font Settings
-            ("Font Family", "log_font_family", "choice", ["Segoe UI", "Consolas", "Courier New", "monospace", "Arial", "Tahoma"]),
-            ("Font Size", "log_font_size", "int", 8, 16),
-            ("Font Bold", "log_font_bold", "bool"),
-            # Color Settings
-            ("Text Color", "log_text_color", "color"),
-            ("Background Color", "log_bg_color", "color"),
-            ("INFO Color", "log_info_color", "color"),
-            ("WARNING Color", "log_warning_color", "color"),
-            ("ERROR Color", "log_error_color", "color"),
-            ("DEBUG Color", "log_debug_color", "color"),
-            # Display Settings
-            ("Show Timestamps", "log_show_timestamps", "bool"),
-            ("Timestamp Format", "log_timestamp_format", "choice", ["HH:MM:SS", "YYYY-MM-DD HH:MM:SS", "MM/DD/YYYY HH:MM:SS", "None"]),
-            ("Show Log Levels", "log_show_levels", "bool"),
-            ("Word Wrap", "log_word_wrap", "bool"),
-            ("Line Spacing", "log_line_spacing", "int", 1, 3),
-            # Behavior Settings
-            ("Auto-scroll to Bottom", "log_auto_scroll", "bool"),
-            ("Max Lines (0 = unlimited)", "log_max_lines", "int", 0, 10000),
-            ("Save Diagnostic Log File", "log_to_file", "bool"),
-            ("Diagnostic Log Level", "log_file_level", "choice", ["DEBUG", "INFO", "WARNING", "ERROR"])
+            (self.tr("Font Family"), "log_font_family", "choice", ["Segoe UI", "Consolas", "Courier New", "monospace", "Arial", "Tahoma"]),
+            (self.tr("Font Size"), "log_font_size", "int", 8, 16),
+            (self.tr("Font Bold"), "log_font_bold", "bool"),
+            (self.tr("Text Color"), "log_text_color", "color"),
+            (self.tr("Background Color"), "log_bg_color", "color"),
+            (self.tr("INFO Color"), "log_info_color", "color"),
+            (self.tr("WARNING Color"), "log_warning_color", "color"),
+            (self.tr("ERROR Color"), "log_error_color", "color"),
+            (self.tr("DEBUG Color"), "log_debug_color", "color"),
+            (self.tr("Show Timestamps"), "log_show_timestamps", "bool"),
+            (self.tr("Timestamp Format"), "log_timestamp_format", "choice", ["HH:MM:SS", "YYYY-MM-DD HH:MM:SS", "MM/DD/YYYY HH:MM:SS", "None"]),
+            (self.tr("Show Log Levels"), "log_show_levels", "bool"),
+            (self.tr("Word Wrap"), "log_word_wrap", "bool"),
+            (self.tr("Line Spacing"), "log_line_spacing", "int", 1, 3),
+            (self.tr("Auto-scroll to Bottom"), "log_auto_scroll", "bool"),
+            (self.tr("Max Lines (0 = unlimited)"), "log_max_lines", "int", 0, 10000),
+            (self.tr("Save Diagnostic Log File"), "log_to_file", "bool"),
+            (self.tr("Diagnostic Log Level"), "log_file_level", "choice", ["DEBUG", "INFO", "WARNING", "ERROR"])
         ]
         
         # Create treeview for logs settings (no headings)
@@ -2056,11 +2117,11 @@ class SettingsMixin:
             "cover_fullscreen_hotkey": "F11",
         }
         settings = [
-            ("Undo", "undo_hotkey", "hotkey", defaults["undo_hotkey"]),
-            ("Redo", "redo_hotkey", "hotkey", defaults["redo_hotkey"]),
-            ("Upload album", "upload_hotkey", "hotkey", defaults["upload_hotkey"]),
-            ("Cancel album", "cancel_hotkey", "hotkey", defaults["cancel_hotkey"]),
-            ("Cover art fullscreen", "cover_fullscreen_hotkey", "hotkey", defaults["cover_fullscreen_hotkey"]),
+            (self.tr("Undo"), "undo_hotkey", "hotkey", defaults["undo_hotkey"]),
+            (self.tr("Redo"), "redo_hotkey", "hotkey", defaults["redo_hotkey"]),
+            (self.tr("Upload album"), "upload_hotkey", "hotkey", defaults["upload_hotkey"]),
+            (self.tr("Cancel album"), "cancel_hotkey", "hotkey", defaults["cancel_hotkey"]),
+            (self.tr("Cover art fullscreen"), "cover_fullscreen_hotkey", "hotkey", defaults["cover_fullscreen_hotkey"]),
         ]
 
         self.hotkey_tree = ttk.Treeview(
@@ -2112,7 +2173,7 @@ class SettingsMixin:
             # Treat empty string as "unbound"
             new_value = ""
         self.hotkey_vars[config_key].set(new_value)
-        self.hotkey_tree.set(item_id, 'value', new_value or "(unbound)")
+        self.hotkey_tree.set(item_id, 'value', new_value or self.tr("(unbound)"))
         setattr(self.config, config_key, new_value)
         try:
             from bandcamp_auto_uploader.config import save_config
@@ -2122,7 +2183,7 @@ class SettingsMixin:
         if hasattr(self, 'apply_hotkey_bindings'):
             self.apply_hotkey_bindings()
         if hasattr(self, 'show_toast'):
-            label = "Unbound" if not new_value else f"Hotkey set to {new_value}"
+            label = self.tr("Unbound") if not new_value else self.tr("Hotkey set to {}").format(new_value)
             self.show_toast(label, 1500, "success")
 
     def _capture_hotkey_dialog(self, current_value=""):
@@ -2133,7 +2194,7 @@ class SettingsMixin:
         user explicitly unbound the key, or None if cancelled.
         """
         dialog = tk.Toplevel(self.root)
-        dialog.title("Record hotkey")
+        dialog.title(self.tr("Record hotkey"))
         dialog.transient(self.root)
         dialog.resizable(False, False)
         dialog.configure(padx=16, pady=12)
@@ -2141,7 +2202,7 @@ class SettingsMixin:
         result = {"value": None}
         SEQUENCE_TIMEOUT_MS = 900
 
-        captured_var = tk.StringVar(value=current_value or "(unbound)")
+        captured_var = tk.StringVar(value=current_value or self.tr("(unbound)"))
         captured_label = ttk.Label(
             dialog,
             textvariable=captured_var,
@@ -2187,13 +2248,13 @@ class SettingsMixin:
                     except Exception:
                         pass
                 pending_after_id[0] = None
-                captured_var.set("(unbound)")
+                captured_var.set(self.tr("(unbound)"))
                 result["value"] = ""
                 return "break"
             hotkey_str = self._tk_event_to_hotkey_string(event)
             if hotkey_str:
                 current = captured_var.get()
-                if current in ("", "(unbound)"):
+                if current in ("", self.tr("(unbound)")):
                     captured_var.set(hotkey_str)
                 else:
                     captured_var.set(current + "+" + hotkey_str)
@@ -2207,7 +2268,7 @@ class SettingsMixin:
                     dialog.after_cancel(pending_after_id[0])
                 except Exception:
                     pass
-            if result["value"] is None and captured_var.get() not in ("(unbound)", ""):
+            if result["value"] is None and captured_var.get() not in (self.tr("(unbound)"), ""):
                 result["value"] = captured_var.get()
             dialog.destroy()
 
@@ -2227,12 +2288,12 @@ class SettingsMixin:
                 except Exception:
                     pass
             pending_after_id[0] = None
-            captured_var.set("(unbound)")
+            captured_var.set(self.tr("(unbound)"))
             result["value"] = ""
 
-        ttk.Button(button_frame, text="Clear", command=on_clear).pack(side=tk.LEFT)
-        ttk.Button(button_frame, text="Cancel", command=on_cancel).pack(side=tk.RIGHT, padx=(4, 0))
-        ttk.Button(button_frame, text="Save", command=on_save).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text=self.tr("Clear"), command=on_clear).pack(side=tk.LEFT)
+        ttk.Button(button_frame, text=self.tr("Cancel"), command=on_cancel).pack(side=tk.RIGHT, padx=(4, 0))
+        ttk.Button(button_frame, text=self.tr("Save"), command=on_save).pack(side=tk.RIGHT)
 
         dialog.bind('<Key>', on_key)
         captured_label.focus_set()
@@ -2360,50 +2421,44 @@ class SettingsMixin:
         """Create combined Interface settings section that includes all sub-sections"""
         # Combined settings from all interface sub-sections
         settings = [
-            # Theme setting
-            ("Interface Theme (Experimental)", "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark", "Azure Light", "Azure Dark"]),
-            # Track Table Columns settings
-            ("Columns: Track No.", "show_track_no", "bool"),
-            ("Columns: Artist", "show_artist", "bool"),
-            ("Columns: Track Name", "show_track_name", "bool"),
-            ("Columns: Comment", "show_comment", "bool"),
-            ("Columns: Length", "show_length", "bool"),
-            ("Columns: Extension", "show_extension", "bool"),
-            ("Columns: Price", "show_price", "bool"),
-            ("Columns: NYP", "show_nyp", "bool"),
-            ("Columns: Year", "show_year", "bool"),
-            ("Columns: Genre", "show_genre", "bool"),
-            ("Columns: Bitrate", "show_bitrate", "bool"),
-            ("Columns: File Size", "show_file_size", "bool"),
-            ("Columns: Sample Rate", "show_sample_rate", "bool"),
-            ("Columns: Channels", "show_channels", "bool"),
-            ("Columns: Bit Depth", "show_bit_depth", "bool"),
-            ("Columns: Album Metadata", "show_album_metadata", "bool"),
-            ("Columns: Album Artist Metadata", "show_album_artist_metadata", "bool"),
-            ("Columns: Composer", "show_composer", "bool"),
-            ("Columns: ISRC", "show_isrc", "bool"),
-            # Logs Font Settings
-            ("Logs: Font Family", "log_font_family", "choice", ["Segoe UI", "Consolas", "Courier New", "monospace", "Arial", "Tahoma"]),
-            ("Logs: Font Size", "log_font_size", "int", 8, 16),
-            ("Logs: Font Bold", "log_font_bold", "bool"),
-            # Logs Color Settings
-            ("Logs: Text Color", "log_text_color", "color"),
-            ("Logs: Background Color", "log_bg_color", "color"),
-            ("Logs: INFO Color", "log_info_color", "color"),
-            ("Logs: WARNING Color", "log_warning_color", "color"),
-            ("Logs: ERROR Color", "log_error_color", "color"),
-            ("Logs: DEBUG Color", "log_debug_color", "color"),
-            # Logs Display Settings
-            ("Logs: Show Timestamps", "log_show_timestamps", "bool"),
-            ("Logs: Timestamp Format", "log_timestamp_format", "choice", ["HH:MM:SS", "YYYY-MM-DD HH:MM:SS", "MM/DD/YYYY HH:MM:SS", "None"]),
-            ("Logs: Show Log Levels", "log_show_levels", "bool"),
-            ("Logs: Word Wrap", "log_word_wrap", "bool"),
-            ("Logs: Line Spacing", "log_line_spacing", "int", 1, 3),
-            # Logs Behavior Settings
-            ("Logs: Auto-scroll to Bottom", "log_auto_scroll", "bool"),
-            ("Logs: Max Lines (0 = unlimited)", "log_max_lines", "int", 0, 10000),
-            ("Logs: Save Diagnostic Log File", "log_to_file", "bool"),
-            ("Logs: Diagnostic Log Level", "log_file_level", "choice", ["DEBUG", "INFO", "WARNING", "ERROR"])
+            (self.tr("Interface Theme (Experimental)"), "theme", "choice", [self.tr("Light"), self.tr("Sun-Valley Light"), self.tr("Sun-Valley Dark"), self.tr("Azure Light"), self.tr("Azure Dark")]),
+            (self.tr("Columns: Track No."), "show_track_no", "bool"),
+            (self.tr("Columns: Artist"), "show_artist", "bool"),
+            (self.tr("Columns: Track Name"), "show_track_name", "bool"),
+            (self.tr("Columns: Comment"), "show_comment", "bool"),
+            (self.tr("Columns: Length"), "show_length", "bool"),
+            (self.tr("Columns: Extension"), "show_extension", "bool"),
+            (self.tr("Columns: Price"), "show_price", "bool"),
+            (self.tr("Columns: NYP"), "show_nyp", "bool"),
+            (self.tr("Columns: Year"), "show_year", "bool"),
+            (self.tr("Columns: Genre"), "show_genre", "bool"),
+            (self.tr("Columns: Bitrate"), "show_bitrate", "bool"),
+            (self.tr("Columns: File Size"), "show_file_size", "bool"),
+            (self.tr("Columns: Sample Rate"), "show_sample_rate", "bool"),
+            (self.tr("Columns: Channels"), "show_channels", "bool"),
+            (self.tr("Columns: Bit Depth"), "show_bit_depth", "bool"),
+            (self.tr("Columns: Album Metadata"), "show_album_metadata", "bool"),
+            (self.tr("Columns: Album Artist Metadata"), "show_album_artist_metadata", "bool"),
+            (self.tr("Columns: Composer"), "show_composer", "bool"),
+            (self.tr("Columns: ISRC"), "show_isrc", "bool"),
+            (self.tr("Logs: Font Family"), "log_font_family", "choice", ["Segoe UI", "Consolas", "Courier New", "monospace", "Arial", "Tahoma"]),
+            (self.tr("Logs: Font Size"), "log_font_size", "int", 8, 16),
+            (self.tr("Logs: Font Bold"), "log_font_bold", "bool"),
+            (self.tr("Logs: Text Color"), "log_text_color", "color"),
+            (self.tr("Logs: Background Color"), "log_bg_color", "color"),
+            (self.tr("Logs: INFO Color"), "log_info_color", "color"),
+            (self.tr("Logs: WARNING Color"), "log_warning_color", "color"),
+            (self.tr("Logs: ERROR Color"), "log_error_color", "color"),
+            (self.tr("Logs: DEBUG Color"), "log_debug_color", "color"),
+            (self.tr("Logs: Show Timestamps"), "log_show_timestamps", "bool"),
+            (self.tr("Logs: Timestamp Format"), "log_timestamp_format", "choice", ["HH:MM:SS", "YYYY-MM-DD HH:MM:SS", "MM/DD/YYYY HH:MM:SS", "None"]),
+            (self.tr("Logs: Show Log Levels"), "log_show_levels", "bool"),
+            (self.tr("Logs: Word Wrap"), "log_word_wrap", "bool"),
+            (self.tr("Logs: Line Spacing"), "log_line_spacing", "int", 1, 3),
+            (self.tr("Logs: Auto-scroll to Bottom"), "log_auto_scroll", "bool"),
+            (self.tr("Logs: Max Lines (0 = unlimited)"), "log_max_lines", "int", 0, 10000),
+            (self.tr("Logs: Save Diagnostic Log File"), "log_to_file", "bool"),
+            (self.tr("Logs: Diagnostic Log Level"), "log_file_level", "choice", ["DEBUG", "INFO", "WARNING", "ERROR"])
         ]
         
         # Create treeview for combined interface settings (no headings)
@@ -2632,18 +2687,18 @@ class SettingsMixin:
         """Create Auto Tagging settings section using Treeview"""
         # Auto tagging settings
         settings = [
-            ("Year", "auto_tag_year", "bool"),
-            ("Genre", "auto_tag_genre", "bool"),
-            ("Artist", "auto_tag_artist", "bool"),
-            ("Album", "auto_tag_album", "bool"),
-            ("Comment", "auto_tag_comment", "bool"),
-            ("Track Title", "auto_tag_track_title", "bool"),
-            ("Album Artist", "auto_tag_album_artist", "bool"),
-            ("Composer", "auto_tag_composer", "bool"),
-            ("Track Number", "auto_tag_track_number", "bool"),
-            ("Duration", "auto_tag_duration", "bool"),
-            ("Bitrate", "auto_tag_bitrate", "bool"),
-            ("Release Type", "auto_tag_release_type", "bool")
+            (self.tr("Year"), "auto_tag_year", "bool"),
+            (self.tr("Genre"), "auto_tag_genre", "bool"),
+            (self.tr("Artist"), "auto_tag_artist", "bool"),
+            (self.tr("Album"), "auto_tag_album", "bool"),
+            (self.tr("Comment"), "auto_tag_comment", "bool"),
+            (self.tr("Track Title"), "auto_tag_track_title", "bool"),
+            (self.tr("Album Artist"), "auto_tag_album_artist", "bool"),
+            (self.tr("Composer"), "auto_tag_composer", "bool"),
+            (self.tr("Track Number"), "auto_tag_track_number", "bool"),
+            (self.tr("Duration"), "auto_tag_duration", "bool"),
+            (self.tr("Bitrate"), "auto_tag_bitrate", "bool"),
+            (self.tr("Release Type"), "auto_tag_release_type", "bool")
         ]
         
         # Create treeview for auto tagging settings (no headings)
@@ -2705,7 +2760,7 @@ class SettingsMixin:
             enabled_count = sum(1 for key, var in self.auto_tagging_vars.items() 
                              if not key.endswith('_type') and var.get())
             if enabled_count >= 10:
-                self.show_toast("Maximum 10 auto-tagging options allowed", 2000, "warning")
+                self.show_toast(self.tr("Maximum 10 auto-tagging options allowed"), 2000, "warning")
                 return
         
         self.auto_tagging_vars[config_key].set(new_value)
@@ -2732,21 +2787,21 @@ class SettingsMixin:
         """Create Upload settings section using Treeview"""
         # Upload settings treeview
         settings = [
-            ("Auto-start upload after adding files", "auto_start_upload", "bool"),
-            ("Confirm before starting upload", "confirm_before_upload", "bool"),
-            ("Use track name for single release", "use_track_name_for_single_release", "bool"),
-            ("Open logs on album upload", "open_logs_on_upload", "bool"),
-            ("Open album page after upload", "open_album_page_after_upload", "bool"),
-            ("Copy album URL to clipboard after upload", "copy_album_url_after_upload", "bool"),
-            ("Use embedded cover art from tracks", "extract_embedded_cover_art", "bool"),
-            ("Detailed track information in progress", "detailed_progress_track_info", "bool"),
-            ("Show progress timing details", "show_progress_timing_details", "bool"),
-            ("Max concurrent uploads", "max_concurrent_uploads", "int", 1, 5),
-            ("Upload timeout (seconds)", "upload_timeout", "int", 30, 600),
-            ("Retry failed uploads", "retry_failed_uploads", "bool"),
-            ("Retry attempts", "retry_attempts", "int", 1, 10),
-            ("Retry delay (seconds)", "retry_delay", "int", 1, 60),
-            ("Enable conversion to FLAC", "enable_flac_conversion", "bool"),
+            (self.tr("Auto-start upload after adding files"), "auto_start_upload", "bool"),
+            (self.tr("Confirm before starting upload"), "confirm_before_upload", "bool"),
+            (self.tr("Use track name for single release"), "use_track_name_for_single_release", "bool"),
+            (self.tr("Open logs on album upload"), "open_logs_on_upload", "bool"),
+            (self.tr("Open album page after upload"), "open_album_page_after_upload", "bool"),
+            (self.tr("Copy album URL to clipboard after upload"), "copy_album_url_after_upload", "bool"),
+            (self.tr("Use embedded cover art from tracks"), "extract_embedded_cover_art", "bool"),
+            (self.tr("Detailed track information in progress"), "detailed_progress_track_info", "bool"),
+            (self.tr("Show progress timing details"), "show_progress_timing_details", "bool"),
+            (self.tr("Max concurrent uploads"), "max_concurrent_uploads", "int", 1, 5),
+            (self.tr("Upload timeout (seconds)"), "upload_timeout", "int", 30, 600),
+            (self.tr("Retry failed uploads"), "retry_failed_uploads", "bool"),
+            (self.tr("Retry attempts"), "retry_attempts", "int", 1, 10),
+            (self.tr("Retry delay (seconds)"), "retry_delay", "int", 1, 60),
+            (self.tr("Enable conversion to FLAC"), "enable_flac_conversion", "bool"),
         ]
         
         # Create treeview for upload settings (no headings)
@@ -2862,88 +2917,78 @@ class SettingsMixin:
         """Create combined General settings section that includes all sub-sections"""
         # Combined settings from all general sub-sections
         settings = [
-            # Interface
-            ("Interface: Apply settings immediately", "apply_settings_immediately", "bool"),
-            ("Interface: Maximize app on open", "maximize_on_open", "bool"),
-            ("Interface: Disable tooltips", "disable_tooltips", "bool"),
-            ("Interface: Remove splash art", "remove_splash_art", "disabled_bool"),
-            ("Interface: Remember Last Opened Album", "remember_last_album", "bool"),
-            # Metadata
-            ("Metadata: Auto load metadata for album details", "auto_load_metadata", "bool"),
-            ("Metadata: Use Album Artist metadata for Artist in Album details", "use_album_artist_in_album_details", "bool"),
-            ("Metadata: Guess album title from track metadata", "guess_album_title_from_track_metadata", "bool"),
-            ("Metadata: Guess release date from track metadata", "guess_release_date_from_track_metadata", "bool"),
-            ("Metadata: Folder name if album tag missing", "use_folder_name_when_album_missing", "bool"),
-            ("Metadata: Extract track cover if cover missing", "extract_track_cover_if_missing", "bool"),
-            ("Metadata: Smart-randomize on album load", "smart_randomize_on_album_load", "bool"),
-            ("Metadata: Auto guess case tracks on album load", "auto_guess_case_on_album_load", "bool"),
-            # Cover Art
-            ("Cover Art: Always auto-scale cover art", "always_auto_scale_cover", "bool"),
-            ("Cover Art: Cover scaling method", "cover_scaling_method", "str"),
-            ("Cover Art: Cover fit mode", "cover_fit_mode", "str"),
-            # Description
-            ("Description: Description auto-fill", "description_auto_fill_mode", "str"),
-            ("Description: Preview Description", "preview_description", "action"),
-            ("Description: Create description on upload", "description_auto_fill_on_upload", "bool"),
-            # Track Table
-            ("Track Table: Auto Fit Columns", "auto_fit_columns", "bool"),
-            ("Track Table: Lock Column Sizes", "lock_column_sizes", "bool"),
-            ("Track Table: Highlight Search Matches (hide non-matches instead)", "highlight_search_matches", "bool"),
-            ("Track Table: Locked Track Highlight Color", "locked_track_highlight_color", "color"),
-            ("Track Table: Highlight Corrupted Tracks", "highlight_corrupted_tracks", "bool"),
-            ("Track Table: Show Total Album Duration", "show_total_album_duration", "bool"),
-            # Files & Sessions
-            ("Files: Create session.txt files (Recommended)", "create_album_session_files", "bool"),
-            ("Files: Clear progress on album change", "clear_progress_on_album_change", "bool"),
-            ("Files: Limit Log Files", "log_file_limit", "int", 1, 99),
-            ("Files: File Size Unit", "file_size_unit", "str"),
-            # Startup & Updates
-            ("Startup: Auto load cookies on startup", "auto_load_cookies", "bool"),
-            ("Startup: Check for updates on startup", "check_for_updates", "bool"),
-            ("Startup: Check for updates now", "check_updates_now", "action"),
-            # Context Menu settings
-            ("Context: Remove Dividers", "context_menu_remove_dividers", "bool"),
-            ("Context: Play", "context_menu_play", "bool"),
-            ("Context: Remove Track", "context_menu_remove_track", "bool"),
-            ("Context: Move Up", "context_menu_move_up", "bool"),
-            ("Context: Move Down", "context_menu_move_down", "bool"),
-            ("Context: Move to Top", "context_menu_move_to_top", "bool"),
-            ("Context: Move to Bottom", "context_menu_move_to_bottom", "bool"),
-            ("Context: Open File", "context_menu_open_file", "bool"),
-            ("Context: Replace File", "context_menu_replace_file", "bool"),
-            ("Context: Extract Cover Art", "context_menu_extract_cover_art", "bool"),
-            ("Context: Extract Tracklist", "context_menu_extract_tracklist", "bool"),
-            ("Context: Open session.txt", "context_menu_open_session", "bool"),
-            ("Context: Set Track Cover as Album Cover", "context_menu_set_track_cover_as_album_cover", "bool"),
-            ("Context: Undo", "context_menu_undo", "bool"),
-            ("Context: Redo", "context_menu_redo", "bool"),
-            ("Context: Extract Track Information", "context_menu_extract_track_info", "bool"),
-            ("Context: Copy Metadata", "context_menu_copy_metadata", "bool"),
-            ("Context: Paste Metadata", "context_menu_paste_metadata", "bool"),
-            ("Context: Revert to Original", "context_menu_revert_to_original", "bool"),
-            ("Context: Lock/Unlock", "context_menu_lock_unlock", "bool"),
-            ("Context: Randomize", "context_menu_randomize", "bool"),
-            ("Context: Smart Randomize", "context_menu_smart_randomize", "bool"),
-            ("Context: Sort By", "context_menu_sort_by", "bool"),
-            ("Context: Clear Metadata", "context_menu_clear_metadata", "bool"),
-            ("Context: Clear All Metadata", "context_menu_clear_all_metadata", "bool"),
-            ("Context: Clear All", "context_menu_clear_all", "bool"),
-            ("Context: Upload as Single", "context_menu_upload_as_single", "bool"),
-            # Sort method settings
-            *[(f"Sort: {setting_name}", config_key, "bool") for setting_name, config_key in SORT_METHOD_SETTINGS],
-            # Auto Tagging settings
-            ("Auto Tag: Year", "auto_tag_year", "bool"),
-            ("Auto Tag: Genre", "auto_tag_genre", "bool"),
-            ("Auto Tag: Artist", "auto_tag_artist", "bool"),
-            ("Auto Tag: Album", "auto_tag_album", "bool"),
-            ("Auto Tag: Comment", "auto_tag_comment", "bool"),
-            ("Auto Tag: Track Title", "auto_tag_track_title", "bool"),
-            ("Auto Tag: Album Artist", "auto_tag_album_artist", "bool"),
-            ("Auto Tag: Composer", "auto_tag_composer", "bool"),
-            ("Auto Tag: Track Number", "auto_tag_track_number", "bool"),
-            ("Auto Tag: Duration", "auto_tag_duration", "bool"),
-            ("Auto Tag: Bitrate", "auto_tag_bitrate", "bool"),
-            ("Auto Tag: Release Type", "auto_tag_release_type", "bool")
+            (self.tr("Interface: Apply settings immediately"), "apply_settings_immediately", "bool"),
+            (self.tr("Interface: Maximize app on open"), "maximize_on_open", "bool"),
+            (self.tr("Interface: Disable tooltips"), "disable_tooltips", "bool"),
+            (self.tr("Interface: Remove splash art"), "remove_splash_art", "disabled_bool"),
+            (self.tr("Interface: Remember Last Opened Album"), "remember_last_album", "bool"),
+            (self.tr("Metadata: Auto load metadata for album details"), "auto_load_metadata", "bool"),
+            (self.tr("Metadata: Use Album Artist metadata for Artist in Album details"), "use_album_artist_in_album_details", "bool"),
+            (self.tr("Metadata: Guess album title from track metadata"), "guess_album_title_from_track_metadata", "bool"),
+            (self.tr("Metadata: Guess release date from track metadata"), "guess_release_date_from_track_metadata", "bool"),
+            (self.tr("Metadata: Folder name if album tag missing"), "use_folder_name_when_album_missing", "bool"),
+            (self.tr("Metadata: Extract track cover if cover missing"), "extract_track_cover_if_missing", "bool"),
+            (self.tr("Metadata: Smart-randomize on album load"), "smart_randomize_on_album_load", "bool"),
+            (self.tr("Metadata: Auto guess case tracks on album load"), "auto_guess_case_on_album_load", "bool"),
+            (self.tr("Cover Art: Always auto-scale cover art"), "always_auto_scale_cover", "bool"),
+            (self.tr("Cover Art: Cover scaling method"), "cover_scaling_method", "str"),
+            (self.tr("Cover Art: Cover fit mode"), "cover_fit_mode", "str"),
+            (self.tr("Description: Description auto-fill"), "description_auto_fill_mode", "str"),
+            (self.tr("Description: Preview Description"), "preview_description", "action"),
+            (self.tr("Description: Create description on upload"), "description_auto_fill_on_upload", "bool"),
+            (self.tr("Track Table: Auto Fit Columns"), "auto_fit_columns", "bool"),
+            (self.tr("Track Table: Lock Column Sizes"), "lock_column_sizes", "bool"),
+            (self.tr("Track Table: Highlight Search Matches (hide non-matches instead)"), "highlight_search_matches", "bool"),
+            (self.tr("Track Table: Locked Track Highlight Color"), "locked_track_highlight_color", "color"),
+            (self.tr("Track Table: Highlight Corrupted Tracks"), "highlight_corrupted_tracks", "bool"),
+            (self.tr("Track Table: Show Total Album Duration"), "show_total_album_duration", "bool"),
+            (self.tr("Files: Create session.txt files (Recommended)"), "create_album_session_files", "bool"),
+            (self.tr("Files: Clear progress on album change"), "clear_progress_on_album_change", "bool"),
+            (self.tr("Files: Limit Log Files"), "log_file_limit", "int", 1, 99),
+            (self.tr("Files: File Size Unit"), "file_size_unit", "str"),
+            (self.tr("Startup: Auto load cookies on startup"), "auto_load_cookies", "bool"),
+            (self.tr("Startup: Check for updates on startup"), "check_for_updates", "bool"),
+            (self.tr("Startup: Check for updates now"), "check_updates_now", "action"),
+            (self.tr("Context: Remove Dividers"), "context_menu_remove_dividers", "bool"),
+            (self.tr("Context: Play"), "context_menu_play", "bool"),
+            (self.tr("Context: Remove Track"), "context_menu_remove_track", "bool"),
+            (self.tr("Context: Move Up"), "context_menu_move_up", "bool"),
+            (self.tr("Context: Move Down"), "context_menu_move_down", "bool"),
+            (self.tr("Context: Move to Top"), "context_menu_move_to_top", "bool"),
+            (self.tr("Context: Move to Bottom"), "context_menu_move_to_bottom", "bool"),
+            (self.tr("Context: Open File"), "context_menu_open_file", "bool"),
+            (self.tr("Context: Replace File"), "context_menu_replace_file", "bool"),
+            (self.tr("Context: Extract Cover Art"), "context_menu_extract_cover_art", "bool"),
+            (self.tr("Context: Extract Tracklist"), "context_menu_extract_tracklist", "bool"),
+            (self.tr("Context: Open session.txt"), "context_menu_open_session", "bool"),
+            (self.tr("Context: Set Track Cover as Album Cover"), "context_menu_set_track_cover_as_album_cover", "bool"),
+            (self.tr("Context: Undo"), "context_menu_undo", "bool"),
+            (self.tr("Context: Redo"), "context_menu_redo", "bool"),
+            (self.tr("Context: Extract Track Information"), "context_menu_extract_track_info", "bool"),
+            (self.tr("Context: Copy Metadata"), "context_menu_copy_metadata", "bool"),
+            (self.tr("Context: Paste Metadata"), "context_menu_paste_metadata", "bool"),
+            (self.tr("Context: Revert to Original"), "context_menu_revert_to_original", "bool"),
+            (self.tr("Context: Lock/Unlock"), "context_menu_lock_unlock", "bool"),
+            (self.tr("Context: Randomize"), "context_menu_randomize", "bool"),
+            (self.tr("Context: Smart Randomize"), "context_menu_smart_randomize", "bool"),
+            (self.tr("Context: Sort By"), "context_menu_sort_by", "bool"),
+            (self.tr("Context: Clear Metadata"), "context_menu_clear_metadata", "bool"),
+            (self.tr("Context: Clear All Metadata"), "context_menu_clear_all_metadata", "bool"),
+            (self.tr("Context: Clear All"), "context_menu_clear_all", "bool"),
+            (self.tr("Context: Upload as Single"), "context_menu_upload_as_single", "bool"),
+            *[(self.tr(f"Sort: {setting_name}"), config_key, "bool") for setting_name, config_key in SORT_METHOD_SETTINGS],
+            (self.tr("Auto Tag: Year"), "auto_tag_year", "bool"),
+            (self.tr("Auto Tag: Genre"), "auto_tag_genre", "bool"),
+            (self.tr("Auto Tag: Artist"), "auto_tag_artist", "bool"),
+            (self.tr("Auto Tag: Album"), "auto_tag_album", "bool"),
+            (self.tr("Auto Tag: Comment"), "auto_tag_comment", "bool"),
+            (self.tr("Auto Tag: Track Title"), "auto_tag_track_title", "bool"),
+            (self.tr("Auto Tag: Album Artist"), "auto_tag_album_artist", "bool"),
+            (self.tr("Auto Tag: Composer"), "auto_tag_composer", "bool"),
+            (self.tr("Auto Tag: Track Number"), "auto_tag_track_number", "bool"),
+            (self.tr("Auto Tag: Duration"), "auto_tag_duration", "bool"),
+            (self.tr("Auto Tag: Bitrate"), "auto_tag_bitrate", "bool"),
+            (self.tr("Auto Tag: Release Type"), "auto_tag_release_type", "bool")
         ]
         
         # Create treeview for combined general settings (no headings)
@@ -2978,7 +3023,7 @@ class SettingsMixin:
                     var = tk.BooleanVar(value=getattr(self.config, config_key, True))
                 display_value = "☑" if var.get() else "☐"
             elif setting_type == "str":
-                var = tk.StringVar(value=getattr(self.config, config_key, "Off"))
+                var = tk.StringVar(value=getattr(self.config, config_key, self.tr("Off")))
                 display_value = var.get()
             elif setting_type == "int":
                 min_val = setting_data[3]
@@ -2990,7 +3035,7 @@ class SettingsMixin:
                 display_value = var.get()
             elif setting_type == "action":
                 var = None
-                display_value = "Remove..." if config_key == "remove_all_custom_templates" else "Preview..."
+                display_value = self.tr("Remove...") if config_key == "remove_all_custom_templates" else self.tr("Preview...")
             
             if var is not None:
                 self.general_combined_vars[config_key] = var
@@ -3068,7 +3113,7 @@ class SettingsMixin:
                 enabled_count = sum(1 for key, var in self.general_combined_vars.items() 
                                  if not key.endswith('_type') and key.startswith("auto_tag_") and var.get())
                 if enabled_count >= 10:
-                    self.show_toast("Maximum 10 auto-tagging options allowed", 2000, "warning")
+                    self.show_toast(self.tr("Maximum 10 auto-tagging options allowed"), 2000, "warning")
                     return
             
             self.general_combined_vars[config_key].set(new_value)
@@ -3084,7 +3129,7 @@ class SettingsMixin:
                     self.general_combined_tree,
                     item_id,
                     'value',
-                    SCALING_METHOD_OPTIONS,
+                    [self.tr(m) for m in SCALING_METHOD_OPTIONS],
                     self.general_combined_vars[config_key].get(),
                     lambda v: self.apply_general_combined_str_setting(config_key, v),
                 )
@@ -3093,7 +3138,7 @@ class SettingsMixin:
                     self.general_combined_tree,
                     item_id,
                     'value',
-                    ["Crop (fill)", "Fit (contain)", "Stretch"],
+                    [self.tr("Crop (fill)"), self.tr("Fit (contain)"), self.tr("Stretch")],
                     self.general_combined_vars[config_key].get(),
                     lambda v: self.apply_general_combined_str_setting(config_key, v),
                 )
@@ -3102,7 +3147,7 @@ class SettingsMixin:
                     self.general_combined_tree,
                     item_id,
                     'value',
-                    ["Auto", "MB", "GB", "KB", "Bytes"],
+                    [self.tr("Auto"), self.tr("MB"), self.tr("GB"), self.tr("KB"), self.tr("Bytes")],
                     self.general_combined_vars[config_key].get(),
                     lambda v: self.apply_general_combined_str_setting(config_key, v),
                 )
@@ -3243,11 +3288,11 @@ class SettingsMixin:
         """Apply a combined General string/dropdown setting."""
         if config_key == "description_auto_fill_mode" and new_value not in DESCRIPTION_AUTO_FILL_MODES:
             return False
-        if config_key == "cover_scaling_method" and new_value not in SCALING_METHOD_OPTIONS:
+        if config_key == "cover_scaling_method" and new_value not in [self.tr(m) for m in SCALING_METHOD_OPTIONS]:
             return False
-        if config_key == "cover_fit_mode" and new_value not in ("Crop (fill)", "Fit (contain)", "Stretch"):
+        if config_key == "cover_fit_mode" and new_value not in (self.tr("Crop (fill)"), self.tr("Fit (contain)"), self.tr("Stretch")):
             return False
-        if config_key == "file_size_unit" and new_value not in ("Auto", "MB", "GB", "KB", "Bytes"):
+        if config_key == "file_size_unit" and new_value not in (self.tr("Auto"), self.tr("MB"), self.tr("GB"), self.tr("KB"), self.tr("Bytes")):
             return False
 
         self.general_combined_vars[config_key].set(new_value)
@@ -3343,9 +3388,9 @@ class SettingsMixin:
         self.advanced_tree.column('value', width=150, anchor=tk.W)
 
         self.advanced_item_mapping = {}
-        item_id = self.advanced_tree.insert('', 'end', values=("Reset all settings", "Reset..."))
+        item_id = self.advanced_tree.insert('', 'end', values=(self.tr("Reset all settings"), self.tr("Reset...")))
         self.advanced_item_mapping[item_id] = "reset_all_settings"
-        item_id = self.advanced_tree.insert('', 'end', values=("Custom Filename Patterns", "Manage..."))
+        item_id = self.advanced_tree.insert('', 'end', values=(self.tr("Custom Filename Patterns"), self.tr("Manage...")))
         self.advanced_item_mapping[item_id] = "custom_filename_patterns"
 
         self.advanced_tree.bind('<Button-1>', self.on_advanced_tree_click)
@@ -3372,8 +3417,8 @@ class SettingsMixin:
         self._reset_in_progress = True
         try:
             confirm1 = messagebox.askyesno(
-                "Reset All Settings - Confirmation 1/3",
-                "Are you sure you want to reset ALL settings to defaults?\n\n"
+                self.tr("Reset All Settings - Confirmation 1/3"),
+                self.tr("Are you sure you want to reset ALL settings to defaults?\n\n"
                 "This will reset:\n"
                 "- All preferences and configurations\n"
                 "- UI customizations (colors and fonts)\n"
@@ -3382,7 +3427,7 @@ class SettingsMixin:
                 "- Upload settings\n"
                 "- Notification settings\n"
                 "- And all other configurable options\n\n"
-                "This action cannot be undone.",
+                "This action cannot be undone."),
                 icon='warning'
             )
 
@@ -3390,11 +3435,11 @@ class SettingsMixin:
                 return
 
             confirm2 = messagebox.askyesno(
-                "Reset All Settings - Confirmation 2/3",
-                "This is your second warning.\n\n"
+                self.tr("Reset All Settings - Confirmation 2/3"),
+                self.tr("This is your second warning.\n\n"
                 "All your carefully customized settings will be lost.\n"
                 "You will need to reconfigure everything from scratch.\n\n"
-                "Are you absolutely sure you want to proceed?",
+                "Are you absolutely sure you want to proceed?"),
                 icon='warning'
             )
 
@@ -3402,11 +3447,11 @@ class SettingsMixin:
                 return
 
             confirm3 = messagebox.askyesno(
-                "Reset All Settings - Final Confirmation",
-                "FINAL WARNING: This is your last chance to cancel.\n\n"
+                self.tr("Reset All Settings - Final Confirmation"),
+                self.tr("FINAL WARNING: This is your last chance to cancel.\n\n"
                 "Once you click Yes, all settings will be immediately reset\n"
                 "to their default values and the application will restart.\n\n"
-                "Click Yes to reset everything or No to cancel.",
+                "Click Yes to reset everything or No to cancel."),
                 icon='warning'
             )
 
@@ -3416,16 +3461,16 @@ class SettingsMixin:
             default_config = Config()
             save_config(default_config)
             messagebox.showinfo(
-                "Settings Reset Complete",
-                "All settings have been reset to defaults.\n\n"
-                "The application will now restart to apply the changes."
+                self.tr("Settings Reset Complete"),
+                self.tr("All settings have been reset to defaults.\n\n"
+                "The application will now restart to apply the changes.")
             )
             self.restart_application()
 
         except Exception as e:
             messagebox.showerror(
-                "Reset Failed",
-                f"Failed to reset settings:\n{str(e)}"
+                self.tr("Reset Failed"),
+                self.tr("Failed to reset settings:") + f"\n{str(e)}"
             )
         finally:
             self._reset_in_progress = False
@@ -3443,7 +3488,7 @@ class SettingsMixin:
         """Open dialog to manage custom filename regex patterns."""
         parent = self.get_preferences_dialog_parent()
         dialog = tk.Toplevel(parent)
-        dialog.title("Custom Filename Patterns")
+        dialog.title(self.tr("Custom Filename Patterns"))
         dialog.transient(parent)
         dialog.withdraw()
         dialog.resizable(True, True)
@@ -3487,7 +3532,7 @@ class SettingsMixin:
 
         def add_pattern():
             add_dialog = tk.Toplevel(dialog)
-            add_dialog.title("Add Pattern")
+            add_dialog.title(self.tr("Add Pattern"))
             add_dialog.transient(dialog)
             add_dialog.grab_set()
             self.center_dialog(add_dialog, 500, 200, dialog)
@@ -3495,19 +3540,19 @@ class SettingsMixin:
             f = ttk.Frame(add_dialog, padding=10)
             f.pack(fill=tk.BOTH, expand=True)
 
-            ttk.Label(f, text="Regex:").grid(row=0, column=0, sticky=tk.W, pady=3)
+            ttk.Label(f, text=self.tr("Regex:")).grid(row=0, column=0, sticky=tk.W, pady=3)
             regex_entry = ttk.Entry(f, width=40)
             regex_entry.grid(row=0, column=1, padx=(5, 0), pady=3)
 
-            ttk.Label(f, text="Track # group:").grid(row=1, column=0, sticky=tk.W, pady=3)
+            ttk.Label(f, text=self.tr("Track # group:")).grid(row=1, column=0, sticky=tk.W, pady=3)
             track_entry = ttk.Entry(f, width=40)
             track_entry.grid(row=1, column=1, sticky=tk.W, padx=(5, 0), pady=3)
 
-            ttk.Label(f, text="Artist group:").grid(row=2, column=0, sticky=tk.W, pady=3)
+            ttk.Label(f, text=self.tr("Artist group:")).grid(row=2, column=0, sticky=tk.W, pady=3)
             artist_entry = ttk.Entry(f, width=40)
             artist_entry.grid(row=2, column=1, sticky=tk.W, padx=(5, 0), pady=3)
 
-            ttk.Label(f, text="Title group:").grid(row=3, column=0, sticky=tk.W, pady=3)
+            ttk.Label(f, text=self.tr("Title group:")).grid(row=3, column=0, sticky=tk.W, pady=3)
             title_entry = ttk.Entry(f, width=40)
             title_entry.grid(row=3, column=1, sticky=tk.W, padx=(5, 0), pady=3)
 
@@ -3530,8 +3575,8 @@ class SettingsMixin:
 
             btn_f = ttk.Frame(f)
             btn_f.grid(row=4, column=0, columnspan=2, pady=(15, 0))
-            ttk.Button(btn_f, text="Add", command=save_pattern, width=12).pack(side=tk.LEFT, padx=5)
-            ttk.Button(btn_f, text="Cancel", command=add_dialog.destroy, width=12).pack(side=tk.LEFT)
+            ttk.Button(btn_f, text=self.tr("Add"), command=save_pattern, width=12).pack(side=tk.LEFT, padx=5)
+            ttk.Button(btn_f, text=self.tr("Cancel"), command=add_dialog.destroy, width=12).pack(side=tk.LEFT)
 
         def remove_selected():
             sel = tree.selection()
@@ -3546,10 +3591,10 @@ class SettingsMixin:
                 patterns.pop(idx)
                 refresh()
 
-        ttk.Button(btn_frame, text="Add", command=add_pattern, width=12).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Remove", command=remove_selected, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=self.tr("Add"), command=add_pattern, width=12).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text=self.tr("Remove"), command=remove_selected, width=12).pack(side=tk.LEFT, padx=5)
 
-        ttk.Button(btn_frame, text="Close", command=dialog.destroy, width=12).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text=self.tr("Close"), command=dialog.destroy, width=12).pack(side=tk.RIGHT, padx=5)
 
         def on_close():
             self.config.filename_track_patterns = patterns
@@ -3565,7 +3610,7 @@ class SettingsMixin:
         """Open dialog to select a description auto-fill mode (single selection)."""
         parent = self.get_preferences_dialog_parent()
         dialog = tk.Toplevel(parent)
-        dialog.title("Description Auto-Fill")
+        dialog.title(self.tr("Description Auto-Fill"))
         dialog.transient(parent)
         dialog.withdraw()
         dialog.resizable(True, True)
@@ -3577,8 +3622,8 @@ class SettingsMixin:
         list_frame.pack(fill=tk.BOTH, expand=True)
 
         mode_tree = ttk.Treeview(list_frame, columns=('mode',), show='tree', selectmode='browse')
-        mode_tree.column('#0', width=0, stretch=False)
-        mode_tree.column('mode', width=460, anchor=tk.W)
+        mode_tree.column('#0', width=440, stretch=True)
+        mode_tree.column('mode', width=0, stretch=False)
 
         scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=mode_tree.yview)
         mode_tree.configure(yscrollcommand=scroll.set)
@@ -3589,7 +3634,7 @@ class SettingsMixin:
             for item in mode_tree.get_children():
                 mode_tree.delete(item)
             for mode in DESCRIPTION_AUTO_FILL_MODES:
-                m = mode_tree.insert('', tk.END, values=(mode,), tags=("builtin",))
+                m = mode_tree.insert('', tk.END, text=self.tr(mode), values=(mode,), tags=("builtin",))
                 if mode == current_value:
                     mode_tree.selection_set(m)
                     mode_tree.focus(m)
@@ -3624,7 +3669,7 @@ class SettingsMixin:
             is_custom = "custom" in tags
 
             edit_dialog = tk.Toplevel(dialog)
-            edit_dialog.title(f"Edit Template — {mode}")
+            edit_dialog.title(self.tr("Edit Template — {}").format(mode))
             edit_dialog.transient(dialog)
             edit_dialog.grab_set()
             edit_dialog.resizable(True, True)
@@ -3673,13 +3718,13 @@ class SettingsMixin:
 
             btn_f = ttk.Frame(f)
             btn_f.pack(fill=tk.X, pady=(10, 0))
-            ttk.Button(btn_f, text="Save", command=save, width=10).pack(side=tk.RIGHT, padx=3)
-            ttk.Button(btn_f, text="Reset to Default", command=reset, width=14).pack(side=tk.RIGHT, padx=3)
-            ttk.Button(btn_f, text="Cancel", command=edit_dialog.destroy, width=10).pack(side=tk.RIGHT)
+            ttk.Button(btn_f, text=self.tr("Save"), command=save, width=10).pack(side=tk.RIGHT, padx=3)
+            ttk.Button(btn_f, text=self.tr("Reset to Default"), command=reset, width=14).pack(side=tk.RIGHT, padx=3)
+            ttk.Button(btn_f, text=self.tr("Cancel"), command=edit_dialog.destroy, width=10).pack(side=tk.RIGHT)
 
         def new_custom():
             name_dialog = tk.Toplevel(dialog)
-            name_dialog.title("New Template")
+            name_dialog.title(self.tr("New Template"))
             name_dialog.transient(dialog)
             name_dialog.grab_set()
             name_dialog.resizable(False, False)
@@ -3687,7 +3732,7 @@ class SettingsMixin:
 
             nf = ttk.Frame(name_dialog, padding=10)
             nf.pack(fill=tk.BOTH, expand=True)
-            ttk.Label(nf, text="Template name:").pack(anchor=tk.W)
+            ttk.Label(nf, text=self.tr("Template name:")).pack(anchor=tk.W)
             name_entry = ttk.Entry(nf, width=40)
             name_entry.pack(fill=tk.X, pady=(5, 10))
             name_entry.focus_set()
@@ -3712,8 +3757,8 @@ class SettingsMixin:
             name_entry.bind('<Return>', on_enter)
             btn_f = ttk.Frame(nf)
             btn_f.pack()
-            ttk.Button(btn_f, text="Create", command=create, width=10).pack(side=tk.LEFT, padx=3)
-            ttk.Button(btn_f, text="Cancel", command=name_dialog.destroy, width=10).pack(side=tk.LEFT)
+            ttk.Button(btn_f, text=self.tr("Create"), command=create, width=10).pack(side=tk.LEFT, padx=3)
+            ttk.Button(btn_f, text=self.tr("Cancel"), command=name_dialog.destroy, width=10).pack(side=tk.LEFT)
 
         def duplicate_selected():
             sel = mode_tree.selection()
@@ -3738,7 +3783,7 @@ class SettingsMixin:
                 return
 
             name_dialog = tk.Toplevel(dialog)
-            name_dialog.title("Duplicate Template")
+            name_dialog.title(self.tr("Duplicate Template"))
             name_dialog.transient(dialog)
             name_dialog.grab_set()
             name_dialog.resizable(False, False)
@@ -3746,10 +3791,10 @@ class SettingsMixin:
 
             nf = ttk.Frame(name_dialog, padding=10)
             nf.pack(fill=tk.BOTH, expand=True)
-            ttk.Label(nf, text="New template name:").pack(anchor=tk.W)
+            ttk.Label(nf, text=self.tr("New template name:")).pack(anchor=tk.W)
             name_entry = ttk.Entry(nf, width=40)
             name_entry.pack(fill=tk.X, pady=(5, 10))
-            name_entry.insert(0, f"{mode} (Copy)")
+            name_entry.insert(0, self.tr("{} (Copy)").format(mode))
             name_entry.select_range(0, tk.END)
             name_entry.focus_set()
 
@@ -3772,8 +3817,8 @@ class SettingsMixin:
             name_entry.bind('<Return>', on_enter)
             btn_f = ttk.Frame(nf)
             btn_f.pack()
-            ttk.Button(btn_f, text="Duplicate", command=create, width=10).pack(side=tk.LEFT, padx=3)
-            ttk.Button(btn_f, text="Cancel", command=name_dialog.destroy, width=10).pack(side=tk.LEFT)
+            ttk.Button(btn_f, text=self.tr("Duplicate"), command=create, width=10).pack(side=tk.LEFT, padx=3)
+            ttk.Button(btn_f, text=self.tr("Cancel"), command=name_dialog.destroy, width=10).pack(side=tk.LEFT)
 
         def remove_selected():
             sel = mode_tree.selection()
@@ -3790,11 +3835,11 @@ class SettingsMixin:
 
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X, pady=(10, 0))
-        ttk.Button(btn_frame, text="Select", command=on_ok, width=12).pack(side=tk.RIGHT, padx=(4, 0))
-        ttk.Button(btn_frame, text="Close", command=dialog.destroy, width=12).pack(side=tk.RIGHT)
-        ttk.Button(btn_frame, text="New", command=new_custom, width=8).pack(side=tk.LEFT, padx=(0, 4))
-        ttk.Button(btn_frame, text="Duplicate", command=duplicate_selected, width=10).pack(side=tk.LEFT, padx=(0, 4))
-        ttk.Button(btn_frame, text="Delete", command=remove_selected, width=8).pack(side=tk.LEFT)
+        ttk.Button(btn_frame, text=self.tr("Select"), command=on_ok, width=12).pack(side=tk.RIGHT, padx=(4, 0))
+        ttk.Button(btn_frame, text=self.tr("Close"), command=dialog.destroy, width=12).pack(side=tk.RIGHT)
+        ttk.Button(btn_frame, text=self.tr("New"), command=new_custom, width=8).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(btn_frame, text=self.tr("Duplicate"), command=duplicate_selected, width=10).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(btn_frame, text=self.tr("Delete"), command=remove_selected, width=8).pack(side=tk.LEFT)
 
         dialog.update_idletasks()
         self.center_dialog(dialog, 520, 400, parent)
@@ -3832,19 +3877,19 @@ class SettingsMixin:
 
             if latest_ver > current_ver:
                 result = messagebox.askyesno(
-                    "Update Available",
-                    f"A new version is available: v{latest_tag}\n"
-                    f"You have: v{__version__}\n\n"
-                    "Would you like to open the releases page to download it?"
+                    self.tr("Update Available"),
+                    self.tr("A new version is available: v{}").format(latest_tag) + "\n" +
+                    self.tr("You have: v{}").format(__version__) + "\n\n" +
+                    self.tr("Would you like to open the releases page to download it?")
                 )
                 if result:
                     webbrowser.open("https://github.com/Nai64/BandcampAutoUploader/releases")
             elif not silent:
-                self.show_toast("You're on the latest version", 2000, "success")
+                self.show_toast(self.tr("You're on the latest version"), 2000, "success")
 
         except Exception:
             if not silent:
-                self.show_toast("Failed to check for updates", 2000, "error")
+                self.show_toast(self.tr("Failed to check for updates"), 2000, "error")
 
     def restart_application(self):
         """Restart the application"""
@@ -3860,8 +3905,8 @@ class SettingsMixin:
         # Create a dialog window
         dialog = tk.Toplevel(self.root)
         self.preferences_dialog = dialog
-        dialog.title("Preferences")
-        dialog.resizable(True, True)  # Allow resizing
+        dialog.title(self.tr("Preferences"))
+        dialog.resizable(True, True)
         dialog.transient(self.root)
         dialog.grab_set()
         self.center_dialog(dialog, 850, 700, self.root)
@@ -3880,7 +3925,7 @@ class SettingsMixin:
         close_frame = ttk.Frame(dialog)
         close_frame.pack(fill=tk.X, padx=15, pady=15)
         
-        ttk.Button(close_frame, text="Close", command=close_preferences).pack(side=tk.RIGHT)
+        ttk.Button(close_frame, text=self.tr("Close"), command=close_preferences).pack(side=tk.RIGHT)
 
     def open_preferences_to_section(self, section_id):
         """Open preferences dialog and navigate to a specific section."""

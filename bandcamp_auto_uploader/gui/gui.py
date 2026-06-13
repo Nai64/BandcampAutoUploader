@@ -74,6 +74,7 @@ from bandcamp_auto_uploader.gui.settings_mixin import SettingsMixin
 
 from bandcamp_auto_uploader.upload import Album, Track, UploadCancelled, get_metadata_track_number
 from bandcamp_auto_uploader import __version__
+from bandcamp_auto_uploader.i18n import setup_translator, get_translator
 
 # Configure logging
 logger = logging.getLogger("bandcamp-auto-uploader")
@@ -362,7 +363,8 @@ def show_startup_intro(root, launch_callback):
             except tk.TclError:
                 pass
             root.deiconify()
-            messagebox.showerror("Startup Error", f"Failed to start Bandcamp Auto Uploader:\n\n{exc}")
+            from bandcamp_auto_uploader.i18n import tr as _tr
+            messagebox.showerror(_tr("Startup Error"), _tr("Failed to start Bandcamp Auto Uploader:") + f"\n\n{exc}")
             raise
 
     splash.after(650, dismiss_splash)
@@ -371,12 +373,10 @@ def show_startup_intro(root, launch_callback):
 class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def __init__(self, root):
         self.root = root
-
-        self.root.title("Bandcamp Auto Uploader")
-        set_windows_app_user_model_id()
-        
-        # Load saved window geometry or use default
         self.config = load_config() or Config()
+        setup_translator(getattr(self.config, 'language', 'en'))
+        self.root.title(self.tr("Bandcamp Auto Uploader"))
+        set_windows_app_user_model_id()
         ToolTip.disabled = bool(getattr(self.config, 'disable_tooltips', True))
         if hasattr(self.config, 'window_geometry') and self.config.window_geometry:
             self.root.geometry(self.config.window_geometry)
@@ -569,6 +569,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if "NoneType" in msg and "remove" in msg:
                 return True
         return False
+
+    @staticmethod
+    def tr(key: str) -> str:
+        return get_translator().tr(key)
 
     def find_app_icon_path(self):
         """Find the bundled app icon in script and frozen builds."""
@@ -861,23 +865,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         
         # Upload Tab (hidden from notebook tabs)
         upload_frame = ttk.Frame(self.notebook)
-        self.notebook.add(upload_frame, text="Upload")
+        self.notebook.add(upload_frame, text=self.tr("Upload"))
         self.notebook.tab(upload_frame, state="hidden")  # Hide the tab from view
         self.create_upload_tab(upload_frame)
 
         # Settings Tab
         settings_frame = ttk.Frame(self.notebook)
-        self.notebook.add(settings_frame, text="Settings")
+        self.notebook.add(settings_frame, text=self.tr("Settings"))
+        self._settings_frame = settings_frame
         self.create_settings_tab(settings_frame)
 
         # Log Tab
         log_frame = ttk.Frame(self.notebook)
-        self.notebook.add(log_frame, text="Logs")
+        self.notebook.add(log_frame, text=self.tr("Logs"))
         self.create_log_tab(log_frame)
 
         # About Tab
         about_frame = ttk.Frame(self.notebook)
-        self.notebook.add(about_frame, text="About")
+        self.notebook.add(about_frame, text=self.tr("About"))
         self.create_about_tab(about_frame)
 
         # Hide all tabs except Upload and Logs (keep functionality but hide tab bar)
@@ -910,7 +915,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         top_section.pack(fill=tk.X, padx=12, pady=(6, 4))
         
         # Artist Selection - Left half
-        artist_frame = ttk.LabelFrame(top_section, text="Artist / Band", padding=10)
+        artist_frame = ttk.LabelFrame(top_section, text=self.tr("Artist / Band"), padding=10)
         artist_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 8))
         
         self.artist_var = tk.StringVar()
@@ -929,24 +934,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         
         self.refresh_btn = ttk.Button(
             button_row,
-            text="Refresh Artists",
+            text=self.tr("Refresh Artists"),
             command=self.load_artists,
             style="Subtle.TButton"
         )
         self.refresh_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 4))
-        ToolTip(self.refresh_btn, "Reload artists from all browsers.\nIf new artist not showing: close browser first, then click this.")
+        ToolTip(self.refresh_btn, self.tr("Reload artists from all browsers.\nIf new artist not showing: close browser first, then click this."))
 
         self.load_cookies_btn = ttk.Button(
             button_row,
-            text="Load Cookies",
+            text=self.tr("Load Cookies"),
             command=self.manual_load_cookies,
             style="Subtle.TButton"
         )
         self.load_cookies_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ToolTip(self.load_cookies_btn, "Manually load cookies from file")
+        ToolTip(self.load_cookies_btn, self.tr("Manually load cookies from file"))
         
         # Album Directory - Right half
-        album_frame = ttk.LabelFrame(top_section, text="Album Folder", padding=10)
+        album_frame = ttk.LabelFrame(top_section, text=self.tr("Album Folder"), padding=10)
         album_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0))
         
         self.album_path_var = tk.StringVar()
@@ -976,7 +981,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         
         self.album_browse_btn = ttk.Button(
             album_btn_row1, 
-            text="Browse...", 
+            text=self.tr("Browse..."), 
             command=self.browse_album,
             style="Subtle.TButton"
         )
@@ -984,16 +989,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.new_album_btn = ttk.Button(
             album_btn_row1,
-            text="New Album",
+            text=self.tr("New Album"),
             command=self.create_new_album,
             style="Subtle.TButton"
         )
         self.new_album_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
-        ToolTip(self.new_album_btn, "Create a new album folder in Documents/Bandcamp Auto Uploader/Albums/")
+        ToolTip(self.new_album_btn, self.tr("Create a new album folder in Documents/Bandcamp Auto Uploader/Albums/"))
 
         self.open_folder_btn = ttk.Button(
             album_btn_row1,
-            text="Open Folder",
+            text=self.tr("Open Folder"),
             command=self.open_album_folder,
             style="Subtle.TButton"
         )
@@ -1001,7 +1006,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.reload_album_btn = ttk.Button(
             album_btn_row1,
-            text="Reload Album",
+            text=self.tr("Reload Album"),
             command=self.reload_album,
             style="Subtle.TButton"
         )
@@ -1035,7 +1040,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 widget = widget.master
         self.left_canvas.bind_all("<MouseWheel>", _on_left_scroll, add=True)
         
-        self.details_frame = ttk.LabelFrame(left_scroll_frame, text="Details", padding=4)
+        self.details_frame = ttk.LabelFrame(left_scroll_frame, text=self.tr("Details"), padding=4)
         self.details_frame.bind("<Map>", lambda e: self._refresh_left_scrollregion())
         self.details_frame.pack(fill=tk.BOTH, expand=True)
         
@@ -1043,7 +1048,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         name_row = ttk.Frame(self.details_frame)
         name_row.pack(fill=tk.X, pady=(0, 2))
         
-        ttk.Label(name_row, text="Album Name:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(name_row, text=self.tr("Album Name:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         
         name_inner = ttk.Frame(name_row)
         name_inner.pack(fill=tk.X)
@@ -1054,18 +1059,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.album_name_auto_btn = ttk.Button(
             name_inner,
-            text="Auto",
+            text=self.tr("Auto"),
             command=self.auto_fill_album_name,
             width=5
         )
         self.album_name_auto_btn.pack(side=tk.LEFT)
-        ToolTip(name_inner.winfo_children()[-1], "Auto-fill from folder name")
+        ToolTip(name_inner.winfo_children()[-1], self.tr("Auto-fill from folder name"))
         
         # Artist
         artist_row = ttk.Frame(self.details_frame)
         artist_row.pack(fill=tk.X, pady=(0, 2))
         
-        ttk.Label(artist_row, text="Artist:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(artist_row, text=self.tr("Artist:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         
         artist_inner = ttk.Frame(artist_row)
         artist_inner.pack(fill=tk.X)
@@ -1076,18 +1081,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.album_artist_auto_btn = ttk.Button(
             artist_inner,
-            text="Auto",
+            text=self.tr("Auto"),
             command=self.auto_fill_artist_name,
             width=5
         )
         self.album_artist_auto_btn.pack(side=tk.LEFT)
-        ToolTip(artist_inner.winfo_children()[-1], "Auto-fill from track metadata")
+        ToolTip(artist_inner.winfo_children()[-1], self.tr("Auto-fill from track metadata"))
 
         # Release Date
         release_date_row = ttk.Frame(self.details_frame)
         release_date_row.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(release_date_row, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(release_date_row, text=self.tr("Release Date:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
 
         release_date_inner = ttk.Frame(release_date_row)
         release_date_inner.pack(fill=tk.X)
@@ -1108,14 +1113,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.album_release_date_btn = ttk.Button(
             release_date_inner,
-            text="Edit",
+            text=self.tr("Edit"),
             command=self.show_release_date_calendar,
             width=5
         )
         self.album_release_date_btn.pack(side=tk.LEFT)
-        ToolTip(release_date_inner.winfo_children()[-1], "Choose release date from calendar")
+        ToolTip(release_date_inner.winfo_children()[-1], self.tr("Choose release date from calendar"))
 
-        ttk.Label(self.details_frame, text="Album Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Album Price:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         price_inner = ttk.Frame(self.details_frame)
         price_inner.pack(fill=tk.X, pady=(0, 2))
         price_vcmd = (self.root.register(self.validate_price_change), "%P")
@@ -1131,18 +1136,18 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "<FocusOut>",
             lambda _event: self.sanitize_price_var(self.album_price_var, default="0", show_warning=True)
         )
-        self.album_nyp_check = ttk.Checkbutton(price_inner, text="Name Your Price", variable=self.album_nyp_var)
+        self.album_nyp_check = ttk.Checkbutton(price_inner, text=self.tr("Name Your Price"), variable=self.album_nyp_var)
         self.album_nyp_check.pack(side=tk.LEFT)
 
         # Tags
-        ttk.Label(self.details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Tags:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_tags_var = tk.StringVar()
         self.create_tag_input(self.details_frame)
         
         # Description
         desc_header = ttk.Frame(self.details_frame)
         desc_header.pack(fill=tk.X, pady=(0, 1))
-        ttk.Label(desc_header, text="Description:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        ttk.Label(desc_header, text=self.tr("Description:"), font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
         self.desc_char_label = ttk.Label(desc_header, text="0/1200", font=("Segoe UI", 7))
         self.desc_char_label.pack(side=tk.RIGHT)
         desc_frame, self.desc_text = create_rounded_text_editbox(
@@ -1159,7 +1164,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Credits
         credits_header = ttk.Frame(self.details_frame)
         credits_header.pack(fill=tk.X, pady=(0, 1))
-        ttk.Label(credits_header, text="Credits:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        ttk.Label(credits_header, text=self.tr("Credits:"), font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
         self.credits_char_label = ttk.Label(credits_header, text="0/1200", font=("Segoe UI", 7))
         self.credits_char_label.pack(side=tk.RIGHT)
         credits_frame, self.credits_text = create_rounded_text_editbox(
@@ -1174,91 +1179,91 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.credits_text, self.credits_char_label, 1200, self.album_credits_var))
 
         # License
-        ttk.Label(self.details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("License:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_license_combo = ttk.Combobox(
             self.details_frame,
             textvariable=self.album_license_var,
             values=[
-                "All Rights Reserved",
-                "CC Attribution",
-                "CC Attribution-ShareAlike",
-                "CC Attribution-NoDerivatives",
-                "CC Attribution-NonCommercial",
-                "CC Attribution-NonCommercial-ShareAlike",
-                "CC Attribution-NonCommercial-NoDerivatives",
-                "Public Domain"
+                self.tr("All Rights Reserved"),
+                self.tr("CC Attribution"),
+                self.tr("CC Attribution-ShareAlike"),
+                self.tr("CC Attribution-NoDerivatives"),
+                self.tr("CC Attribution-NonCommercial"),
+                self.tr("CC Attribution-NonCommercial-ShareAlike"),
+                self.tr("CC Attribution-NonCommercial-NoDerivatives"),
+                self.tr("Public Domain")
             ],
             state="readonly",
             font=("Segoe UI", 8)
         )
         self.album_license_combo.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Download Description:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Download Description:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_download_desc_entry = ttk.Entry(self.details_frame, textvariable=self.album_download_desc_var, font=("Segoe UI", 8))
         self.album_download_desc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Release Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Release Message:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_release_message_entry = ttk.Entry(self.details_frame, textvariable=self.album_release_message_var, font=("Segoe UI", 8))
         self.album_release_message_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Record Label:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Record Label:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_record_label_entry = ttk.Entry(self.details_frame, textvariable=self.album_record_label_var, font=("Segoe UI", 8))
         self.album_record_label_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Catalog #:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Catalog #:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_catalog_number_entry = ttk.Entry(self.details_frame, textvariable=self.album_catalog_number_var, font=("Segoe UI", 8))
         self.album_catalog_number_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="UPC/EAN:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("UPC/EAN:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_upc_entry = ttk.Entry(self.details_frame, textvariable=self.album_upc_var, font=("Segoe UI", 8))
         self.album_upc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Subscriber Message:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Subscriber Message:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_subscriber_entry = ttk.Entry(self.details_frame, textvariable=self.album_subscriber_message_var, font=("Segoe UI", 8))
         self.album_subscriber_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Composers (songwriters):", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Composers (songwriters):"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_composer_entry = ttk.Entry(self.details_frame, textvariable=self.album_composer_var, font=("Segoe UI", 8))
         self.album_composer_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.details_frame, text="Publishers:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.details_frame, text=self.tr("Publishers:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.album_publisher_entry = ttk.Entry(self.details_frame, textvariable=self.album_publisher_var, font=("Segoe UI", 8))
         self.album_publisher_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Checkbutton(self.details_frame, text="Require email", variable=self.album_require_email_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.details_frame, text="Registered with collection society", variable=self.album_pro_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.details_frame, text="Public", variable=self.album_public_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.details_frame, text=self.tr("Require email"), variable=self.album_require_email_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.details_frame, text=self.tr("Registered with collection society"), variable=self.album_pro_var).pack(anchor=tk.W, pady=(0, 2))
+        ttk.Checkbutton(self.details_frame, text=self.tr("Public"), variable=self.album_public_var).pack(anchor=tk.W, pady=(0, 2))
 
         self.setup_album_session_autosave()
 
         # Track details frame (hidden initially, shown when a track is selected)
-        self.track_details_frame = ttk.LabelFrame(left_scroll_frame, text="Details", padding=4)
+        self.track_details_frame = ttk.LabelFrame(left_scroll_frame, text=self.tr("Details"), padding=4)
         self.track_details_frame.bind("<Map>", lambda e: self._refresh_left_scrollregion())
 
         name_row2 = ttk.Frame(self.track_details_frame)
         name_row2.pack(fill=tk.X, pady=(0, 2))
-        ttk.Label(name_row2, text="Track Name:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(name_row2, text=self.tr("Track Name:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         name_inner2 = ttk.Frame(name_row2)
         name_inner2.pack(fill=tk.X)
         self.td_name_var = tk.StringVar()
         self.td_name_entry = ttk.Entry(name_inner2, textvariable=self.td_name_var, font=("Segoe UI", 8))
         self.td_name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
-        self.td_name_auto_btn = ttk.Button(name_inner2, text="Auto", command=self.td_auto_fill_name, width=5)
+        self.td_name_auto_btn = ttk.Button(name_inner2, text=self.tr("Auto"), command=self.td_auto_fill_name, width=5)
         self.td_name_auto_btn.pack(side=tk.LEFT)
 
         artist_row2 = ttk.Frame(self.track_details_frame)
         artist_row2.pack(fill=tk.X, pady=(0, 2))
-        ttk.Label(artist_row2, text="Artist:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(artist_row2, text=self.tr("Artist:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         artist_inner2 = ttk.Frame(artist_row2)
         artist_inner2.pack(fill=tk.X)
         self.td_artist_var = tk.StringVar()
         self.td_artist_entry = ttk.Entry(artist_inner2, textvariable=self.td_artist_var, font=("Segoe UI", 8))
         self.td_artist_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 3))
-        self.td_artist_auto_btn = ttk.Button(artist_inner2, text="Auto", command=self.td_auto_fill_artist, width=5)
+        self.td_artist_auto_btn = ttk.Button(artist_inner2, text=self.tr("Auto"), command=self.td_auto_fill_artist, width=5)
         self.td_artist_auto_btn.pack(side=tk.LEFT)
 
         # Release Date
-        ttk.Label(self.track_details_frame, text="Release Date:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("Release Date:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         rd_row2 = ttk.Frame(self.track_details_frame)
         rd_row2.pack(fill=tk.X, pady=(0, 2))
         self.td_release_date_var = tk.StringVar()
@@ -1274,11 +1279,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             "<FocusOut>",
             lambda _event: self.sanitize_release_date_var(self.td_release_date_var, show_warning=True)
         )
-        self.td_release_date_btn = ttk.Button(rd_row2, text="Edit", command=self.td_show_calendar, width=5)
+        self.td_release_date_btn = ttk.Button(rd_row2, text=self.tr("Edit"), command=self.td_show_calendar, width=5)
         self.td_release_date_btn.pack(side=tk.LEFT)
 
         # Track Price
-        ttk.Label(self.track_details_frame, text="Track Price:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("Track Price:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         td_price_row = ttk.Frame(self.track_details_frame)
         td_price_row.pack(fill=tk.X, pady=(0, 2))
         self.td_price_var = tk.StringVar(value="")
@@ -1295,13 +1300,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             lambda _event: self.sanitize_price_var(self.td_price_var, default="", show_warning=True)
         )
         self.td_nyp_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(td_price_row, text="Name Your Price", variable=self.td_nyp_var).pack(side=tk.LEFT)
+        self.td_nyp_check = ttk.Checkbutton(td_price_row, text=self.tr("Name Your Price"), variable=self.td_nyp_var)
+        self.td_nyp_check.pack(side=tk.LEFT)
 
-        ttk.Label(self.track_details_frame, text="Tags:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("Tags:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         td_tags_row = ttk.Frame(self.track_details_frame)
         td_tags_row.pack(fill=tk.X, pady=(0, 2))
         self.td_tags_var = tk.StringVar()
-        self.td_tags_edit_btn = ttk.Button(td_tags_row, text="Edit", width=5, command=self.open_td_tag_edit_dialog)
+        self.td_tags_edit_btn = ttk.Button(td_tags_row, text=self.tr("Edit"), width=5, command=self.open_td_tag_edit_dialog)
         self.td_tags_edit_btn.pack(side=tk.RIGHT, padx=(5, 0))
         self.td_tags_entry = ttk.Entry(td_tags_row, textvariable=self.td_tags_var, font=("Segoe UI", 8))
         self.td_tags_entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
@@ -1310,7 +1316,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         td_desc_header = ttk.Frame(self.track_details_frame)
         td_desc_header.pack(fill=tk.X, pady=(0, 1))
-        ttk.Label(td_desc_header, text="Description:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        ttk.Label(td_desc_header, text=self.tr("Description:"), font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
         self.td_desc_char_label = ttk.Label(td_desc_header, text="0/1200", font=("Segoe UI", 7))
         self.td_desc_char_label.pack(side=tk.RIGHT)
         td_desc_frame, self.td_desc_text = create_rounded_text_editbox(
@@ -1325,7 +1331,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         td_lyrics_header = ttk.Frame(self.track_details_frame)
         td_lyrics_header.pack(fill=tk.X, pady=(0, 1))
-        ttk.Label(td_lyrics_header, text="Lyrics:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        ttk.Label(td_lyrics_header, text=self.tr("Lyrics:"), font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
         self.td_lyrics_char_label = ttk.Label(td_lyrics_header, text="0/10000", font=("Segoe UI", 7))
         self.td_lyrics_char_label.pack(side=tk.RIGHT)
         td_lyrics_frame, self.td_lyrics_text = create_rounded_text_editbox(
@@ -1340,7 +1346,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         td_credits_header = ttk.Frame(self.track_details_frame)
         td_credits_header.pack(fill=tk.X, pady=(0, 1))
-        ttk.Label(td_credits_header, text="Credits:", font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
+        ttk.Label(td_credits_header, text=self.tr("Credits:"), font=("Segoe UI", 8, "bold")).pack(side=tk.LEFT)
         self.td_credits_char_label = ttk.Label(td_credits_header, text="0/1200", font=("Segoe UI", 7))
         self.td_credits_char_label.pack(side=tk.RIGHT)
         td_credits_frame, self.td_credits_text = create_rounded_text_editbox(
@@ -1353,36 +1359,36 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_credits_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
             self.td_credits_text, self.td_credits_char_label, 1200))
 
-        ttk.Label(self.track_details_frame, text="License:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
-        self.td_license_var = tk.StringVar(value="All Rights Reserved")
+        ttk.Label(self.track_details_frame, text=self.tr("License:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        self.td_license_var = tk.StringVar(value=self.tr("All Rights Reserved"))
         self.td_license_combo = ttk.Combobox(self.track_details_frame, textvariable=self.td_license_var,
-            values=["All Rights Reserved","CC Attribution","CC Attribution-ShareAlike","CC Attribution-NoDerivatives",
-                    "CC Attribution-NonCommercial","CC Attribution-NonCommercial-ShareAlike",
-                    "CC Attribution-NonCommercial-NoDerivatives","Public Domain"],
+            values=[self.tr("All Rights Reserved"),self.tr("CC Attribution"),self.tr("CC Attribution-ShareAlike"),self.tr("CC Attribution-NoDerivatives"),
+                    self.tr("CC Attribution-NonCommercial"),self.tr("CC Attribution-NonCommercial-ShareAlike"),
+                    self.tr("CC Attribution-NonCommercial-NoDerivatives"),self.tr("Public Domain")],
             state="readonly", font=("Segoe UI", 8))
         self.td_license_combo.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.track_details_frame, text="Download Desc.:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("Download Desc.:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_download_desc_var = tk.StringVar()
         self.td_download_desc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_download_desc_var, font=("Segoe UI", 8))
         self.td_download_desc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.track_details_frame, text="ISRC:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("ISRC:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_isrc_var = tk.StringVar()
         self.td_isrc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_isrc_var, font=("Segoe UI", 8))
         self.td_isrc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.track_details_frame, text="ISWC:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("ISWC:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_iswc_var = tk.StringVar()
         self.td_iswc_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_iswc_var, font=("Segoe UI", 8))
         self.td_iswc_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.track_details_frame, text="Video ID (YouTube/Vimeo):", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("Video ID (YouTube/Vimeo):"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_video_id_var = tk.StringVar(value="")
         self.td_video_id_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_video_id_var, font=("Segoe UI", 8))
         self.td_video_id_entry.pack(fill=tk.X, pady=(0, 2))
 
-        ttk.Label(self.track_details_frame, text="Video Caption:", font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
+        ttk.Label(self.track_details_frame, text=self.tr("Video Caption:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_video_caption_var = tk.StringVar(value="")
         self.td_video_caption_entry = ttk.Entry(self.track_details_frame, textvariable=self.td_video_caption_var, font=("Segoe UI", 8))
         self.td_video_caption_entry.pack(fill=tk.X, pady=(0, 2))
@@ -1391,11 +1397,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.td_streaming_var = tk.BooleanVar(value=True)
         self.td_enable_dl_var = tk.BooleanVar(value=True)
         self.td_private_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(self.track_details_frame, text="Featured", variable=self.td_featured_var).pack(anchor=tk.W, pady=(0, 2))
+        self.td_featured_check = ttk.Checkbutton(self.track_details_frame, text=self.tr("Featured"), variable=self.td_featured_var)
+        self.td_featured_check.pack(anchor=tk.W, pady=(0, 2))
         self.td_featured_var.trace_add("write", self._on_featured_toggled)
-        ttk.Checkbutton(self.track_details_frame, text="Streaming", variable=self.td_streaming_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.track_details_frame, text="Download", variable=self.td_enable_dl_var).pack(anchor=tk.W, pady=(0, 2))
-        ttk.Checkbutton(self.track_details_frame, text="Bonus track", variable=self.td_private_var).pack(anchor=tk.W, pady=(0, 2))
+        self.td_streaming_check = ttk.Checkbutton(self.track_details_frame, text=self.tr("Streaming"), variable=self.td_streaming_var)
+        self.td_streaming_check.pack(anchor=tk.W, pady=(0, 2))
+        self.td_enable_dl_check = ttk.Checkbutton(self.track_details_frame, text=self.tr("Download"), variable=self.td_enable_dl_var)
+        self.td_enable_dl_check.pack(anchor=tk.W, pady=(0, 2))
+        self.td_private_check = ttk.Checkbutton(self.track_details_frame, text=self.tr("Bonus track"), variable=self.td_private_var)
+        self.td_private_check.pack(anchor=tk.W, pady=(0, 2))
 
         self.track_details_frame.pack(fill=tk.BOTH, expand=True)
         self.track_details_frame.pack_forget()
@@ -1408,7 +1418,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         preview_title = ttk.Frame(middle_column)
         self.preview_title_label = ttk.Label(
             preview_title,
-            text="Preview",
+            text=self.tr("Preview"),
             font=("Segoe UI", 9, "bold")
         )
         self.preview_title_label.pack(side=tk.LEFT)
@@ -1452,7 +1462,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.guess_case_preview_values = None
         self.guess_case_btn = ttk.Button(
             checkbox_frame,
-            text="Guess Case",
+            text=self.tr("Guess Case"),
             command=self.apply_guess_case_to_track_titles,
             style="Subtle.TButton"
         )
@@ -1463,23 +1473,23 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.extract_filename_preview_values = None
         self.extract_filename_btn = ttk.Button(
             checkbox_frame,
-            text="Extract from Filename",
+            text=self.tr("Extract from Filename"),
             command=self.apply_extract_from_filename,
             style="Subtle.TButton"
         )
         self.extract_filename_btn.pack(side=tk.RIGHT, padx=(0, 6))
         self.extract_filename_btn.bind("<Enter>", self.preview_extract_from_filename)
         self.extract_filename_btn.bind("<Leave>", self.restore_extract_from_filename)
-        ToolTip(self.extract_filename_btn, "Parse track number and title from filename patterns\nHover to preview")
+        ToolTip(self.extract_filename_btn, self.tr("Parse track number and title from filename patterns\nHover to preview"))
 
         self.add_track_btn = ttk.Button(
             checkbox_frame,
-            text="Add Track",
+            text=self.tr("Add Track"),
             command=self.add_track_to_album,
             style="Subtle.TButton"
         )
         self.add_track_btn.pack(side=tk.RIGHT, padx=(0, 6))
-        ToolTip(self.add_track_btn, "Add individual tracks to build the current album\n(Tracks shown in Preview area - right-click to manage)")
+        ToolTip(self.add_track_btn, self.tr("Add individual tracks to build the current album\n(Tracks shown in Preview area - right-click to manage)"))
 
         # Track table (Treeview)
         table_frame = ttk.Frame(preview_container, width=1120)
@@ -1508,26 +1518,26 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.copied_track_metadata = None
 
         # Configure columns
-        self.track_table.heading("track_no", text="Track No.")
-        self.track_table.heading("artist", text="Artist")
-        self.track_table.heading("track_name", text="Track Name")
-        self.track_table.heading("comment", text="Comment")
-        self.track_table.heading("length", text="Length")
-        self.track_table.heading("extension", text="Extension")
-        self.track_table.heading("price", text="Price")
-        self.track_table.heading("nyp", text="NYP")
-        self.track_table.heading("year", text="Year")
-        self.track_table.heading("genre", text="Genre")
-        self.track_table.heading("bitrate", text="Bitrate")
-        self.track_table.heading("file_size", text="File Size")
-        self.track_table.heading("file_path", text="File Path")
-        self.track_table.heading("sample_rate", text="Sample Rate")
-        self.track_table.heading("channels", text="Channels")
-        self.track_table.heading("bit_depth", text="Bit Depth")
-        self.track_table.heading("album_metadata", text="Album")
-        self.track_table.heading("album_artist_metadata", text="Album Artist")
-        self.track_table.heading("composer", text="Composer")
-        self.track_table.heading("isrc", text="ISRC")
+        self.track_table.heading("track_no", text=self.tr("Track No."))
+        self.track_table.heading("artist", text=self.tr("Artist"))
+        self.track_table.heading("track_name", text=self.tr("Track Name"))
+        self.track_table.heading("comment", text=self.tr("Comment"))
+        self.track_table.heading("length", text=self.tr("Length"))
+        self.track_table.heading("extension", text=self.tr("Extension"))
+        self.track_table.heading("price", text=self.tr("Price"))
+        self.track_table.heading("nyp", text=self.tr("NYP"))
+        self.track_table.heading("year", text=self.tr("Year"))
+        self.track_table.heading("genre", text=self.tr("Genre"))
+        self.track_table.heading("bitrate", text=self.tr("Bitrate"))
+        self.track_table.heading("file_size", text=self.tr("File Size"))
+        self.track_table.heading("file_path", text=self.tr("File Path"))
+        self.track_table.heading("sample_rate", text=self.tr("Sample Rate"))
+        self.track_table.heading("channels", text=self.tr("Channels"))
+        self.track_table.heading("bit_depth", text=self.tr("Bit Depth"))
+        self.track_table.heading("album_metadata", text=self.tr("Album"))
+        self.track_table.heading("album_artist_metadata", text=self.tr("Album Artist"))
+        self.track_table.heading("composer", text=self.tr("Composer"))
+        self.track_table.heading("isrc", text=self.tr("ISRC"))
         self.configure_track_table_heading_commands()
 
         self.track_table.column("track_no", width=50, anchor=tk.CENTER)
@@ -1618,7 +1628,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         cover_title = ttk.Frame(right_column)
         self.cover_art_title_label = ttk.Label(
             cover_title,
-            text="Cover Art",
+            text=self.tr("Cover Art"),
             font=("Segoe UI", 9, "bold")
         )
         self.cover_art_title_label.pack(side=tk.LEFT)
@@ -1643,7 +1653,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.cover_preview_label = ttk.Label(
             self.cover_preview_frame,
-            text="No cover art\n\nClick Browse",
+            text=self.tr("No cover art\n\nClick Browse"),
             anchor="center",
             justify="center",
             font=("Segoe UI", 9)
@@ -1690,28 +1700,28 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.browse_cover_btn = ttk.Button(
             cover_btn_frame,
-            text="Browse",
+            text=self.tr("Browse"),
             command=self.browse_cover
         )
         self.browse_cover_btn.grid(row=0, column=0, sticky="ew", padx=(0, 2))
 
         self.view_cover_btn = ttk.Button(
             cover_btn_frame,
-            text="View",
+            text=self.tr("View"),
             command=self.view_cover_art
         )
         self.view_cover_btn.grid(row=0, column=1, sticky="ew")
 
         self.library_cover_btn = ttk.Button(
             cover_btn_frame,
-            text="Library",
+            text=self.tr("Library"),
             command=self.manage_cover_art_library
         )
         self.library_cover_btn.grid(row=1, column=0, sticky="ew", padx=(0, 2), pady=(3, 0))
 
         self.detect_cover_btn = ttk.Button(
             cover_btn_frame,
-            text="Detect",
+            text=self.tr("Detect"),
             command=self.detect_cover_from_tracks
         )
         self.detect_cover_btn.grid(row=1, column=1, sticky="ew", pady=(3, 0))
@@ -1723,7 +1733,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.scale_cover_var = tk.BooleanVar(value=getattr(self.config, 'always_auto_scale_cover', True))
         self.scale_cover_check = ttk.Checkbutton(
             cover_controls_frame,
-            text="Auto-scale to Bandcamp specs",
+            text=self.tr("Auto-scale to Bandcamp specs"),
             variable=self.scale_cover_var,
             command=self.on_scale_cover_changed
         )
@@ -1733,7 +1743,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         scale_method_frame = ttk.Frame(cover_controls_frame)
         scale_method_frame.pack(fill=tk.X, pady=(0, 1))
 
-        ttk.Label(scale_method_frame, text="Size:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
+        ttk.Label(scale_method_frame, text=self.tr("Size:"), font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
 
         self.scale_size_var = tk.StringVar(value="1400x1400")
         self.scaling_method_var = tk.StringVar(value=getattr(self.config, 'cover_scaling_method', 'Lanczos'))
@@ -1748,21 +1758,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         self.scale_size_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
 
-        ttk.Label(scale_method_frame, text="Fit:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
+        ttk.Label(scale_method_frame, text=self.tr("Fit:"), font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
 
         self.cover_fit_mode_var = tk.StringVar(value=getattr(self.config, 'cover_fit_mode', 'Crop (fill)'))
         self.cover_fit_mode_var.trace_add('write', lambda *args: self._on_cover_fit_mode_changed())
         self.cover_fit_mode_combo = ttk.Combobox(
             scale_method_frame,
             textvariable=self.cover_fit_mode_var,
-            values=["Crop (fill)", "Fit (contain)", "Stretch"],
+            values=[self.tr("Crop (fill)"), self.tr("Fit (contain)"), self.tr("Stretch")],
             state="readonly",
             width=12,
             font=("Segoe UI", 8)
         )
         self.cover_fit_mode_combo.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 6))
 
-        ttk.Label(scale_method_frame, text="Method:", font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
+        ttk.Label(scale_method_frame, text=self.tr("Method:"), font=("Segoe UI", 8)).pack(side=tk.LEFT, padx=(0, 3))
 
         self.create_upload_progress_section(right_column)
 
@@ -1777,32 +1787,32 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Preferences button
         prefs_btn = ttk.Button(
             button_frame,
-            text="Preferences",
+            text=self.tr("Preferences"),
             command=self.open_preferences_dialog,
             style="Subtle.TButton"
         )
         prefs_btn.pack(side=tk.LEFT, padx=(0, 10))
-        ToolTip(prefs_btn, "Open preferences dialog")
+        ToolTip(prefs_btn, self.tr("Open preferences dialog"))
         
         self.upload_btn = ttk.Button(
             button_frame,
-            text="UPLOAD ALBUM",
+            text=self.tr("UPLOAD ALBUM"),
             command=self.start_upload,
             style="Primary.TButton",
             state=tk.DISABLED
         )
         self.upload_btn.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
-        ToolTip(self.upload_btn, "Upload the selected album to Bandcamp (Keyboard: Ctrl+S)")
+        ToolTip(self.upload_btn, self.tr("Upload the selected album to Bandcamp (Keyboard: Ctrl+S)"))
         
         self.cancel_btn = ttk.Button(
             button_frame,
-            text="Cancel Upload",
+            text=self.tr("Cancel Upload"),
             command=self.cancel_upload,
             style="Subtle.TButton",
             state=tk.DISABLED
         )
         self.cancel_btn.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        ToolTip(self.cancel_btn, "Cancel the current upload operation")
+        ToolTip(self.cancel_btn, self.tr("Cancel the current upload operation"))
 
     def create_upload_progress_section(self, parent):
         """Create the per-track upload progress section below cover art."""
@@ -1811,7 +1821,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         progress_title = ttk.Frame(parent)
         self.upload_progress_title_label = ttk.Label(
             progress_title,
-            text="Progress",
+            text=self.tr("Progress"),
             font=("Segoe UI", 9, "bold")
         )
         self.upload_progress_title_label.pack(side=tk.LEFT)
@@ -1858,7 +1868,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.upload_progress_content.bind("<Enter>", self.bind_upload_progress_mousewheel)
         self.upload_progress_content.bind("<Leave>", self.unbind_upload_progress_mousewheel)
         self.upload_progress_rows = []
-        self.clear_upload_progress("No upload in progress")
+        self.clear_upload_progress()
         self.upload_progress_timing_job = None
         self.upload_progress_started_at = None
         self.upload_progress_active_index = None
@@ -1913,9 +1923,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.upload_progress_canvas.yview_scroll(delta, "units")
         return "break"
 
-    def clear_upload_progress(self, message="No upload in progress"):
+    def clear_upload_progress(self, message=None):
         """Clear per-track progress rows and show a placeholder."""
+        if message is None:
+            message = self.tr("No upload in progress")
         if not hasattr(self, 'upload_progress_content'):
+            return
             return
 
         self.stop_upload_progress_timer()
@@ -1985,7 +1998,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.upload_progress_rows = []
         if not labels:
-            self.clear_upload_progress("No tracks queued")
+            self.clear_upload_progress(self.tr("No tracks queued"))
             return
 
         for index, title in enumerate(labels):
@@ -2004,7 +2017,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             status_label = ttk.Label(
                 header,
-                text="Waiting",
+                text=self.tr("Waiting"),
                 font=("Segoe UI", 8),
                 foreground="#64748b"
             )
@@ -2251,7 +2264,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             for row in getattr(self, 'upload_progress_rows', []):
                 if int(row["progress"]["value"]) < 100:
                     row["base_status"] = "Cancelled"
-                    row["status"].configure(text="Cancelled")
+                    row["status"].configure(text=self.tr("Cancelled"))
             if self._taskbar_progress:
                 self._taskbar_progress.clear()
             return
@@ -2272,7 +2285,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         if event == "conversion_done":
             if getattr(self.config, 'notify_on_conversion_complete', False):
-                self.show_toast(f"Converted: {payload.get('title', '')}", 2000, "success", trigger="conversion_complete")
+                self.show_toast(self.tr("Converted: {}").format(payload.get('title', '')), 2000, "success", trigger="conversion_complete")
             return
 
         if event == "track_start":
@@ -2302,7 +2315,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 row["status"].configure(foreground="#dc2626")
                 row["progress"].configure(style="Failed.Horizontal.TProgressbar")
                 if getattr(self.config, 'notify_on_track_error', True):
-                    self.root.after(0, lambda t=payload.get('title', ''): self.show_toast(f"Track skipped: {t}", 2500, "error", trigger="track_error"))
+                    self.root.after(0, lambda t=payload.get('title', ''): self.show_toast(self.tr("Track skipped: {}").format(t), 2500, "error", trigger="track_error"))
 
         row["status"].configure(text=self.compose_progress_status_text(index))
 
@@ -2409,7 +2422,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             # No cover - show placeholder
             self.cover_preview_label.configure(
                 image='',
-                text="No cover art selected\n\nClick Browse to add"
+                text=self.tr("No cover art selected\n\nClick Browse to add")
             )
             if hasattr(self, '_cover_photo'):
                 delattr(self, '_cover_photo')
@@ -2418,7 +2431,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if self._is_url(cover_path):
             self.cover_preview_label.configure(
                 image='',
-                text="Image URL set\n\nPress Enter to load"
+                text=self.tr("Image URL set\n\nPress Enter to load")
             )
             if hasattr(self, '_cover_photo'):
                 delattr(self, '_cover_photo')
@@ -2428,7 +2441,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             # Invalid path - show placeholder
             self.cover_preview_label.configure(
                 image='',
-                text="No cover art selected\n\nClick Browse to add"
+                text=self.tr("No cover art selected\n\nClick Browse to add")
             )
             if hasattr(self, '_cover_photo'):
                 delattr(self, '_cover_photo')
@@ -2496,31 +2509,31 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if icon is not None:
             icon.pack(pady=(0, 10))
 
-        ttk.Label(content, text="Bandcamp Auto Uploader",
+        ttk.Label(content, text=self.tr("Bandcamp Auto Uploader"),
                   font=("Segoe UI", 20, "bold")).pack()
 
-        ttk.Label(content, text=f"Version {__version__}",
+        ttk.Label(content, text=self.tr("Version") + f" {__version__}",
                   font=("Segoe UI", 11)).pack(pady=(5, 15))
 
         link = ttk.Label(content,
-                         text="github.com/7x11x13/bandcamp-auto-uploader",
+                         text=self.tr("github.com/7x11x13/bandcamp-auto-uploader"),
                          font=("Segoe UI", 9), foreground="#4a90e2", cursor="hand2")
         link.pack()
         link.bind("<Button-1>", lambda e: webbrowser.open("https://github.com/7x11x13/bandcamp-auto-uploader"))
 
         btn_frame = ttk.Frame(content)
         btn_frame.pack()
-        ttk.Button(btn_frame, text="GitHub Repository",
+        ttk.Button(btn_frame, text=self.tr("GitHub Repository"),
                    command=lambda: webbrowser.open("https://github.com/Nai64/BandcampAutoUploader"),
                    width=22).pack(pady=3)
-        ttk.Button(btn_frame, text="Follow on Twitter",
+        ttk.Button(btn_frame, text=self.tr("Follow on Twitter"),
                    command=lambda: webbrowser.open("https://x.com/naii_dev"),
                    width=22).pack(pady=3)
-        ttk.Button(btn_frame, text="Privacy Policy",
+        ttk.Button(btn_frame, text=self.tr("Privacy Policy"),
                    command=self.show_privacy_policy,
                    width=22).pack(pady=3)
 
-        ttk.Label(content, text="Made with ❤ for the Bandcamp community",
+        ttk.Label(content, text=self.tr("Made with ❤ for the Bandcamp community"),
                   font=("Segoe UI", 9), foreground="gray").pack(pady=(20, 5))
 
     def _build_about_icon(self, parent):
@@ -2555,7 +2568,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         import sys
         
         dialog = tk.Toplevel(self.root)
-        dialog.title("Privacy Policy")
+        dialog.title(self.tr("Privacy Policy"))
         dialog.geometry("800x600")
         dialog.transient(self.root)
         
@@ -2602,10 +2615,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     privacy_text = f.read()
             else:
                 # Fallback to basic policy if file not found
-                privacy_text = "Privacy policy file not found. Please visit our GitHub repository for the full privacy policy."
+                privacy_text = self.tr("Privacy policy file not found. Please visit our GitHub repository for the full privacy policy.")
         except Exception as e:
             logger.warning(f"Failed to load privacy policy file: {e}")
-            privacy_text = "Unable to load privacy policy. Please visit our GitHub repository for the full privacy policy."
+            privacy_text = self.tr("Unable to load privacy policy. Please visit our GitHub repository for the full privacy policy.")
         
         text_widget = tk.Text(scrollable_frame, wrap=tk.WORD, font=("Segoe UI", 9), padx=10, pady=10)
         text_widget.insert("1.0", privacy_text)
@@ -2613,7 +2626,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         text_widget.pack(fill=tk.BOTH, expand=True)
         
         # Close button
-        close_btn = ttk.Button(main_frame, text="Close", command=dialog.destroy, width=15)
+        close_btn = ttk.Button(main_frame, text=self.tr("Close"), command=dialog.destroy, width=15)
         close_btn.pack(pady=(10, 0))
     
     def initialize_app(self):
@@ -2702,12 +2715,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if self.urls:
                     self.root.after(0, self.update_artist_dropdown)
                     artist_count = len(self.urls)
-                    self.root.after(0, lambda: self.show_toast(f"{artist_count} artist(s) loaded", 2500, "success", trigger="artists_load"))
+                    self.root.after(0, lambda ac=artist_count: self.show_toast(self.tr("{} artist(s) loaded").format(ac), 2500, "success", trigger="artists_load"))
                 else:
                     self.log_queue.put("No artists found. Please log in to Bandcamp in your browser.")
                     self.root.after(0, lambda: messagebox.showwarning(
-                        "No Artists Found",
-                        "Could not find any Bandcamp artists.\n\n"
+                        self.tr("No Artists Found"),
+                        self.tr("Could not find any Bandcamp artists.\n\n"
                         "Please make sure you're logged in to Bandcamp in at least one browser:\n"
                         "• Chrome, Firefox (Stable/Nightly/Developer/ESR), Edge, Brave\n"
                         "• Opera, Opera GX, Vivaldi, Safari\n\n"
@@ -2716,7 +2729,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         "2. Visit your artist/label page\n"
                         "3. CLOSE the browser completely (to save cookies to disk)\n"
                         "4. Click 'Refresh Artists' in this app\n\n"
-                        "If still not working, export cookies.txt and configure it in Settings."
+                        "If still not working, export cookies.txt and configure it in Settings.")
                     ))
             except Exception as e:
                 logger.exception(e)
@@ -2797,7 +2810,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 # Show which browsers we loaded from
                 browser_list = ", ".join(found_browsers)
                 self.update_status(f"Loaded from {len(found_browsers)} browser(s)", None)
-                self.show_toast(f"Loaded {len(all_bands)} bands from {browser_list}", 3500, "success")
+                self.show_toast(self.tr("Loaded {} bands from {}").format(len(all_bands), browser_list), 3500, "success")
                 
                 # Cache the first successful browser for faster startup next time
                 if found_browsers:
@@ -2986,8 +2999,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     if "login" in test_response.url.lower() or "signin" in test_response.url.lower():
                         self.log_queue.put("WARNING: Session may be invalid - redirected to login")
                         self.root.after(0, lambda: messagebox.showwarning(
-                            "Session Warning",
-                            "Your session may have expired. Please log in to Bandcamp again."
+                            self.tr("Session Warning"),
+                            self.tr("Your session may have expired. Please log in to Bandcamp again.")
                         ))
                     else:
                         self.log_queue.put("Session verified successfully")
@@ -3014,7 +3027,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if cover_file.exists():
                 self.cover_path_var.set(str(cover_file))
                 logger.info(f"Auto-detected cover art: {cover_name}")
-                self.show_toast(f"Auto-detected cover: {cover_name}", 2000, "success")
+                self.show_toast(self.tr("Auto-detected cover: {}").format(cover_name), 2000, "success")
                 return True
 
         # Also check for any image file in the folder
@@ -3024,7 +3037,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if file.stem.lower() not in ['cover', 'folder', 'front', 'album', 'artwork']:
                     self.cover_path_var.set(str(file))
                     logger.info(f"Auto-detected cover art: {file.name}")
-                    self.show_toast(f"Auto-detected cover: {file.name}", 2000, "success")
+                    self.show_toast(self.tr("Auto-detected cover: {}").format(file.name), 2000, "success")
                     return True
 
         return False
@@ -3118,7 +3131,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.cover_path_var.set(str(cover_path))
         self.add_to_cover_library(str(cover_path))
-        self.show_toast("Extracted cover art from track metadata", 2200, "success", trigger="cover_load")
+        self.show_toast(self.tr("Extracted cover art from track metadata"), 2200, "success", trigger="cover_load")
         return True
 
     def apply_album_load_preferences(self, album_path):
@@ -3143,7 +3156,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def on_album_selection_changed(self):
         """Reset album-change UI state controlled by Preferences."""
         if getattr(self.config, 'clear_progress_on_album_change', True):
-            self.clear_upload_progress("No upload in progress")
+            self.clear_upload_progress()
 
     def clear_album_load_fields(self):
         """Clear album-specific fields before loading metadata from another album."""
@@ -3407,7 +3420,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             session_path.write_text(self.render_album_session_text(payload), encoding="utf-8")
             logger.debug(f"Saved album session file: {session_path}")
             if getattr(self.config, 'notify_on_album_save', False):
-                self.show_toast("Album session saved", 1800, "success", trigger="album_save")
+                self.show_toast(self.tr("Album session saved"), 1800, "success", trigger="album_save")
         except Exception as e:
             logger.warning(f"Failed to save album session file: {e}")
 
@@ -3568,13 +3581,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         if not session_path.exists():
             self.save_album_session_file()
-            self.show_toast("Album session file created", 1800, "success", trigger="file_add")
+            self.show_toast(self.tr("Album session file created"), 1800, "success", trigger="file_add")
             return
 
         try:
             payload = self.read_album_session_payload(session_path)
             if not payload:
-                self.show_toast("Album session file has no loadable data", 2200, "warning")
+                self.show_toast(self.tr("Album session file has no loadable data"), 2200, "warning")
                 return
 
             self._album_session_loading = True
@@ -3585,10 +3598,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.sync_track_table_to_current_album()
             self.refresh_all_track_row_tags()
             self._auto_feature_first_track()
-            self.show_toast("Album session restored", 1800, "success", trigger="file_add")
+            self.show_toast(self.tr("Album session restored"), 1800, "success", trigger="file_add")
         except Exception as e:
             logger.warning(f"Failed to load album session file: {e}")
-            self.show_toast("Could not load album session file", 2200, "warning")
+            self.show_toast(self.tr("Could not load album session file"), 2200, "warning")
         finally:
             self._album_session_loading = False
 
@@ -3677,24 +3690,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def undo_track_table_action(self):
         """Undo the latest captured track-table action."""
         if not self.undo_buffer:
-            self.show_toast("Nothing to undo", 1500, "info")
+            self.show_toast(self.tr("Nothing to undo"), 1500, "info")
             return
         current = self.get_track_table_state_snapshot("Redo state")
         snapshot = self.undo_buffer.pop()
         self.redo_buffer.append(current)
         self.restore_track_table_state_snapshot(snapshot)
-        self.show_toast(f"Undid: {snapshot.get('label', 'Edit')}", 1700, "success")
+        self.show_toast(self.tr("Undid: {}").format(snapshot.get('label', self.tr('Edit'))), 1700, "success")
 
     def redo_track_table_action(self):
         """Redo the latest undone track-table action."""
         if not self.redo_buffer:
-            self.show_toast("Nothing to redo", 1500, "info")
+            self.show_toast(self.tr("Nothing to redo"), 1500, "info")
             return
         current = self.get_track_table_state_snapshot("Undo state")
         snapshot = self.redo_buffer.pop()
         self.undo_buffer.append(current)
         self.restore_track_table_state_snapshot(snapshot)
-        self.show_toast("Redo applied", 1700, "success")
+        self.show_toast(self.tr("Redo applied"), 1700, "success")
 
     def get_visible_track_columns(self):
         """Return the currently displayed preview table columns."""
@@ -4125,7 +4138,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Open dialog to pick a description template and fill the description box."""
         rows = self.get_track_table_rows()
         dialog = tk.Toplevel(self.root)
-        dialog.title("Description Presets")
+        dialog.title(self.tr("Description Presets"))
         dialog.transient(self.root)
         dialog.grab_set()
         dialog.resizable(True, True)
@@ -4138,8 +4151,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         list_frame.pack(fill=tk.BOTH, expand=True)
 
         mode_tree = ttk.Treeview(list_frame, columns=('mode',), show='tree', selectmode='browse')
-        mode_tree.column('#0', width=0, stretch=False)
-        mode_tree.column('mode', width=460, anchor=tk.W)
+        mode_tree.column('#0', width=440, stretch=True)
+        mode_tree.column('mode', width=0, stretch=False)
 
         scroll = ttk.Scrollbar(list_frame, orient=tk.VERTICAL, command=mode_tree.yview)
         mode_tree.configure(yscrollcommand=scroll.set)
@@ -4147,7 +4160,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         mode_tree.pack(fill=tk.BOTH, expand=True)
 
         for mode in DESCRIPTION_AUTO_FILL_MODES:
-            mode_tree.insert('', tk.END, values=(mode,), tags=("builtin",))
+            mode_tree.insert('', tk.END, text=self.tr(mode), values=(mode,), tags=("builtin",))
         for cm in load_custom_description_templates():
             mode_tree.insert('', tk.END, values=(cm.get("name", "?"),), tags=("custom",))
 
@@ -4168,13 +4181,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         btn_f = ttk.Frame(frame)
         btn_f.pack(fill=tk.X, pady=(10, 0))
-        ttk.Button(btn_f, text="Apply", command=apply, width=10).pack(side=tk.RIGHT, padx=3)
-        ttk.Button(btn_f, text="Cancel", command=dialog.destroy, width=10).pack(side=tk.RIGHT)
+        ttk.Button(btn_f, text=self.tr("Apply"), command=apply, width=10).pack(side=tk.RIGHT, padx=3)
+        ttk.Button(btn_f, text=self.tr("Cancel"), command=dialog.destroy, width=10).pack(side=tk.RIGHT)
 
     def _ask_album_name_dialog(self):
         """Modern input dialog for album name."""
         dialog = tk.Toplevel(self.root)
-        dialog.title("New Album")
+        dialog.title(self.tr("New Album"))
         dialog.transient(self.root)
         dialog.withdraw()
         dialog.resizable(False, False)
@@ -4187,7 +4200,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         frame = ttk.Frame(dialog, padding=20)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(frame, text="Enter album name:", font=("Segoe UI", 10)).pack(anchor=tk.W, pady=(0, 10))
+        ttk.Label(frame, text=self.tr("Enter album name:"), font=("Segoe UI", 10)).pack(anchor=tk.W, pady=(0, 10))
 
         var = tk.StringVar()
         entry = ttk.Entry(frame, textvariable=var, font=("Segoe UI", 10))
@@ -4210,8 +4223,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         btn_frame = ttk.Frame(frame)
         btn_frame.pack(fill=tk.X)
 
-        ttk.Button(btn_frame, text="Cancel", command=cancel, width=10).pack(side=tk.RIGHT, padx=(5, 0))
-        ttk.Button(btn_frame, text="Create", command=confirm, width=10).pack(side=tk.RIGHT)
+        ttk.Button(btn_frame, text=self.tr("Cancel"), command=cancel, width=10).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(btn_frame, text=self.tr("Create"), command=confirm, width=10).pack(side=tk.RIGHT)
 
         dialog.deiconify()
         dialog.grab_set()
@@ -4222,7 +4235,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def create_new_album(self):
         """Create a new album folder under Documents/Bandcamp Auto Uploader/Albums/."""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         name = self._ask_album_name_dialog()
@@ -4238,10 +4251,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             album_dir.mkdir(parents=True, exist_ok=False)
         except FileExistsError:
-            messagebox.showerror("New Album", "An album with this name already exists.")
+            messagebox.showerror(self.tr("New Album"), self.tr("An album with this name already exists."))
             return
         except OSError as e:
-            messagebox.showerror("New Album", f"Could not create album folder:\n{e}")
+            messagebox.showerror(self.tr("New Album"), self.tr("Could not create album folder:") + f"\n{e}")
             return
 
         self.album_path_var.set(str(album_dir))
@@ -4250,15 +4263,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.clear_album_load_fields()
         self.album_name_var.set(name)
         self.preview_album()
-        self.show_toast("New album created", 2000, "success")
+        self.show_toast(self.tr("New album created"), 2000, "success")
 
     def browse_album(self):
         """Browse for album directory"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
-        directory = filedialog.askdirectory(title="Select Album Folder")
+        directory = filedialog.askdirectory(title=self.tr("Select album folder"))
         if directory:
             self.album_path_var.set(directory)
             self.upload_btn['state'] = tk.NORMAL if self.selected_artist_url else tk.DISABLED
@@ -4299,22 +4312,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.apply_album_load_preferences(path)
         self.load_or_create_album_session_file(path)
         self.add_to_recent_albums(path)
-        self.show_toast(f"Loaded last album: {Path(path).name}", 2500, "info", trigger="album_load")
+        self.show_toast(self.tr("Loaded last album: {}").format(Path(path).name), 2500, "info", trigger="album_load")
 
     def reload_album(self):
         """Reload the currently selected album folder."""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         album_path = self.album_path_var.get()
         if not album_path:
-            messagebox.showwarning("No Album Folder", "Please select an album folder first")
+            messagebox.showwarning(self.tr("No Album Folder"), self.tr("Please select an album folder first"))
             return
 
         path = Path(album_path)
         if not path.is_dir():
-            messagebox.showerror("Invalid Album Folder", f"Folder does not exist:\n{album_path}")
+            messagebox.showerror(self.tr("Invalid Album Folder"), self.tr("Folder does not exist:") + f"\n{album_path}")
             return
 
         session_paths = [
@@ -4327,8 +4340,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         ]
         if session_paths:
             if not messagebox.askyesno(
-                "Reload Fresh Album",
-                "Reloading the album will delete the saved session.txt for this folder and rebuild the preview from the audio files.\n\nContinue?"
+                self.tr("Reload Fresh Album"),
+                self.tr("Reloading the album will delete the saved session.txt for this folder and rebuild the preview from the audio files.\n\nContinue?")
             ):
                 return
             for session_path in session_paths:
@@ -4336,7 +4349,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     session_path.unlink()
                     logger.info(f"Deleted album session file for fresh reload: {session_path}")
                 except Exception as e:
-                    messagebox.showerror("Reload Failed", f"Could not delete:\n{session_path}\n\n{e}")
+                    messagebox.showerror(self.tr("Reload Failed"), self.tr("Could not delete:") + f"\n{session_path}\n\n{e}")
                     return
 
         self.on_album_selection_changed()
@@ -4350,21 +4363,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.config.last_opened_album_path = str(path)
         save_config(self.config)
         self.upload_btn['state'] = tk.NORMAL if self.selected_artist_url else tk.DISABLED
-        self.show_toast("Album reloaded", 1800, "success", trigger="file_add")
+        self.show_toast(self.tr("Album reloaded"), 1800, "success", trigger="file_add")
     
     def open_album_folder(self):
         """Open album folder in file explorer"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         path = self.album_path_var.get()
         if not path:
-            messagebox.showwarning("No Folder", "Please select an album folder first")
+            messagebox.showwarning(self.tr("No Folder"), self.tr("Please select an album folder first"))
             return
         
         if not Path(path).exists():
-            messagebox.showerror("Folder Not Found", f"Folder does not exist:\n{path}")
+            messagebox.showerror(self.tr("Folder Not Found"), self.tr("Folder does not exist:") + f"\n{path}")
             return
         
         import os
@@ -4379,16 +4392,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 subprocess.Popen(['xdg-open', str(folder)])
         except Exception as e:
             logger.exception(e)
-            messagebox.showerror("Open Folder Failed", f"Could not open folder:\n{folder}\n\n{e}")
+            messagebox.showerror(self.tr("Open Folder Failed"), self.tr("Could not open folder:") + f"\n{folder}\n\n{e}")
             return
         
-        self.show_toast("Folder opened", 1500, "success", trigger="file_add")
+        self.show_toast(self.tr("Folder opened"), 1500, "success", trigger="file_add")
     
     def copy_album_path(self):
         """Copy album path to clipboard"""
         path = self.album_path_var.get()
         if not path:
-            messagebox.showwarning("No Path", "Please select an album folder first")
+            messagebox.showwarning(self.tr("No Path"), self.tr("Please select an album folder first"))
             return
         
         self.root.clipboard_clear()
@@ -4398,7 +4411,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Auto-fill album name from folder name"""
         path = self.album_path_var.get()
         if not path:
-            messagebox.showwarning("No Folder", "Please select an album folder first")
+            messagebox.showwarning(self.tr("No Folder"), self.tr("Please select an album folder first"))
             return
 
         folder_name = Path(path).name
@@ -4414,7 +4427,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if path:
             album_path = Path(path)
             if not album_path.exists():
-                messagebox.showwarning("Invalid Path", "The selected folder does not exist")
+                messagebox.showwarning(self.tr("Invalid Path"), self.tr("The selected folder does not exist"))
                 return
 
             audio_extensions = ['.flac', '.mp3', '.wav', '.aiff', '.aif', '.ogg', '.opus', '.m4a', '.aac', '.mod', '.xm']
@@ -4424,11 +4437,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         elif self.manual_tracks:
             audio_files = self.manual_tracks
         else:
-            messagebox.showwarning("No Folder", "Please select an album folder or add tracks first")
+            messagebox.showwarning(self.tr("No Folder"), self.tr("Please select an album folder or add tracks first"))
             return
 
         if not audio_files:
-            messagebox.showwarning("No Audio Files", "No audio files found")
+            messagebox.showwarning(self.tr("No Audio Files"), self.tr("No audio files found"))
             return
 
         try:
@@ -4458,9 +4471,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if artist:
                     self.album_artist_var.set(artist)
                 else:
-                    messagebox.showinfo("No Artist", "No artist tag found in the audio file")
+                    messagebox.showinfo(self.tr("No Artist"), self.tr("No artist tag found in the audio file"))
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to read metadata: {str(e)}")
+            messagebox.showerror(self.tr("Error"), self.tr("Failed to read metadata:") + f" {str(e)}")
 
     def show_release_date_calendar(self):
         """Show calendar dialog to select release date"""
@@ -4469,7 +4482,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Create a simple calendar dialog
         dialog = tk.Toplevel(self.root)
-        dialog.title("Select Release Date")
+        dialog.title(self.tr("Select Release Date"))
         dialog.geometry("350x340")
         dialog.resizable(True, True)
         dialog.transient(self.root)
@@ -4497,7 +4510,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         year_frame = ttk.Frame(month_year_frame)
         year_frame.pack(fill=tk.X, pady=(0, 5))
 
-        year_label = ttk.Label(year_frame, text="Year:", font=("Segoe UI", 9))
+        year_label = ttk.Label(year_frame, text=self.tr("Year:"), font=("Segoe UI", 9))
         year_label.pack(side=tk.LEFT, padx=(0, 3))
 
         years = list(range(1900, 2101))
@@ -4513,11 +4526,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         month_frame = ttk.Frame(month_year_frame)
         month_frame.pack(fill=tk.X)
 
-        month_label = ttk.Label(month_frame, text="Month:", font=("Segoe UI", 9))
+        month_label = ttk.Label(month_frame, text=self.tr("Month:"), font=("Segoe UI", 9))
         month_label.pack(side=tk.LEFT, padx=(0, 3))
 
-        month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        month_names = [self.tr("Jan"), self.tr("Feb"), self.tr("Mar"), self.tr("Apr"), self.tr("May"), self.tr("Jun"),
+                       self.tr("Jul"), self.tr("Aug"), self.tr("Sep"), self.tr("Oct"), self.tr("Nov"), self.tr("Dec")]
         self.cal_month_combo = ttk.Combobox(month_frame, values=month_names, width=6, font=("Segoe UI", 9), state="readonly")
         self.cal_month_combo.set(month_names[self.cal_month - 1])
         self.cal_month_combo.pack(side=tk.LEFT, padx=(0, 5))
@@ -4544,8 +4557,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         button_frame = ttk.Frame(cal_frame)
         button_frame.pack(fill=tk.X, pady=(8, 0))
 
-        ttk.Button(button_frame, text="Today", command=self.select_today, width=8).pack(side=tk.LEFT, padx=(0, 5))
-        ttk.Button(button_frame, text="Cancel", command=dialog.destroy, width=8).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text=self.tr("Today"), command=self.select_today, width=8).pack(side=tk.LEFT, padx=(0, 5))
+        ttk.Button(button_frame, text=self.tr("Cancel"), command=dialog.destroy, width=8).pack(side=tk.RIGHT)
 
         # Store dialog reference
         self.cal_dialog = dialog
@@ -4558,8 +4571,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
     def on_month_selected(self):
         """Handle month selection from dropdown"""
-        month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        month_names = [self.tr("Jan"), self.tr("Feb"), self.tr("Mar"), self.tr("Apr"), self.tr("May"), self.tr("Jun"),
+                       self.tr("Jul"), self.tr("Aug"), self.tr("Sep"), self.tr("Oct"), self.tr("Nov"), self.tr("Dec")]
         selected_month_name = self.cal_month_combo.get()
         self.cal_month = month_names.index(selected_month_name) + 1
         self.render_calendar()
@@ -4591,8 +4604,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         cal = calendar.monthcalendar(self.cal_year, self.cal_month)
 
         # Month names for dropdown
-        month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        month_names = [self.tr("Jan"), self.tr("Feb"), self.tr("Mar"), self.tr("Apr"), self.tr("May"), self.tr("Jun"),
+                       self.tr("Jul"), self.tr("Aug"), self.tr("Sep"), self.tr("Oct"), self.tr("Nov"), self.tr("Dec")]
 
         # Update month dropdown
         if hasattr(self, 'cal_month_combo'):
@@ -4603,7 +4616,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.cal_year_combo.set(str(self.cal_year))
 
         # Add day headers
-        days = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
+        days = [self.tr("Su"), self.tr("Mo"), self.tr("Tu"), self.tr("We"), self.tr("Th"), self.tr("Fr"), self.tr("Sa")]
         for col, day in enumerate(days):
             ttk.Label(self.cal_grid, text=day, font=("Segoe UI", 8, "bold")).grid(row=0, column=col, sticky="nsew", padx=1, pady=1)
 
@@ -4639,8 +4652,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def clear_all_fields(self):
         """Clear all input fields with warning dialog"""
         result = messagebox.askyesno(
-            "Clear All Fields",
-            "Clear all input fields?\n\nThis will reset album details, tags, description, and other metadata."
+            self.tr("Clear All Fields"),
+            self.tr("Clear all input fields?\n\nThis will reset album details, tags, description, and other metadata.")
         )
         
         if result:
@@ -4671,7 +4684,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def paste_album_path(self):
         """Paste path from clipboard"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         try:
@@ -4688,9 +4701,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.apply_album_load_preferences(path)
                 self.load_or_create_album_session_file(path)
             else:
-                messagebox.showwarning("Invalid Path", "Clipboard does not contain a valid folder path")
+                messagebox.showwarning(self.tr("Invalid Path"), self.tr("Clipboard does not contain a valid folder path"))
         except:
-            messagebox.showwarning("Paste Error", "Could not paste from clipboard")
+            messagebox.showwarning(self.tr("Paste Error"), self.tr("Could not paste from clipboard"))
 
     def _refresh_left_scrollregion(self):
         self.root.update_idletasks()
@@ -4772,7 +4785,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if original != display:
             var.set(display)
             if show_warning and normalized == default:
-                self.show_toast("Price must be $0-$1000 with up to 2 decimals", 2200, "warning")
+                self.show_toast(self.tr("Price must be $0-$1000 with up to 2 decimals"), 2200, "warning")
         return normalized
 
     def validate_release_date_change(self, proposed):
@@ -4800,7 +4813,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if original != normalized:
             var.set(normalized)
             if show_warning:
-                self.show_toast("Release date must be YYYY-MM-DD", 2000, "warning")
+                self.show_toast(self.tr("Release date must be YYYY-MM-DD"), 2000, "warning")
         return normalized
 
     def on_track_select(self, event):
@@ -5198,14 +5211,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
 
         menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Browse...", command=self.browse_album)
-        menu.add_command(label="Paste Path", command=self.paste_album_path)
+        menu.add_command(label=self.tr("Browse..."), command=self.browse_album)
+        menu.add_command(label=self.tr("Paste Path"), command=self.paste_album_path)
         menu.add_separator()
-        menu.add_command(label="Open Folder", command=self.open_album_folder)
-        menu.add_command(label="Copy Path", command=self.copy_album_path)
+        menu.add_command(label=self.tr("Open Folder"), command=self.open_album_folder)
+        menu.add_command(label=self.tr("Copy Path"), command=self.copy_album_path)
         menu.add_separator()
-        menu.add_command(label="Clear", command=lambda: self.album_path_var.set(""))
-        menu.add_command(label="Clear All", command=self.clear_all_fields)
+        menu.add_command(label=self.tr("Clear"), command=lambda: self.album_path_var.set(""))
+        menu.add_command(label=self.tr("Clear All"), command=self.clear_all_fields)
         
         try:
             menu.tk_popup(event.x_root, event.y_root)
@@ -5643,8 +5656,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         def cancel(_event=None):
             dialog.destroy()
 
-        ttk.Button(button_frame, text="OK", command=accept).pack(side=tk.RIGHT, padx=(6, 0))
-        ttk.Button(button_frame, text="Cancel", command=cancel).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text=self.tr("OK"), command=accept).pack(side=tk.RIGHT, padx=(6, 0))
+        ttk.Button(button_frame, text=self.tr("Cancel"), command=cancel).pack(side=tk.RIGHT)
 
         dialog.bind("<Return>", accept)
         dialog.bind("<Escape>", cancel)
@@ -5664,7 +5677,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def batch_edit_track_column(self, column_id):
         """Prompt for a value and apply it to every row in the chosen column."""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         if column_id not in self.get_track_table_editable_columns():
@@ -5686,15 +5699,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         first_value = existing_values[0] if existing_values and all(value == existing_values[0] for value in existing_values) else ""
 
         new_value = self.ask_text_value(
-            f"Update {label}",
-            f"Set {label} for all tracks:",
+            self.tr("Update") + f" {label}",
+            self.tr("Set") + f" {label} " + self.tr("for all tracks:"),
             initialvalue=first_value
         )
         if new_value is None:
             return
         new_value = self.normalize_track_table_cell_edit_value(column_id, new_value)
         if new_value is None:
-            self.show_toast("Price must be $0-$1000 with up to 2 decimals", 2200, "warning")
+            self.show_toast(self.tr("Price must be $0-$1000 with up to 2 decimals"), 2200, "warning")
             return
 
         self.push_undo_state(f"Update {label}")
@@ -5712,7 +5725,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.maybe_auto_fit_track_columns()
         self.sync_track_table_to_current_album()
-        self.show_toast(f"Updated {label} for {changed} track(s)", 1800, "success")
+        self.show_toast(self.tr("Updated {} for {} track(s)").format(label, changed), 1800, "success")
 
     def on_table_double_click(self, event):
         """Handle double-click on table cell to edit"""
@@ -5723,7 +5736,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if not item or not column:
             return
         if self.is_track_item_locked(item):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
 
         column_id = self.get_track_table_column_id_from_event_column(column)
@@ -5757,7 +5770,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         def save_edit(event=None):
             new_value = self.normalize_track_table_cell_edit_value(column_id, edit_var.get())
             if new_value is None:
-                self.show_toast("Price must be $0-$1000 with up to 2 decimals", 2200, "warning")
+                self.show_toast(self.tr("Price must be $0-$1000 with up to 2 decimals"), 2200, "warning")
                 entry.focus_set()
                 entry.select_range(0, tk.END)
                 return
@@ -5827,7 +5840,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         if target_item and source_item != target_item:
             if self.is_track_item_locked(target_item):
-                self.show_toast("Cannot move onto a locked track", 1600, "warning")
+                self.show_toast(self.tr("Cannot move onto a locked track"), 1600, "warning")
                 self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None}
                 return
 
@@ -5964,7 +5977,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         items = list(self.track_table.get_children())
         if not items:
             if show_feedback:
-                self.show_toast("No tracks to update", 2000, "warning")
+                self.show_toast(self.tr("No tracks to update"), 2000, "warning")
             return
 
         preview_values = self.guess_case_preview_values
@@ -5994,9 +6007,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.guess_case_preview_values = None
             self.sync_track_table_to_current_album()
             if changed and show_feedback:
-                self.show_toast(f"Guess Case applied to {changed} track title(s)", 2000, "success")
+                self.show_toast(self.tr("Guess Case applied to {} track title(s)").format(changed), 2000, "success")
             elif show_feedback:
-                self.show_toast("Track titles already look good", 2000, "info")
+                self.show_toast(self.tr("Track titles already look good"), 2000, "info")
 
     FILENAME_PATTERNS = [
         (r"^(\d+)\s*[.\-)_\s]+\s*(.+?)\s*-\s*(.+)", 1, 2, 3),
@@ -6048,7 +6061,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         items = list(self.track_table.get_children())
         if not items:
             if show_feedback:
-                self.show_toast("No tracks to update", 2000, "warning")
+                self.show_toast(self.tr("No tracks to update"), 2000, "warning")
             return
 
         preview_values = self.extract_filename_preview_values
@@ -6090,9 +6103,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.extract_filename_preview_values = None
             self.sync_track_table_to_current_album()
             if changed and show_feedback:
-                self.show_toast(f"Extracted from {changed} filename(s)", 2000, "success")
+                self.show_toast(self.tr("Extracted from {} filename(s)").format(changed), 2000, "success")
             elif show_feedback:
-                self.show_toast("No changes needed", 2000, "info")
+                self.show_toast(self.tr("No changes needed"), 2000, "info")
 
     def parse_track_from_filename(self, stem):
         import re
@@ -6194,7 +6207,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def resolve_cover_input(self, event=None):
         """Resolve the cover entry: download URL or browse if empty."""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         value = self.cover_path_var.get().strip()
@@ -6214,27 +6227,27 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 temp_path.write_bytes(resp.content)
                 self.cover_path_var.set(str(temp_path))
                 self.add_to_cover_library(str(temp_path))
-                self.show_toast("Cover art loaded from URL", 2000, "success", trigger="cover_load")
+                self.show_toast(self.tr("Cover art loaded from URL"), 2000, "success", trigger="cover_load")
             except Exception as e:
                 logger.error(f"Failed to download cover URL: {e}")
-                self.show_toast("Failed to load cover from URL", 2000, "error")
+                self.show_toast(self.tr("Failed to load cover from URL"), 2000, "error")
         else:
             self.update_cover_preview()
 
     def browse_cover(self):
         """Browse for cover art image"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         filename = filedialog.askopenfilename(
-            title="Select Cover Art",
+            title=self.tr("Select Cover Art"),
             filetypes=[
-                ("Image files", "*.jpg *.jpeg *.png *.gif"),
-                ("JPEG", "*.jpg *.jpeg"),
-                ("PNG", "*.png"),
-                ("GIF", "*.gif"),
-                ("All files", "*.*")
+                (self.tr("Image files"), "*.jpg *.jpeg *.png *.gif"),
+                (self.tr("JPEG"), "*.jpg *.jpeg"),
+                (self.tr("PNG"), "*.png"),
+                (self.tr("GIF"), "*.gif"),
+                (self.tr("All files"), "*.*")
             ]
         )
         if filename:
@@ -6244,12 +6257,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def view_cover_art(self):
         """View cover art in a resizable 1:1 dialog"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         cover_path = self.cover_path_var.get()
         if not cover_path or not Path(cover_path).exists():
-            messagebox.showinfo("No Cover Art", "No cover art selected.")
+            messagebox.showinfo(self.tr("No Cover Art"), self.tr("No cover art selected."))
             return
 
         try:
@@ -6265,7 +6278,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             # Create dialog
             dialog = tk.Toplevel(self.root)
-            dialog.title(f"Cover Art ({width}x{height})")
+            dialog.title(self.tr("Cover Art") + f" ({width}x{height})")
             dialog.transient(self.root)
             dialog.grab_set()
 
@@ -6328,7 +6341,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             dialog.bind('<Escape>', lambda e: dialog.destroy())
 
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to view cover art:\n{e}")
+            messagebox.showerror(self.tr("Error"), self.tr("Failed to view cover art:") + f"\n{e}")
             logger.exception(e)
 
     def show_cover_context_menu(self, event):
@@ -6337,8 +6350,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             return
 
         menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Clear Cover Art", command=lambda: self.cover_path_var.set(""))
-        menu.add_command(label="View Cover Art", command=self.view_cover_art)
+        menu.add_command(label=self.tr("Clear Cover Art"), command=lambda: self.cover_path_var.set(""))
+        menu.add_command(label=self.tr("View Cover Art"), command=self.view_cover_art)
 
         try:
             menu.tk_popup(event.x_root, event.y_root)
@@ -6348,7 +6361,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def detect_cover_from_tracks(self):
         """Detect and extract cover art from tracks in current album"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         import mutagen
@@ -6377,7 +6390,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             tracks = self.manual_tracks
 
         if not tracks:
-            messagebox.showinfo("No Tracks", "No tracks found to detect cover art from.")
+            messagebox.showinfo(self.tr("No Tracks"), self.tr("No tracks found to detect cover art from."))
             return
 
         # Extract cover art from tracks
@@ -6435,7 +6448,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 continue
 
         if not cover_images:
-            messagebox.showinfo("No Cover Art Found", "No embedded cover art found in any tracks.")
+            messagebox.showinfo(self.tr("No Cover Art Found"), self.tr("No embedded cover art found in any tracks."))
             return
 
         # Show dialog with cover arts
@@ -6446,7 +6459,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         from PIL import Image, ImageTk
 
         dialog = tk.Toplevel(self.root)
-        dialog.title("Detect Cover Art")
+        dialog.title(self.tr("Detect Cover Art"))
         dialog.geometry("820x650")
         dialog.transient(self.root)
 
@@ -6578,7 +6591,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.cover_path_var.set(cover_info['path'])
         self.add_to_cover_library(cover_info['path'])
         dialog.destroy()
-        self.show_toast("Cover art selected from track", 2000, "success", trigger="cover_load")
+        self.show_toast(self.tr("Cover art selected from track"), 2000, "success", trigger="cover_load")
 
         # Handle window close - clean up temp files
         def on_close():
@@ -6595,8 +6608,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def manual_load_cookies(self):
         """Manually load cookies from file"""
         filename = filedialog.askopenfilename(
-            title="Select Cookies File",
-            filetypes=[("Text files", "*.txt"), ("All files", "*.*")]
+            title=self.tr("Select Cookies File"),
+            filetypes=[(self.tr("Text files"), "*.txt"), (self.tr("All files"), "*.*")]
         )
         if not filename:
             return
@@ -6612,7 +6625,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.load_artists()
         except Exception as e:
             logger.error(f"Failed to load cookies: {e}")
-            messagebox.showerror("Load Error", f"Failed to load cookies:\n{e}")
+            messagebox.showerror(self.tr("Load Error"), self.tr("Failed to load cookies:") + f"\n{e}")
     
     def preview_album(self):
         """Preview album information"""
@@ -6629,7 +6642,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         try:
             path = Path(album_path)
             if not path.is_dir():
-                messagebox.showerror("Invalid Path", "Please select a valid directory")
+                messagebox.showerror(self.tr("Invalid Path"), self.tr("Please select a valid directory"))
                 return
             
             # Create album object to preview
@@ -6720,7 +6733,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self._auto_feature_first_track()
 
         except Exception as e:
-            messagebox.showerror("Preview Error", f"Failed to preview album:\n{e}")
+            messagebox.showerror(self.tr("Preview Error"), self.tr("Failed to preview album:") + f"\n{e}")
             logger.exception(e)
     
     def get_audio_length(self, file_path):
@@ -7320,7 +7333,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.validate_tag_limit()
             
             logger.info(f"Auto-filled album details from metadata: {metadata}")
-            self.show_toast(f"Auto-filled album details from metadata ({tags_added} tags added)", 2000, "success", trigger="metadata_load")
+            self.show_toast(self.tr("Auto-filled album details from metadata ({} tags added)").format(tags_added), 2000, "success", trigger="metadata_load")
             
         except Exception as e:
             logger.warning(f"Failed to auto-fill album details from metadata: {e}")
@@ -7332,7 +7345,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.tag_container.pack(fill=tk.X, pady=(0, 2))
 
         # EDIT button for tags
-        self.edit_tags_btn = ttk.Button(self.tag_container, text="Edit", width=5, command=self.open_tag_edit_dialog)
+        self.edit_tags_btn = ttk.Button(self.tag_container, text=self.tr("Edit"), width=5, command=self.open_tag_edit_dialog)
         self.edit_tags_btn.pack(side=tk.RIGHT, padx=(5, 0))
 
         # Simple text entry for tags
@@ -7363,14 +7376,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.tag_entry.delete(0, tk.END)
             self.tag_entry.insert(0, new_text)
             self.album_tags_var.set(new_text)
-            self.show_toast("Maximum 10 tags allowed (Bandcamp limit)", 2000, "warning")
+            self.show_toast(self.tr("Maximum 10 tags allowed (Bandcamp limit)"), 2000, "warning")
         else:
             self.album_tags_var.set(tag_text)
     
     def open_tag_edit_dialog(self):
         """Open a dialog to edit tags as wrapped text"""
         dialog = tk.Toplevel(self.root)
-        dialog.title("Edit Tags")
+        dialog.title(self.tr("Edit Tags"))
         dialog.geometry("400x300")
         dialog.transient(self.root)
         dialog.grab_set()
@@ -7409,8 +7422,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         def cancel():
             dialog.destroy()
         
-        ttk.Button(button_frame, text="Save", command=save_tags).pack(side=tk.RIGHT, padx=(5, 0))
-        ttk.Button(button_frame, text="Cancel", command=cancel).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text=self.tr("Save"), command=save_tags).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(button_frame, text=self.tr("Cancel"), command=cancel).pack(side=tk.RIGHT)
 
     def validate_td_tag_limit(self, event=None):
         """Validate and limit track tags to 10."""
@@ -7426,14 +7439,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.td_tags_entry.delete(0, tk.END)
             self.td_tags_entry.insert(0, new_text)
             self.td_tags_var.set(new_text)
-            self.show_toast("Maximum 10 tags allowed (Bandcamp limit)", 2000, "warning")
+            self.show_toast(self.tr("Maximum 10 tags allowed (Bandcamp limit)"), 2000, "warning")
         else:
             self.td_tags_var.set(tag_text)
 
     def open_td_tag_edit_dialog(self):
         """Open a dialog to edit selected track tags as wrapped text."""
         dialog = tk.Toplevel(self.root)
-        dialog.title("Edit Track Tags")
+        dialog.title(self.tr("Edit Track Tags"))
         dialog.geometry("400x300")
         dialog.transient(self.root)
         dialog.grab_set()
@@ -7462,14 +7475,14 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.validate_td_tag_limit()
             dialog.destroy()
 
-        ttk.Button(button_frame, text="Save", command=save_tags).pack(side=tk.RIGHT, padx=(5, 0))
-        ttk.Button(button_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT)
+        ttk.Button(button_frame, text=self.tr("Save"), command=save_tags).pack(side=tk.RIGHT, padx=(5, 0))
+        ttk.Button(button_frame, text=self.tr("Cancel"), command=dialog.destroy).pack(side=tk.RIGHT)
     
     def shuffle_tracks(self):
         """Shuffle the track order in the current album"""
         items = list(self.track_table.get_children())
         if not items:
-            self.show_toast("No tracks to shuffle", 2000, "warning")
+            self.show_toast(self.tr("No tracks to shuffle"), 2000, "warning")
             return
 
         try:
@@ -7502,10 +7515,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     vals.append("")
                 self.insert_track_row(vals)
             self.sync_track_table_to_current_album()
-            self.show_toast("Tracks randomized", 2000, "success")
+            self.show_toast(self.tr("Tracks randomized"), 2000, "success")
             logger.info("Track order shuffled")
         except Exception as e:
-            messagebox.showerror("Shuffle Error", f"Failed to shuffle tracks:\n{e}")
+            messagebox.showerror(self.tr("Shuffle Error"), self.tr("Failed to shuffle tracks:") + f"\n{e}")
             logger.exception(e)
 
     def smart_randomize_tracks(self, show_feedback=True):
@@ -7513,7 +7526,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         items = list(self.track_table.get_children())
         if len(items) < 2:
             if show_feedback:
-                self.show_toast("Need at least two tracks to randomize", 2000, "warning")
+                self.show_toast(self.tr("Need at least two tracks to randomize"), 2000, "warning")
             return
 
         try:
@@ -7531,7 +7544,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             ]
             if len(original_values) < 2:
                 if show_feedback:
-                    self.show_toast("Need at least two unlocked tracks to randomize", 2000, "warning")
+                    self.show_toast(self.tr("Need at least two unlocked tracks to randomize"), 2000, "warning")
                 return
 
             def score_order(order):
@@ -7573,10 +7586,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             self.sync_track_table_to_current_album()
             if show_feedback:
-                self.show_toast("Smart randomize applied", 2000, "success")
+                self.show_toast(self.tr("Smart randomize applied"), 2000, "success")
             logger.info("Smart randomized track order")
         except Exception as e:
-            messagebox.showerror("Smart Randomize Error", f"Failed to smart-randomize tracks:\n{e}")
+            messagebox.showerror(self.tr("Smart Randomize Error"), self.tr("Failed to smart-randomize tracks:") + f"\n{e}")
             logger.exception(e)
 
     def parse_duration_seconds(self, value):
@@ -7666,7 +7679,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """Sort the preview table by a criterion and toggle next sort direction."""
         items = list(self.track_table.get_children())
         if not items:
-            self.show_toast("No tracks to sort", 2000, "warning")
+            self.show_toast(self.tr("No tracks to sort"), 2000, "warning")
             return
 
         ascending = self.context_sort_directions.get(criterion, True)
@@ -7702,7 +7715,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.maybe_auto_fit_track_columns()
         self.context_sort_directions[criterion] = not ascending
         direction = "ascending" if ascending else "descending"
-        self.show_toast(f"Sorted by {label} ({direction})", 1600, "success")
+        self.show_toast(self.tr("Sorted by {} ({})").format(label, direction), 1600, "success")
 
     def close_track_context_menu(self):
         """Dismiss any active track context menu and clear menu references."""
@@ -7840,12 +7853,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.locked_track_keys.remove(key)
             self.apply_track_item_tags(item_id)
             self.queue_album_session_save()
-            self.show_toast("Track unlocked", 1500, "success")
+            self.show_toast(self.tr("Track unlocked"), 1500, "success")
         else:
             self.locked_track_keys.add(key)
             self.apply_track_item_tags(item_id)
             self.queue_album_session_save()
-            self.show_toast("Track locked", 1500, "success")
+            self.show_toast(self.tr("Track locked"), 1500, "success")
     
     def show_track_context_menu(self, event):
         """Show context menu for track table"""
@@ -7917,7 +7930,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 direction_marker = "Asc" if ascending else "Desc"
                 command = close_then_run(lambda c=criterion, l=label: self.sort_tracks_by(c, l), f"Sort by {label}")
                 sort_menu.add_command(
-                    label=f"Sort by {label} ({direction_marker})",
+                    label=self.tr("Sort by") + f" {label} ({direction_marker})",
                     command=command
                 )
 
@@ -7925,9 +7938,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if self.config.show_context_menu_icons:
                 icon = self.icon_images.get("Sort By")
             if icon:
-                context_menu.add_cascade(label="Sort By...", menu=sort_menu, image=icon, compound=tk.LEFT)
+                context_menu.add_cascade(label=self.tr("Sort By..."), menu=sort_menu, image=icon, compound=tk.LEFT)
             else:
-                context_menu.add_cascade(label="Sort By...", menu=sort_menu)
+                context_menu.add_cascade(label=self.tr("Sort By..."), menu=sort_menu)
             has_items = True
         
         # Add track-specific options only if an item is selected
@@ -7936,22 +7949,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.track_table.selection_set(item_id)
             
             if self.config.context_menu_play:
-                add_menu_command("Play", lambda: self.play_track(item_id), "Play")
+                add_menu_command(self.tr("Play"), lambda: self.play_track(item_id), "Play")
 
             if getattr(self.config, 'context_menu_lock_unlock', True):
-                lock_label = "Unlock Track" if self.is_track_item_locked(item_id) else "Lock Track"
+                lock_label = self.tr("Unlock Track") if self.is_track_item_locked(item_id) else self.tr("Lock Track")
                 add_separator_if_needed()
                 add_menu_command(lock_label, lambda: self.toggle_track_lock(item_id), lock_label, undo_label=lock_label)
             
             if self.config.context_menu_remove_track:
                 add_separator_if_needed()
-                add_menu_command("Remove Track", lambda: self.remove_track(item_id), "Remove Track", undo_label="Remove Track")
+                add_menu_command(self.tr("Remove Track"), lambda: self.remove_track(item_id), "Remove Track", undo_label=self.tr("Remove Track"))
 
             move_options = [
-                (self.config.context_menu_move_up, "Move Up", lambda: self.move_track_up(item_id), "Move Up"),
-                (self.config.context_menu_move_down, "Move Down", lambda: self.move_track_down(item_id), "Move Down"),
-                (getattr(self.config, 'context_menu_move_to_top', True), "Move to Top", lambda: self.move_track_to_top(item_id), "Move to Top"),
-                (getattr(self.config, 'context_menu_move_to_bottom', True), "Move to Bottom", lambda: self.move_track_to_bottom(item_id), "Move to Bottom"),
+                (self.config.context_menu_move_up, self.tr("Move Up"), lambda: self.move_track_up(item_id), "Move Up"),
+                (self.config.context_menu_move_down, self.tr("Move Down"), lambda: self.move_track_down(item_id), "Move Down"),
+                (getattr(self.config, 'context_menu_move_to_top', True), self.tr("Move to Top"), lambda: self.move_track_to_top(item_id), "Move to Top"),
+                (getattr(self.config, 'context_menu_move_to_bottom', True), self.tr("Move to Bottom"), lambda: self.move_track_to_bottom(item_id), "Move to Bottom"),
             ]
             enabled_move_options = [option for option in move_options if option[0]]
             if enabled_move_options:
@@ -7960,11 +7973,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     add_menu_command(label, command, icon_label, undo_label=label)
 
             file_options = [
-                (self.config.context_menu_open_file, "Open File Location", lambda: self.open_file_location(item_id), "Open File Location"),
-                (self.config.context_menu_replace_file, "Replace File", lambda: self.replace_track_file(item_id), "Replace File", "Replace File"),
-                (getattr(self.config, 'context_menu_extract_cover_art', True), "Extract Cover Art", lambda: self.extract_cover_art_from_track(item_id), "Extract Cover Art", "Extract Cover Art"),
-                (getattr(self.config, 'context_menu_set_track_cover_as_album_cover', True), "Set Track Cover as Album Cover", lambda: self.set_track_cover_as_album_cover(item_id), "Set Track Cover as Album Cover", "Set Track Cover"),
-                (getattr(self.config, 'context_menu_extract_track_info', True), "Extract Track Information", lambda: self.extract_track_information(item_id), "Extract Track Information", None),
+                (self.config.context_menu_open_file, self.tr("Open File Location"), lambda: self.open_file_location(item_id), "Open File Location"),
+                (self.config.context_menu_replace_file, self.tr("Replace File"), lambda: self.replace_track_file(item_id), "Replace File", "Replace File"),
+                (getattr(self.config, 'context_menu_extract_cover_art', True), self.tr("Extract Cover Art"), lambda: self.extract_cover_art_from_track(item_id), "Extract Cover Art", "Extract Cover Art"),
+                (getattr(self.config, 'context_menu_set_track_cover_as_album_cover', True), self.tr("Set Track Cover as Album Cover"), lambda: self.set_track_cover_as_album_cover(item_id), "Set Track Cover as Album Cover", "Set Track Cover"),
+                (getattr(self.config, 'context_menu_extract_track_info', True), self.tr("Extract Track Information"), lambda: self.extract_track_information(item_id), "Extract Track Information", None),
             ]
             enabled_file_options = [option for option in file_options if option[0]]
             if enabled_file_options:
@@ -7974,10 +7987,10 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     add_menu_command(label, command, icon_label, undo_label=undo_label[0] if undo_label else None)
 
             metadata_options = [
-                (self.config.context_menu_copy_metadata, "Copy Metadata", lambda: self.copy_track_metadata(item_id), "Copy Metadata"),
-                (self.config.context_menu_paste_metadata, "Paste Metadata", lambda: self.paste_track_metadata(item_id), "Paste Metadata", "Paste Metadata"),
-                (getattr(self.config, 'context_menu_revert_to_original', True), "Revert to Original", lambda: self.revert_track_to_original(item_id), "Revert to Original", "Revert to Original"),
-                (getattr(self.config, 'context_menu_clear_metadata', True), "Clear Metadata", lambda: self.clear_track_metadata(item_id), "Clear Metadata", "Clear Metadata"),
+                (self.config.context_menu_copy_metadata, self.tr("Copy Metadata"), lambda: self.copy_track_metadata(item_id), "Copy Metadata"),
+                (self.config.context_menu_paste_metadata, self.tr("Paste Metadata"), lambda: self.paste_track_metadata(item_id), "Paste Metadata", "Paste Metadata"),
+                (getattr(self.config, 'context_menu_revert_to_original', True), self.tr("Revert to Original"), lambda: self.revert_track_to_original(item_id), "Revert to Original", "Revert to Original"),
+                (getattr(self.config, 'context_menu_clear_metadata', True), self.tr("Clear Metadata"), lambda: self.clear_track_metadata(item_id), "Clear Metadata", "Clear Metadata"),
             ]
             enabled_metadata_options = [option for option in metadata_options if option[0]]
             if enabled_metadata_options:
@@ -7988,13 +8001,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             if getattr(self.config, 'context_menu_upload_as_single', True):
                 add_separator_if_needed()
-                add_menu_command("Upload as Single", lambda: self.upload_as_single(item_id), "Upload as Single")
+                add_menu_command(self.tr("Upload as Single"), lambda: self.upload_as_single(item_id), "Upload as Single")
 
         session_options = [
-            (getattr(self.config, 'context_menu_extract_tracklist', True), "Extract Tracklist", self.extract_tracklist, "Extract Tracklist", None),
-            (getattr(self.config, 'context_menu_open_session', True), "Open session.txt", self.open_album_session_file, "Open session.txt", None),
-            (getattr(self.config, 'context_menu_undo', True), "Undo", self.undo_track_table_action, "Undo", tk.NORMAL if self.undo_buffer else tk.DISABLED),
-            (getattr(self.config, 'context_menu_redo', True), "Redo", self.redo_track_table_action, "Redo", tk.NORMAL if self.redo_buffer else tk.DISABLED),
+            (getattr(self.config, 'context_menu_extract_tracklist', True), self.tr("Extract Tracklist"), self.extract_tracklist, "Extract Tracklist", None),
+            (getattr(self.config, 'context_menu_open_session', True), self.tr("Open session.txt"), self.open_album_session_file, "Open session.txt", None),
+            (getattr(self.config, 'context_menu_undo', True), self.tr("Undo"), self.undo_track_table_action, "Undo", tk.NORMAL if self.undo_buffer else tk.DISABLED),
+            (getattr(self.config, 'context_menu_redo', True), self.tr("Redo"), self.redo_track_table_action, "Redo", tk.NORMAL if self.redo_buffer else tk.DISABLED),
         ]
         enabled_session_options = [option for option in session_options if option[0]]
         if enabled_session_options:
@@ -8003,8 +8016,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 add_menu_command(label, command, icon_label, state=state)
             
         global_order_options = [
-            (self.config.context_menu_randomize, "Randomize", self.shuffle_tracks, "Randomize"),
-            (getattr(self.config, 'context_menu_smart_randomize', True), "Smart Randomize", self.smart_randomize_tracks, "Smart Randomize"),
+            (self.config.context_menu_randomize, self.tr("Randomize"), self.shuffle_tracks, "Randomize"),
+            (getattr(self.config, 'context_menu_smart_randomize', True), self.tr("Smart Randomize"), self.smart_randomize_tracks, "Smart Randomize"),
         ]
         enabled_global_order_options = [option for option in global_order_options if option[0]]
         if enabled_global_order_options:
@@ -8030,8 +8043,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             add_sort_submenu()
 
         global_clear_options = [
-            (getattr(self.config, 'context_menu_clear_all_metadata', True), "Clear All Metadata", self.clear_all_track_metadata, "Clear All Metadata"),
-            (self.config.context_menu_clear_all, "Clear All Tracks", self.clear_manual_tracks, "Clear All Tracks"),
+            (getattr(self.config, 'context_menu_clear_all_metadata', True), self.tr("Clear All Metadata"), self.clear_all_track_metadata, "Clear All Metadata"),
+            (self.config.context_menu_clear_all, self.tr("Clear All Tracks"), self.clear_manual_tracks, "Clear All Tracks"),
         ]
         enabled_global_clear_options = [option for option in global_clear_options if option[0]]
         if enabled_global_clear_options:
@@ -8061,7 +8074,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         file_path = track_values[12] if len(track_values) > 12 else ""
         
         if not file_path:
-            self.show_toast("No file path available", 2000, "warning")
+            self.show_toast(self.tr("No file path available"), 2000, "warning")
             return
         
         try:
@@ -8078,17 +8091,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def remove_track(self, item_id):
         """Remove a track from the table"""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         self.track_table.delete(item_id)
         self.sync_track_table_to_current_album()
         self.update_preview_total_duration_label()
-        self.show_toast("Track removed", 2000, "success", trigger="track_remove")
+        self.show_toast(self.tr("Track removed"), 2000, "success", trigger="track_remove")
     
     def move_track_up(self, item_id):
         """Move a track up in the order"""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         items = list(self.track_table.get_children())
         current_index = items.index(item_id)
@@ -8098,7 +8111,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             current_values = list(self.track_table.item(item_id)['values'])
             previous_item = items[current_index - 1]
             if self.is_track_item_locked(previous_item):
-                self.show_toast("Cannot move past a locked track", 1600, "warning")
+                self.show_toast(self.tr("Cannot move past a locked track"), 1600, "warning")
                 return
             previous_values = list(self.track_table.item(previous_item)['values'])
             
@@ -8116,7 +8129,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def move_track_down(self, item_id):
         """Move a track down in the order"""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         items = list(self.track_table.get_children())
         current_index = items.index(item_id)
@@ -8126,7 +8139,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             current_values = list(self.track_table.item(item_id)['values'])
             next_item = items[current_index + 1]
             if self.is_track_item_locked(next_item):
-                self.show_toast("Cannot move past a locked track", 1600, "warning")
+                self.show_toast(self.tr("Cannot move past a locked track"), 1600, "warning")
                 return
             next_values = list(self.track_table.item(next_item)['values'])
             
@@ -8144,7 +8157,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def move_track_to_top(self, item_id):
         """Move a track to the top of the order."""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         items = list(self.track_table.get_children())
         if not items or item_id == items[0]:
@@ -8158,12 +8171,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.insert_track_row(values, 0)
         self.renumber_tracks()
         self.sync_track_table_to_current_album()
-        self.show_toast("Track moved to top", 1500, "success")
+        self.show_toast(self.tr("Track moved to top"), 1500, "success")
 
     def move_track_to_bottom(self, item_id):
         """Move a track to the bottom of the order."""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         items = list(self.track_table.get_children())
         if not items or item_id == items[-1]:
@@ -8177,7 +8190,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.insert_track_row(values)
         self.renumber_tracks()
         self.sync_track_table_to_current_album()
-        self.show_toast("Track moved to bottom", 1500, "success")
+        self.show_toast(self.tr("Track moved to bottom"), 1500, "success")
     
     def open_file_location(self, item_id):
         """Open the file location in file explorer"""
@@ -8186,7 +8199,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         file_path = track_values[12] if len(track_values) > 12 else ""
         
         if not file_path:
-            self.show_toast("No file path available", 2000, "warning")
+            self.show_toast(self.tr("No file path available"), 2000, "warning")
             return
         
         try:
@@ -8207,16 +8220,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def replace_track_file(self, item_id):
         """Replace the audio file for a track"""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         from tkinter import filedialog
         
         # Open file dialog to select new file
         file_path = filedialog.askopenfilename(
-            title="Select Audio File",
+            title=self.tr("Select Audio File"),
             filetypes=[
-                ("Audio Files", "*.mp3 *.flac *.wav *.ogg *.opus *.m4a *.aac *.mod *.xm"),
-                ("All Files", "*.*")
+                (self.tr("Audio files"), "*.mp3 *.flac *.wav *.ogg *.opus *.m4a *.aac *.mod *.xm"),
+                (self.tr("All files"), "*.*")
             ]
         )
         
@@ -8265,7 +8278,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         file_path = track_values[12] if len(track_values) > 12 else ""
 
         if not file_path or not Path(file_path).exists():
-            self.show_toast("No valid track file path available", 2000, "warning")
+            self.show_toast(self.tr("No valid track file path available"), 2000, "warning")
             return
 
         try:
@@ -8278,7 +8291,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             file_data = mutagen.File(file_path)
             if file_data is None:
-                messagebox.showinfo("No Cover Art Found", "Could not read metadata from this track.")
+                messagebox.showinfo(self.tr("No Cover Art Found"), self.tr("Could not read metadata from this track."))
                 return
 
             cover_data = None
@@ -8303,7 +8316,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         mime_type = 'image/jpeg'
 
             if not cover_data:
-                messagebox.showinfo("No Cover Art Found", "No embedded cover art was found in this track.")
+                messagebox.showinfo(self.tr("No Cover Art Found"), self.tr("No embedded cover art was found in this track."))
                 return
 
             suffix = '.png' if mime_type and 'png' in mime_type.lower() else '.jpg'
@@ -8315,15 +8328,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             initial_name = f"{safe_stem}_cover{suffix}"
 
             cover_path = filedialog.asksaveasfilename(
-                title="Save Extracted Cover Art",
+                title=self.tr("Save Extracted Cover Art"),
                 initialdir=initial_dir,
                 initialfile=initial_name,
                 defaultextension=suffix,
                 filetypes=[
                     (filetype_label, f"*{suffix}"),
-                    ("PNG Image", "*.png"),
-                    ("JPEG Image", "*.jpg *.jpeg"),
-                    ("All Files", "*.*"),
+                    (self.tr("PNG Image"), "*.png"),
+                    (self.tr("JPEG Image"), "*.jpg *.jpeg"),
+                    (self.tr("All files"), "*.*"),
                 ],
             )
 
@@ -8340,35 +8353,35 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
             self.cover_path_var.set(str(cover_path))
             self.add_to_cover_library(str(cover_path))
-            self.show_toast("Cover art extracted from track", 2000, "success")
+            self.show_toast(self.tr("Cover art extracted from track"), 2000, "success")
             logger.info(f"Extracted cover art from {file_path} to {cover_path}")
 
         except Exception as e:
             logger.exception(e)
-            messagebox.showerror("Extract Cover Art Failed", f"Failed to extract cover art:\n{e}")
+            messagebox.showerror(self.tr("Extract Cover Art Failed"), self.tr("Failed to extract cover art:") + f"\n{e}")
 
     def set_track_cover_as_album_cover(self, item_id):
         """Use the selected track's embedded artwork as the album cover."""
         track_values = self.track_table.item(item_id)['values']
         file_path = track_values[12] if len(track_values) > 12 else ""
         if not file_path or not Path(file_path).exists():
-            self.show_toast("No valid track file path available", 2000, "warning")
+            self.show_toast(self.tr("No valid track file path available"), 2000, "warning")
             return
 
         cover_path = self.extract_first_embedded_cover_to_temp([Path(file_path)])
         if not cover_path:
-            messagebox.showinfo("No Cover Art Found", "No embedded cover art was found in this track.")
+            messagebox.showinfo(self.tr("No Cover Art Found"), self.tr("No embedded cover art was found in this track."))
             return
 
         self.cover_path_var.set(str(cover_path))
         self.add_to_cover_library(str(cover_path))
-        self.show_toast("Track cover set as album cover", 2000, "success", trigger="cover_load")
+        self.show_toast(self.tr("Track cover set as album cover"), 2000, "success", trigger="cover_load")
 
     def extract_tracklist(self):
         """Save the current preview tracklist into the album folder."""
         rows = self.get_track_table_rows()
         if not rows:
-            self.show_toast("No tracks to export", 1800, "warning")
+            self.show_toast(self.tr("No tracks to export"), 1800, "warning")
             return
 
         output_dir = self.get_current_album_directory()
@@ -8396,17 +8409,17 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         try:
             output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-            self.show_toast(f"Tracklist saved: {output_path.name}", 2000, "success", trigger="file_add")
+            self.show_toast(self.tr("Tracklist saved:") + f" {output_path.name}", 2000, "success", trigger="file_add")
             logger.info(f"Extracted tracklist to {output_path}")
         except Exception as e:
             logger.exception(e)
-            messagebox.showerror("Extract Tracklist Failed", f"Failed to save tracklist:\n{e}")
+            messagebox.showerror(self.tr("Extract Tracklist Failed"), self.tr("Failed to save tracklist:") + f"\n{e}")
 
     def open_album_session_file(self):
         """Open the current album's session.txt file."""
         session_path = self.get_album_session_file_path()
         if not session_path or not session_path.exists():
-            self.show_toast("session.txt not found", 2000, "warning")
+            self.show_toast(self.tr("session.txt not found"), 2000, "warning")
             return
 
         try:
@@ -8418,7 +8431,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 subprocess.Popen(["xdg-open", str(session_path)])
         except Exception as e:
             logger.exception(e)
-            messagebox.showerror("Open session.txt Failed", f"Could not open:\n{session_path}\n\n{e}")
+            messagebox.showerror(self.tr("Open session.txt Failed"), self.tr("Could not open:") + f"\n{session_path}\n\n{e}")
 
     def format_track_info_value(self, value):
         """Return a readable, bounded metadata value for exported diagnostics."""
@@ -8444,7 +8457,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         file_path = Path(values[12]) if values[12] else None
         if file_path is None or not file_path.exists():
-            self.show_toast("No valid track file path available", 2000, "warning")
+            self.show_toast(self.tr("No valid track file path available"), 2000, "warning")
             return
 
         try:
@@ -8509,11 +8522,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         lines.append("No FLAC pictures found.")
 
             output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-            self.show_toast(f"Track info saved: {output_path.name}", 2200, "success", trigger="file_add")
+            self.show_toast(self.tr("Track info saved:") + f" {output_path.name}", 2200, "success", trigger="file_add")
             logger.info(f"Extracted track information to {output_path}")
         except Exception as e:
             logger.exception(e)
-            messagebox.showerror("Extract Track Information Failed", f"Failed to save track information:\n{e}")
+            messagebox.showerror(self.tr("Extract Track Information Failed"), self.tr("Failed to save track information:") + f"\n{e}")
     
     def copy_track_metadata(self, item_id):
         """Copy track metadata to clipboard"""
@@ -8531,7 +8544,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def paste_track_metadata(self, item_id):
         """Paste copied metadata to this track"""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         if not self.copied_track_metadata:
             return
@@ -8552,7 +8565,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def clear_track_metadata(self, item_id):
         """Clear metadata fields for the selected track without removing its title."""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         values = list(self.track_table.item(item_id)['values'])
         while len(values) < 13:
@@ -8563,12 +8576,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.track_table.item(item_id, values=tuple(values))
         self.sync_track_table_metadata_to_current_album()
-        self.show_toast("Track metadata cleared", 1500, "success")
+        self.show_toast(self.tr("Track metadata cleared"), 1500, "success")
 
     def revert_track_to_original(self, item_id):
         """Restore a track row from the source file metadata."""
         if self.is_track_item_locked(item_id):
-            self.show_toast("Track is locked", 1600, "warning")
+            self.show_toast(self.tr("Track is locked"), 1600, "warning")
             return
         values = list(self.track_table.item(item_id)['values'])
         while len(values) < 20:
@@ -8576,13 +8589,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         file_path = Path(values[12]) if values[12] else None
         if file_path is None or not file_path.exists():
-            self.show_toast("No original file path available", 2000, "warning")
+            self.show_toast(self.tr("No original file path available"), 2000, "warning")
             return
 
         try:
             track = Track.from_file(file_path, self.config)
             if track is None:
-                self.show_toast("Could not read original metadata", 2000, "warning")
+                self.show_toast(self.tr("Could not read original metadata"), 2000, "warning")
                 return
 
             file_size = file_path.stat().st_size / (1024 ** 2)
@@ -8635,16 +8648,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     self.td_lyrics_char_label.config(text="0/10000")
 
             self.sync_track_table_to_current_album()
-            self.show_toast("Track reverted to original metadata", 1800, "success")
+            self.show_toast(self.tr("Track reverted to original metadata"), 1800, "success")
         except Exception as e:
             logger.exception(e)
-            messagebox.showerror("Revert Failed", f"Failed to revert track metadata:\n{e}")
+            messagebox.showerror(self.tr("Revert Failed"), self.tr("Failed to revert track metadata:") + f"\n{e}")
 
     def clear_all_track_metadata(self):
         """Clear metadata fields for every visible track without removing titles."""
         items = list(self.track_table.get_children())
         if not items:
-            self.show_toast("No tracks to update", 2000, "warning")
+            self.show_toast(self.tr("No tracks to update"), 2000, "warning")
             return
 
         for item in items:
@@ -8658,7 +8671,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.track_table.item(item, values=tuple(values))
 
         self.sync_track_table_metadata_to_current_album()
-        self.show_toast("All track metadata cleared", 2000, "success")
+        self.show_toast(self.tr("All track metadata cleared"), 2000, "success")
 
     def sync_track_table_metadata_to_current_album(self):
         """Push editable table metadata into current_album when it is available."""
@@ -8667,7 +8680,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def _toggle_artist_column(self, column_id):
         """Click the Artist column header to hide/restore all artist names in the preview table."""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         rows = self.track_table.get_children()
@@ -8692,24 +8705,24 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.sync_track_table_to_current_album()
         self.show_toast(
-            "All artists hidden (click Artist column to restore)" if self._artist_collapsed
-            else "All artists restored",
+            self.tr("All artists hidden (click Artist column to restore)") if self._artist_collapsed
+            else self.tr("All artists restored"),
             1600, "info"
         )
 
     def upload_as_single(self, item_id):
         """Upload the selected track as a standalone single-track release."""
         if not self.session or not self.selected_artist_url:
-            messagebox.showerror("Error", "Please select an artist first")
+            messagebox.showerror(self.tr("Error"), self.tr("Please select an artist first"))
             return
         if self.upload_thread and self.upload_thread.is_alive():
-            messagebox.showwarning("Upload Running", "An upload is already in progress.")
+            messagebox.showwarning(self.tr("Upload Running"), self.tr("An upload is already in progress."))
             return
 
         track_values = self.track_table.item(item_id)['values']
         file_path = track_values[12] if len(track_values) > 12 else ""
         if not file_path or not Path(file_path).exists():
-            self.show_toast("No valid track file available", 2000, "warning")
+            self.show_toast(self.tr("No valid track file available"), 2000, "warning")
             return
 
         track_path = Path(file_path)
@@ -8725,7 +8738,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         elif not self.album_name_var.get().strip():
             self.album_name_var.set(track_path.stem)
         self._single_upload_pending = True
-        self.show_toast(f"Uploading {track_path.stem} as single...", 2500, "info")
+        self.show_toast(self.tr("Uploading") + f" {track_path.stem} " + self.tr("as single..."), 2500, "info")
         self.start_upload()
 
     def upload_finished(self):
@@ -8744,16 +8757,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def start_upload(self):
         """Start album upload in background thread"""
         if self.upload_thread and self.upload_thread.is_alive():
-            messagebox.showwarning("Upload Running", "An upload is already in progress.")
+            messagebox.showwarning(self.tr("Upload Running"), self.tr("An upload is already in progress."))
             return
 
         if not self.session or not self.selected_artist_url:
-            messagebox.showerror("Error", "Please select an artist first")
+            messagebox.showerror(self.tr("Error"), self.tr("Please select an artist first"))
             return
         
         album_path = self.album_path_var.get()
         if not album_path and not self.manual_tracks:
-            messagebox.showerror("Error", "Please select an album folder or add tracks")
+            messagebox.showerror(self.tr("Error"), self.tr("Please select an album folder or add tracks"))
             return
 
         self.sync_track_table_to_current_album()
@@ -8762,15 +8775,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             and self.current_album is not None
             and not getattr(self.current_album, 'tracks', None)
         ):
-            messagebox.showerror("Error", "No tracks left to upload")
+            messagebox.showerror(self.tr("Error"), self.tr("No tracks left to upload"))
             return
         upload_description_text = self.get_album_description_text()
 
         # Confirm upload if setting is enabled
         if self.config.confirm_before_upload:
             if not messagebox.askyesno(
-                "Confirm Upload",
-                f"Upload album to {self.selected_artist_url}?\n\nThis will create a new album on Bandcamp."
+                self.tr("Confirm Upload"),
+                self.tr("Upload album to") + f" {self.selected_artist_url}?\n\n" + self.tr("This will create a new album on Bandcamp.")
             ):
                 return
 
@@ -9036,9 +9049,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         result_q = Queue()
                         self.root.after(0, lambda: result_q.put(
                             messagebox.askyesno(
-                                "FLAC Conversion Required",
-                                f"{len(non_flac)} track(s) are not in FLAC format.\n\n"
-                                "Would you like to enable automatic conversion to FLAC?"
+                                self.tr("FLAC Conversion Required"),
+                                f"{len(non_flac)} " + self.tr("track(s) are not in FLAC format.") + "\n\n" + self.tr("Would you like to enable automatic conversion to FLAC?")
                             )
                         ))
                         if result_q.get():
@@ -9080,8 +9092,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 ))
                 
                 self.root.after(0, lambda: messagebox.showinfo(
-                    "Upload Complete",
-                    f"Album '{album.album_data.title}' uploaded successfully!"
+                    self.tr("Upload Complete"),
+                    self.tr("Album") + f" '{album.album_data.title}' " + self.tr("uploaded successfully!")
                 ))
 
                 if getattr(self.config, 'copy_album_url_after_upload', False) and album_url:
@@ -9096,13 +9108,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     self.root.after(0, lambda: self.update_manual_tracks_preview())
                     logger.info("Cleared manually added tracks after successful upload")
                 
-                self.root.after(100, lambda: self.show_toast("Album uploaded successfully!", 3000, "success", trigger="upload_success"))
+                self.root.after(100, lambda: self.show_toast(self.tr("Album uploaded successfully!"), 3000, "success", trigger="upload_success"))
             except UploadCancelled:
                 logger.warning("Upload stopped after user cancellation")
                 self.update_status("Upload cancelled", None)
                 self.root.after(
                     100,
-                    lambda: self.show_toast("Upload cancelled", 2500, "warning")
+                    lambda: self.show_toast(self.tr("Upload cancelled"), 2500, "warning")
                 )
             except Exception as e:
                 exc_info = sys.exc_info()
@@ -9118,7 +9130,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                         exc_info=info,
                     )
                 )
-                self.root.after(100, lambda: self.show_toast("Upload failed - check logs", 3000, "error", trigger="upload_error"))
+                self.root.after(100, lambda: self.show_toast(self.tr("Upload failed - check logs"), 3000, "error", trigger="upload_error"))
                 if self._taskbar_progress:
                     self._taskbar_progress.set_error()
                     self.root.after(3000, self._taskbar_progress.clear)
@@ -9136,7 +9148,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         try:
             webbrowser.open(album_url)
-            self.show_toast("Opened uploaded album page", 2200, "success", trigger="upload_success")
+            self.show_toast(self.tr("Opened uploaded album page"), 2200, "success", trigger="upload_success")
         except Exception as e:
             logger.warning(f"Failed to open uploaded album page {album_url}: {e}")
 
@@ -9158,7 +9170,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.set_cancel_buttons_state(tk.DISABLED)
             return
 
-        if messagebox.askyesno("Cancel Upload", "Are you sure you want to cancel?\n\nThis may leave the upload in an incomplete state."):
+        if messagebox.askyesno(self.tr("Cancel Upload"), self.tr("Are you sure you want to cancel?\n\nThis may leave the upload in an incomplete state.")):
             logger.warning("Upload cancellation requested by user")
             self.upload_cancel_event.set()
             self.set_cancel_buttons_state(tk.DISABLED)
@@ -9385,22 +9397,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def add_track_to_album(self):
         """Add individual track files to the current album"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         track_files = filedialog.askopenfilenames(
-            title="Select Track Files",
+            title=self.tr("Select Track Files"),
             filetypes=[
-                ("Audio files", "*.wav *.flac *.aiff *.mp3 *.ogg *.opus *.m4a *.aac *.mod *.xm"),
-                ("WAV", "*.wav"),
-                ("FLAC", "*.flac"),
-                ("AIFF", "*.aiff"),
-                ("MP3", "*.mp3"),
-                ("OGG", "*.ogg"),
-                ("Opus", "*.opus"),
-                ("M4A/AAC", "*.m4a *.aac"),
-                ("Tracker Modules", "*.mod *.xm"),
-                ("All files", "*.*")
+                (self.tr("Audio files"), "*.wav *.flac *.aiff *.mp3 *.ogg *.opus *.m4a *.aac *.mod *.xm"),
+                (self.tr("WAV"), "*.wav"),
+                (self.tr("FLAC"), "*.flac"),
+                (self.tr("AIFF"), "*.aiff"),
+                (self.tr("MP3"), "*.mp3"),
+                (self.tr("OGG"), "*.ogg"),
+                (self.tr("Opus"), "*.opus"),
+                (self.tr("M4A/AAC"), "*.m4a *.aac"),
+                (self.tr("Tracker Modules"), "*.mod *.xm"),
+                (self.tr("All files"), "*.*")
             ]
         )
 
@@ -9414,7 +9426,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 logger.info(f"Added track: {track_path.name}")
 
         self.sort_manual_tracks_by_metadata_numbers()
-        self.show_toast(f"Added {len(track_files)} track(s)", 2000, "success", trigger="track_add")
+        self.show_toast(self.tr("Added") + f" {len(track_files)} " + self.tr("track(s)"), 2000, "success", trigger="track_add")
 
         # Treat as new album - clear album folder path since we're building from tracks
         self.album_path_var.set("")
@@ -9449,11 +9461,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.locked_track_keys.clear()
             return
 
-        if messagebox.askyesno("Clear Tracks", f"Clear all {len(self.manual_tracks)} added tracks?"):
+        if messagebox.askyesno(self.tr("Clear Tracks"), self.tr("Clear all") + f" {len(self.manual_tracks)} " + self.tr("added tracks?")):
             self.manual_tracks.clear()
             self.locked_track_keys.clear()
             logger.info("Cleared all manually added tracks")
-            self.show_toast("All tracks cleared", 2000, "info")
+            self.show_toast(self.tr("All tracks cleared"), 2000, "info")
 
             # Update preview
             self.update_manual_tracks_preview()
@@ -10269,7 +10281,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Check if we're in a context where save makes sense
         focused = self.root.focus_get()
         if focused:
-            self.show_toast("Save shortcut triggered", 1500, "info")
+            self.show_toast(self.tr("Save shortcut triggered"), 1500, "info")
     
     def undo_action(self):
         """Handle Ctrl+Z undo"""
@@ -10282,13 +10294,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def refresh_current_tab(self):
         """Handle F5 shortcut - refresh current tab"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         current_tab = self.get_selected_tab_text()
         if current_tab == "Upload":
             self.load_artists()
-            self.show_toast("Refreshed artists", 2000, "success")
+            self.show_toast(self.tr("Refreshed artists"), 2000, "success")
 
     def get_selected_tab_text(self):
         """Return the selected notebook tab label, or an empty string if unavailable."""
@@ -10323,7 +10335,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def on_drop_folder(self, event):
         """Handle drag & drop of folder onto album path field"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         try:
@@ -10345,9 +10357,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.auto_extract_cover_art_if_missing(path)
                 self.apply_album_load_preferences(path)
                 self.load_or_create_album_session_file(path)
-                self.show_toast("Album folder loaded", 2000, "success", trigger="file_add")
+                self.show_toast(self.tr("Album folder loaded"), 2000, "success", trigger="file_add")
             else:
-                self.show_toast("Please drop a folder, not a file", 2000, "warning")
+                self.show_toast(self.tr("Please drop a folder, not a file"), 2000, "warning")
 
 
         except Exception as e:
@@ -10356,7 +10368,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def on_drop_image(self, event):
         """Handle drag & drop of image onto cover art field"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         try:
@@ -10366,16 +10378,16 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             # Check if it's an image file
             if Path(path).suffix.lower() in ['.jpg', '.jpeg', '.png', '.gif']:
                 self.cover_path_var.set(path)
-                self.show_toast("Cover art loaded", 2000, "success", trigger="cover_load")
+                self.show_toast(self.tr("Cover art loaded"), 2000, "success", trigger="cover_load")
             else:
-                self.show_toast("Please drop an image file (JPG, PNG, GIF)", 2000, "warning")
+                self.show_toast(self.tr("Please drop an image file (JPG, PNG, GIF)"), 2000, "warning")
         except Exception as e:
             logger.error(f"Drag & drop image failed: {e}")
 
     def on_drop_track_files(self, event):
         """Handle drag & drop of audio files or album folder onto the track table"""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         try:
@@ -10403,7 +10415,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 self.apply_album_load_preferences(str(folder))
                 self.load_or_create_album_session_file(str(folder))
                 self.add_to_recent_albums(str(folder))
-                self.show_toast("Album folder loaded", 2000, "success", trigger="file_add")
+                self.show_toast(self.tr("Album folder loaded"), 2000, "success", trigger="file_add")
                 if self.config.auto_start_upload and self.selected_artist_url:
                     self.root.after(500, self.start_upload)
             elif audio_files:
@@ -10420,9 +10432,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                     self.update_manual_tracks_preview()
                     if self.manual_tracks:
                         self.upload_btn['state'] = tk.NORMAL
-                    self.show_toast(f"Added {added} track(s)", 2000, "success", trigger="track_add")
+                    self.show_toast(self.tr("Added {} track(s)").format(added), 2000, "success", trigger="track_add")
             else:
-                self.show_toast("No supported audio files or folders found", 2000, "warning")
+                self.show_toast(self.tr("No supported audio files or folders found"), 2000, "warning")
         except Exception as e:
             logger.error(f"Drag & drop tracks failed: {e}")
 
@@ -10451,11 +10463,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def manage_cover_art_library(self):
         """Manage recently used cover art."""
         if self.is_upload_in_progress():
-            self.show_toast("Upload in progress", 1600, "warning")
+            self.show_toast(self.tr("Upload in progress"), 1600, "warning")
             return
 
         dialog = tk.Toplevel(self.root)
-        dialog.title("Library")
+        dialog.title(self.tr("Library"))
         dialog.geometry("820x650")
         dialog.transient(self.root)
 
@@ -10612,7 +10624,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
     def use_cover_from_library(self, cover_path, dialog):
         """Use selected cover from library"""
         self.cover_path_var.set(cover_path)
-        self.show_toast("Cover art loaded from library", 2000, "success", trigger="cover_load")
+        self.show_toast(self.tr("Cover art loaded from library"), 2000, "success", trigger="cover_load")
         dialog.destroy()
     
 
