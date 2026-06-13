@@ -2421,7 +2421,7 @@ class SettingsMixin:
         """Create combined Interface settings section that includes all sub-sections"""
         # Combined settings from all interface sub-sections
         settings = [
-            (self.tr("Interface Theme (Experimental)"), "theme", "choice", [self.tr("Light"), self.tr("Sun-Valley Light"), self.tr("Sun-Valley Dark"), self.tr("Azure Light"), self.tr("Azure Dark")]),
+            (self.tr("Interface Theme (Experimental)"), "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark", "Azure Light", "Azure Dark"]),
             (self.tr("Columns: Track No."), "show_track_no", "bool"),
             (self.tr("Columns: Artist"), "show_artist", "bool"),
             (self.tr("Columns: Track Name"), "show_track_name", "bool"),
@@ -2498,6 +2498,8 @@ class SettingsMixin:
                 choices = setting_data[3]
                 var = tk.StringVar(value=getattr(self.config, config_key, choices[0]))
                 display_value = var.get()
+                if config_key == "theme":
+                    display_value = self.tr(var.get())
             elif setting_type == "color":
                 var = tk.StringVar(value=getattr(self.config, config_key, '#ffffff'))
                 display_value = var.get()
@@ -2564,13 +2566,25 @@ class SettingsMixin:
             # Edit choice inline with dropdown
             choices = self.interface_combined_vars.get(f"{config_key}_choices", [])
             current_value = self.interface_combined_vars[config_key].get()
-            
-            def validate_and_save(new_value):
-                self.interface_combined_vars[config_key].set(new_value)
-                self.apply_interface_combined_settings()
-                return True
-            
-            self.edit_treeview_cell_dropdown(self.interface_combined_tree, item_id, 'value', choices, current_value, validate_and_save)
+
+            if config_key == "theme":
+                translated_choices = [self.tr(c) for c in choices]
+
+                def validate_and_save(new_value):
+                    eng_idx = translated_choices.index(new_value)
+                    eng_value = choices[eng_idx]
+                    self.interface_combined_vars[config_key].set(eng_value)
+                    self.apply_interface_combined_settings()
+                    return True
+
+                self.edit_treeview_cell_dropdown(self.interface_combined_tree, item_id, 'value', translated_choices, self.tr(current_value), validate_and_save)
+            else:
+                def validate_and_save(new_value):
+                    self.interface_combined_vars[config_key].set(new_value)
+                    self.apply_interface_combined_settings()
+                    return True
+
+                self.edit_treeview_cell_dropdown(self.interface_combined_tree, item_id, 'value', choices, current_value, validate_and_save)
             
         elif setting_type == "color":
             # Edit color with color picker
