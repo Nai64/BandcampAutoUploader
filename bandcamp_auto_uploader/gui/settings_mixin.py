@@ -133,6 +133,7 @@ class SettingsMixin:
         interface_id = self.settings_tree.insert('', 'end', 'Interface', text=self.tr('Interface'))
         self.settings_tree.insert(interface_id, 'end', 'columns', text=self.tr('Track Table Columns'))
         self.settings_tree.insert(interface_id, 'end', 'logs', text=self.tr('Logs'))
+        self.settings_tree.insert(interface_id, 'end', 'tips', text=self.tr('Tips'))
 
         # Hotkeys (top-level section, customizable key bindings)
         self.settings_tree.insert('', 'end', 'hotkeys', text=self.tr('Hotkeys'))
@@ -208,6 +209,10 @@ class SettingsMixin:
         logs_frame = ttk.Frame(content_frame)
         self.create_logs_settings(logs_frame)
         self.settings_frames["logs"] = logs_frame
+
+        tips_frame = ttk.Frame(content_frame)
+        self.create_tips_settings(tips_frame)
+        self.settings_frames["tips"] = tips_frame
         
         # About frame
         about_frame = ttk.Frame(content_frame)
@@ -1382,9 +1387,6 @@ class SettingsMixin:
                 self.check_for_updates_now()
             elif config_key == "remove_all_custom_templates":
                 self._remove_all_custom_templates()
-            elif config_key == "show_tip_now":
-                if hasattr(self, '_show_random_tip'):
-                    self._show_random_tip()
             return
 
         if setting_type == "bool":
@@ -2111,6 +2113,21 @@ class SettingsMixin:
 
         # Note: Line spacing and timestamp formats require log message format changes
         # These will be applied in the log formatting logic
+
+    def create_tips_settings(self, parent):
+        """Create Tips settings section for random tip toast customization."""
+        settings = [
+            (self.tr("Show random tips"), "show_random_tips", "bool"),
+            (self.tr("Tips interval (min)"), "tips_interval_minutes", "int", 1, 60),
+            (self.tr("Tips duration (s)"), "tips_duration", "int", 1, 10),
+            (self.tr("Tips random order"), "tips_random_order", "bool"),
+            (self.tr("Show tip now"), "show_tip_now", "action"),
+        ]
+        tree, vars_dict, mapping = self._build_std_tree(parent, settings)
+        self.tips_tree = tree
+        self.tips_vars = vars_dict
+        self.tips_item_mapping = mapping
+        self._register_std_page(tree, vars_dict, mapping)
 
     def create_hotkey_settings(self, parent):
         """Create Hotkeys settings section (customizable key bindings)."""
@@ -2942,11 +2959,6 @@ class SettingsMixin:
             (self.tr("Interface: Apply settings immediately"), "apply_settings_immediately", "bool"),
             (self.tr("Interface: Maximize app on open"), "maximize_on_open", "bool"),
             (self.tr("Interface: Disable tooltips"), "disable_tooltips", "bool"),
-            (self.tr("Interface: Show random tips"), "show_random_tips", "bool"),
-            (self.tr("Interface: Tips interval (min)"), "tips_interval_minutes", "int", 1, 60),
-            (self.tr("Interface: Tips duration (s)"), "tips_duration", "int", 1, 10),
-            (self.tr("Interface: Tips random order"), "tips_random_order", "bool"),
-            (self.tr("Interface: Show tip now"), "show_tip_now", "action"),
             (self.tr("Interface: Remove splash art"), "remove_splash_art", "disabled_bool"),
             (self.tr("Interface: Remember Last Opened Album"), "remember_last_album", "bool"),
             (self.tr("Metadata: Auto load metadata for album details"), "auto_load_metadata", "bool"),
