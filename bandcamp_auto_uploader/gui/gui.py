@@ -1033,6 +1033,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if isinstance(event.widget, tk.Text):
                 return
             widget = event.widget
+            if not hasattr(widget, "master"):
+                return
             while widget:
                 if widget == left_column:
                     self.left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
