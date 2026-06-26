@@ -18,7 +18,6 @@ changelog.txt
 dist/
 tests/
 Features.txt
-INSTALL.md
 scripts/version.inc
 scripts/release.py
 *.env
