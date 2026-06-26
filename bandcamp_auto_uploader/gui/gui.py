@@ -9898,15 +9898,21 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.root.after(self.toast_poll_interval_ms, self.monitor_toasts)
 
     def _schedule_random_tip(self):
-        """Schedule the next random tip toast (every 5 minutes)."""
-        self.root.after(300000, self._show_random_tip)
+        """Schedule the next random tip toast."""
+        interval = max(1, min(60, getattr(self.config, 'tips_interval_minutes', 5))) * 60000
+        self.root.after(interval, self._show_random_tip)
 
     def _show_random_tip(self):
         """Show a random tip as a toast notification."""
         if getattr(self.config, 'show_random_tips', True):
-            tip = RANDOM_TIPS[self._random_tip_index % len(RANDOM_TIPS)]
-            self._random_tip_index += 1
-            self.show_toast(self.tr(tip), 4000, "info")
+            if getattr(self.config, 'tips_random_order', False):
+                import random
+                tip = random.choice(RANDOM_TIPS)
+            else:
+                tip = RANDOM_TIPS[self._random_tip_index % len(RANDOM_TIPS)]
+                self._random_tip_index += 1
+            duration = max(1, min(10, getattr(self.config, 'tips_duration', 4))) * 1000
+            self.show_toast(self.tr(tip), duration, "info")
         self._schedule_random_tip()
 
     def display_toast(self, message: str, duration: int, toast_type: str):

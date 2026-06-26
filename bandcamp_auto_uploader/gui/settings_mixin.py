@@ -1382,6 +1382,9 @@ class SettingsMixin:
                 self.check_for_updates_now()
             elif config_key == "remove_all_custom_templates":
                 self._remove_all_custom_templates()
+            elif config_key == "show_tip_now":
+                if hasattr(self, '_show_random_tip'):
+                    self._show_random_tip()
             return
 
         if setting_type == "bool":
@@ -1422,6 +1425,7 @@ class SettingsMixin:
                 "extract_track_cover_if_missing",
                 "clear_progress_on_album_change",
                 "show_random_tips",
+                "tips_random_order",
             ):
                 setattr(self.config, config_key, new_value)
                 if config_key == "always_auto_scale_cover" and hasattr(self, 'scale_cover_var'):
@@ -2939,6 +2943,10 @@ class SettingsMixin:
             (self.tr("Interface: Maximize app on open"), "maximize_on_open", "bool"),
             (self.tr("Interface: Disable tooltips"), "disable_tooltips", "bool"),
             (self.tr("Interface: Show random tips"), "show_random_tips", "bool"),
+            (self.tr("Interface: Tips interval (min)"), "tips_interval_minutes", "int", 1, 60),
+            (self.tr("Interface: Tips duration (s)"), "tips_duration", "int", 1, 10),
+            (self.tr("Interface: Tips random order"), "tips_random_order", "bool"),
+            (self.tr("Interface: Show tip now"), "show_tip_now", "action"),
             (self.tr("Interface: Remove splash art"), "remove_splash_art", "disabled_bool"),
             (self.tr("Interface: Remember Last Opened Album"), "remember_last_album", "bool"),
             (self.tr("Metadata: Auto load metadata for album details"), "auto_load_metadata", "bool"),

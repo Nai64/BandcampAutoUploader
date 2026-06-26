@@ -42,6 +42,9 @@ class Config:
     maximize_on_open: bool = False  # Maximize window on startup
     disable_tooltips: bool = True  # Disable UI tooltips
     show_random_tips: bool = True  # Show random tips as toast notifications
+    tips_interval_minutes: int = 5  # Minutes between random tips (1-60)
+    tips_duration: int = 4  # Seconds each tip stays on screen (1-10)
+    tips_random_order: bool = False  # Show tips in random order instead of sequential
     theme: str = "Light"  # UI theme: "Light", Sun-Valley, or Azure variants
     auto_load_metadata: bool = True  # Auto load metadata for album details
     create_album_session_files: bool = True  # Save/load album state in session.txt sidecar files
