@@ -70,10 +70,11 @@ class SettingsMixin:
             style.configure('PrefSearch.TEntry', padding=(28, 0, 0, 0))
             self.settings_search_entry = ttk.Entry(search_frame, textvariable=self.settings_search_var, style='PrefSearch.TEntry')
             self.settings_search_entry.pack(fill=tk.X)
-            icon_canvas = tk.Canvas(self.settings_search_entry, width=24, height=20, highlightthickness=0, bd=0, bg='SystemWindow')
-            icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
-            icon_canvas.place(x=2, rely=0.5, anchor='w')
-            icon_canvas.bind('<Button-1>', lambda e: self.settings_search_entry.focus_set())
+            entry_bg = self.settings_search_entry.tk.call(self.settings_search_entry._w, 'cget', '-background')
+            self._settings_search_icon_canvas = tk.Canvas(self.settings_search_entry, width=24, height=20, highlightthickness=0, bd=0, bg=entry_bg)
+            self._settings_search_icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
+            self._settings_search_icon_canvas.place(x=2, rely=0.5, anchor='w')
+            self._settings_search_icon_canvas.bind('<Button-1>', lambda e: self.settings_search_entry.focus_set())
         else:
             self.settings_search_entry = ttk.Entry(search_frame, textvariable=self.settings_search_var)
             self.settings_search_entry.pack(fill=tk.X)
@@ -2635,6 +2636,8 @@ class SettingsMixin:
         if 'theme' in self.interface_combined_vars:
             self.config.theme = self.interface_combined_vars['theme'].get()
             set_ui_theme(self.root, self.config.theme)
+            if hasattr(self, 'refresh_search_icon_backgrounds'):
+                self.refresh_search_icon_backgrounds()
 
         save_config(self.config)
 

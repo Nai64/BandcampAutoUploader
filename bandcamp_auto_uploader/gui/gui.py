@@ -843,6 +843,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.load_context_menu_icons()
         else:
             self.icon_images = {}
+
+    def refresh_search_icon_backgrounds(self):
+        """Update search icon canvas backgrounds to match the current entry background."""
+        for attr in ('_track_search_icon_canvas', '_settings_search_icon_canvas'):
+            canvas = getattr(self, attr, None)
+            if canvas is None:
+                continue
+            entry = canvas.master
+            try:
+                bg = entry.tk.call(entry._w, 'cget', '-background')
+                canvas.configure(bg=bg)
+            except Exception:
+                pass
     
     def create_widgets(self):
         """Create all GUI widgets"""
@@ -1451,10 +1464,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             style.configure('TrackSearch.TEntry', padding=(28, 0, 0, 0))
             self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, style='TrackSearch.TEntry', width=28)
             self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
-            icon_canvas = tk.Canvas(self._track_search_entry, width=24, height=20, highlightthickness=0, bd=0, bg='SystemWindow')
-            icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
-            icon_canvas.place(x=2, rely=0.5, anchor='w')
-            icon_canvas.bind('<Button-1>', lambda e: self._track_search_entry.focus_set())
+            entry_bg = self._track_search_entry.tk.call(self._track_search_entry._w, 'cget', '-background')
+            self._track_search_icon_canvas = tk.Canvas(self._track_search_entry, width=24, height=20, highlightthickness=0, bd=0, bg=entry_bg)
+            self._track_search_icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
+            self._track_search_icon_canvas.place(x=2, rely=0.5, anchor='w')
+            self._track_search_icon_canvas.bind('<Button-1>', lambda e: self._track_search_entry.focus_set())
         else:
             self._track_search_entry = ttk.Entry(checkbox_frame, textvariable=self._track_search_var, width=28)
             self._track_search_entry.pack(side=tk.LEFT, padx=(5, 10))
