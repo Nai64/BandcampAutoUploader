@@ -5877,9 +5877,22 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             # Renumber tracks
             self.renumber_tracks()
             self.sync_track_table_to_current_album()
+            self._refresh_track_details_item()
 
         # Reset drag data
         self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None}
+
+    def _refresh_track_details_item(self):
+        """Re-find the tree item for the currently selected track after reorder."""
+        path = getattr(self, "_track_details_path", None)
+        if not path:
+            return
+        for item in self.track_table.get_children():
+            values = self.track_table.item(item).get("values", ())
+            if len(values) > 12 and str(values[12]) == path:
+                self._track_details_item = item
+                return
+        self._track_details_item = None
 
     def renumber_tracks(self):
         """Renumber tracks after reordering"""
@@ -8173,6 +8186,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.insert_track_row(values, 0)
         self.renumber_tracks()
         self.sync_track_table_to_current_album()
+        self._refresh_track_details_item()
         self.show_toast(self.tr("Track moved to top"), 1500, "success")
 
     def move_track_to_bottom(self, item_id):
@@ -8192,6 +8206,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.insert_track_row(values)
         self.renumber_tracks()
         self.sync_track_table_to_current_album()
+        self._refresh_track_details_item()
         self.show_toast(self.tr("Track moved to bottom"), 1500, "success")
     
     def open_file_location(self, item_id):
