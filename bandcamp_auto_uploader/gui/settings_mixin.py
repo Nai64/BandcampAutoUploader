@@ -70,7 +70,7 @@ class SettingsMixin:
             style.configure('PrefSearch.TEntry', padding=(28, 0, 0, 0))
             self.settings_search_entry = ttk.Entry(search_frame, textvariable=self.settings_search_var, style='PrefSearch.TEntry')
             self.settings_search_entry.pack(fill=tk.X)
-            entry_bg = self.settings_search_entry.tk.call(self.settings_search_entry._w, 'cget', '-background')
+            entry_bg = self.settings_search_entry.tk.call(self.settings_search_entry._w, 'cget', '-background') or 'SystemWindow'
             self._settings_search_icon_canvas = tk.Canvas(self.settings_search_entry, width=24, height=20, highlightthickness=0, bd=0, bg=entry_bg)
             self._settings_search_icon_canvas.create_image(12, 10, image=search_icon, anchor='center')
             self._settings_search_icon_canvas.place(x=2, rely=0.5, anchor='w')
