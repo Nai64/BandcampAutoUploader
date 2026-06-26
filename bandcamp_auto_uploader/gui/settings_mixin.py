@@ -1421,6 +1421,7 @@ class SettingsMixin:
                 "description_auto_fill_on_upload",
                 "extract_track_cover_if_missing",
                 "clear_progress_on_album_change",
+                "show_random_tips",
             ):
                 setattr(self.config, config_key, new_value)
                 if config_key == "always_auto_scale_cover" and hasattr(self, 'scale_cover_var'):
@@ -2937,6 +2938,7 @@ class SettingsMixin:
             (self.tr("Interface: Apply settings immediately"), "apply_settings_immediately", "bool"),
             (self.tr("Interface: Maximize app on open"), "maximize_on_open", "bool"),
             (self.tr("Interface: Disable tooltips"), "disable_tooltips", "bool"),
+            (self.tr("Interface: Show random tips"), "show_random_tips", "bool"),
             (self.tr("Interface: Remove splash art"), "remove_splash_art", "disabled_bool"),
             (self.tr("Interface: Remember Last Opened Album"), "remember_last_album", "bool"),
             (self.tr("Metadata: Auto load metadata for album details"), "auto_load_metadata", "bool"),

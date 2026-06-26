@@ -79,6 +79,24 @@ from bandcamp_auto_uploader.i18n import setup_translator, get_translator
 # Configure logging
 logger = logging.getLogger("bandcamp-auto-uploader")
 
+RANDOM_TIPS = [
+    "Tip: Drag and drop audio files directly onto the track table to add them.",
+    "Tip: Right-click any track for quick actions like Move Up/Down, Extract Cover, or Revert.",
+    "Tip: Double-click a track's price or name in the table to edit it inline.",
+    "Tip: Use Ctrl+Enter to start uploading, Ctrl+Z to undo.",
+    "Tip: Press F11 to preview the cover art in fullscreen.",
+    "Tip: Lock a track to prevent it from being reordered or edited.",
+    "Tip: Click the search icon to filter tracks by name.",
+    "Tip: You can paste a cover art URL into the cover entry field.",
+    "Tip: Use 'Smart Randomize' to keep the first track fixed while shuffling the rest.",
+    "Tip: Album session files auto-save your progress as sidecar files.",
+    "Tip: Extract tracklist and track info to text files from the right-click menu.",
+    "Tip: The app supports FLAC, MP3, OGG, WAV, AIFF, and M4A formats.",
+    "Tip: Check the Logs tab for detailed upload progress and diagnostics.",
+    "Tip: You can customize hotkeys in Settings > Hotkeys.",
+    "Tip: Toggle column visibility in Settings > Interface > Track Table Columns.",
+]
+
 
 def set_windows_app_user_model_id():
     """Set a Windows AppUserModelID before Tk creates the taskbar button."""
@@ -913,6 +931,11 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         # Start toast monitor
         self.monitor_toasts()
+
+        # Start random tips timer
+        if getattr(self.config, 'show_random_tips', True):
+            self._random_tip_index = 0
+            self._schedule_random_tip()
 
 
 
@@ -9873,7 +9896,19 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             pass
         finally:
             self.root.after(self.toast_poll_interval_ms, self.monitor_toasts)
-    
+
+    def _schedule_random_tip(self):
+        """Schedule the next random tip toast (every 5 minutes)."""
+        self.root.after(300000, self._show_random_tip)
+
+    def _show_random_tip(self):
+        """Show a random tip as a toast notification."""
+        if getattr(self.config, 'show_random_tips', True):
+            tip = RANDOM_TIPS[self._random_tip_index % len(RANDOM_TIPS)]
+            self._random_tip_index += 1
+            self.show_toast(self.tr(tip), 4000, "info")
+        self._schedule_random_tip()
+
     def display_toast(self, message: str, duration: int, toast_type: str):
         """Display a modern floating toast notification inside the app window."""
         import time

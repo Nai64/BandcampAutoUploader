@@ -41,6 +41,7 @@ class Config:
     apply_settings_immediately: bool = True  # Apply settings immediately without Save button
     maximize_on_open: bool = False  # Maximize window on startup
     disable_tooltips: bool = True  # Disable UI tooltips
+    show_random_tips: bool = True  # Show random tips as toast notifications
     theme: str = "Light"  # UI theme: "Light", Sun-Valley, or Azure variants
     auto_load_metadata: bool = True  # Auto load metadata for album details
     create_album_session_files: bool = True  # Save/load album state in session.txt sidecar files
