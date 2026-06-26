@@ -1387,6 +1387,9 @@ class SettingsMixin:
                 self.check_for_updates_now()
             elif config_key == "remove_all_custom_templates":
                 self._remove_all_custom_templates()
+            elif config_key == "show_tip_now":
+                if hasattr(self, '_show_random_tip'):
+                    self._show_random_tip()
             return
 
         if setting_type == "bool":
