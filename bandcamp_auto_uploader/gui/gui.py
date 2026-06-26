@@ -9844,7 +9844,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         """No-op - status bar removed"""
         pass
     
-    def show_toast(self, message: str, duration: int = 3000, toast_type: str = "info", trigger: str = None):
+    def show_toast(self, message: str, duration: int = 3000, toast_type: str = "info", trigger: str = None, respect_duration: bool = False):
         """Show a non-blocking toast notification
         
         Args:
@@ -9881,8 +9881,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 # Fallback to custom toasts on error
                 logger.warning(f"Windows notifications failed: {e}, falling back to custom toasts")
         
-        # Use configured duration if available
-        if hasattr(self.config, 'toast_duration'):
+        # Use configured duration if available (unless caller explicitly wants its own)
+        if not respect_duration and hasattr(self.config, 'toast_duration'):
             duration = self.config.toast_duration * 1000  # Convert to milliseconds
         
         self.toast_queue.put((message, duration, toast_type))
@@ -9912,7 +9912,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 tip = RANDOM_TIPS[self._random_tip_index % len(RANDOM_TIPS)]
                 self._random_tip_index += 1
             duration = max(1, min(10, getattr(self.config, 'tips_duration', 4))) * 1000
-            self.show_toast(self.tr(tip), duration, "info")
+            self.show_toast(self.tr(tip), duration, "info", respect_duration=True)
         self._schedule_random_tip()
 
     def display_toast(self, message: str, duration: int, toast_type: str):
