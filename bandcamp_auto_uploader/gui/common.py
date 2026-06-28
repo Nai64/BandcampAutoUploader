@@ -366,6 +366,9 @@ _TKMT_THEME_PATH = None
 _TKMT_THEME_LOADED = False
 _AZURE_THEME_PATH = None
 _AZURE_THEME_LOADED = False
+_FOREST_THEME_DARK_PATH = None
+_FOREST_THEME_LIGHT_PATH = None
+_FOREST_THEME_LOADED = False
 
 
 def _get_tkmt_theme_path():
@@ -389,6 +392,27 @@ def _get_azure_theme_path():
             theme_path = Path(__file__).resolve().parents[1] / "themes" / "azure" / "azure.tcl"
         _AZURE_THEME_PATH = str(theme_path) if theme_path.exists() else ""
     return _AZURE_THEME_PATH
+
+
+def _get_forest_theme_path(dark=True):
+    global _FOREST_THEME_DARK_PATH, _FOREST_THEME_LIGHT_PATH
+    if dark and _FOREST_THEME_DARK_PATH is not None:
+        return _FOREST_THEME_DARK_PATH
+    if not dark and _FOREST_THEME_LIGHT_PATH is not None:
+        return _FOREST_THEME_LIGHT_PATH
+    if getattr(sys, "frozen", False):
+        base_dir = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[1]))
+        theme_dir = base_dir / "bandcamp_auto_uploader" / "themes" / "forest"
+    else:
+        theme_dir = Path(__file__).resolve().parents[1] / "themes" / "forest"
+    variant = "forest-dark" if dark else "forest-light"
+    theme_path = theme_dir / f"{variant}.tcl"
+    result = str(theme_path) if theme_path.exists() else ""
+    if dark:
+        _FOREST_THEME_DARK_PATH = result
+    else:
+        _FOREST_THEME_LIGHT_PATH = result
+    return result
 
 
 def _use_azure_theme(root, style, dark):
@@ -426,7 +450,7 @@ def _use_azure_theme(root, style, dark):
 
 
 def set_ui_theme(root, theme_name):
-    global _TKMT_THEME_LOADED, _AZURE_THEME_LOADED
+    global _TKMT_THEME_LOADED, _AZURE_THEME_LOADED, _FOREST_THEME_LOADED
     style = ttk.Style()
     set_window_redraw(root, False)
 
@@ -531,6 +555,96 @@ def set_ui_theme(root, theme_name):
             style.configure("TEntry", padding=(2, 1))
             style_tk_text_widgets(root, "#1c1c1c", "#ffffff", "#ffffff", "#2f60d8", "#ffffff", "#2f2f2f")
             set_titlebar_dark(root, True)
+        except Exception:
+            pass
+    elif theme_name == "Forest Dark":
+        if not _FOREST_THEME_LOADED:
+            theme_path = _get_forest_theme_path(dark=True)
+            if theme_path:
+                try:
+                    root.tk.call("source", theme_path)
+                    _FOREST_THEME_LOADED = True
+                except Exception:
+                    pass
+        try:
+            style.theme_use("forest-dark")
+            style.configure(".", background="#313131", foreground="#eeeeee",
+                            troughcolor="#313131", focuscolor="#217346",
+                            selectbackground="#217346", selectforeground="#ffffff",
+                            insertwidth=1, insertcolor="#eeeeee",
+                            fieldbackground="#217346", borderwidth=1, relief="flat")
+            style.configure(".", font=("Segoe UI", 8))
+            style.map(".", foreground=[("disabled", "#595959")])
+            root.tk.eval(
+                "tk_setPalette "
+                "background #313131 "
+                "foreground #eeeeee "
+                "selectBackground #217346 "
+                "selectForeground #ffffff "
+                "highlightColor #217346 "
+                "activeBackground #217346 "
+                "activeForeground #ffffff"
+            )
+            root.tk.eval("option add *Menu.selectcolor #eeeeee startup")
+            root.tk.eval("option add *Menu.background #313131 startup")
+            style.configure("TButton", padding=(2, 0))
+            style.configure("TCheckbutton", padding=0)
+            style.configure("TRadiobutton", padding=0)
+            try:
+                root.tk.eval("ttk::style element create Notebook.border from default")
+            except Exception:
+                pass
+            style.configure("TNotebook", background="#313131")
+            style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
+            style.configure("Treeview", rowheight=20)
+            style.configure("TEntry", padding=(2, 1))
+            style_tk_text_widgets(root, "#313131", "#eeeeee", "#eeeeee", "#217346", "#ffffff", "#313131")
+            set_titlebar_dark(root, True)
+        except Exception:
+            pass
+    elif theme_name == "Forest Light":
+        if not _FOREST_THEME_LOADED:
+            theme_path = _get_forest_theme_path(dark=False)
+            if theme_path:
+                try:
+                    root.tk.call("source", theme_path)
+                    _FOREST_THEME_LOADED = True
+                except Exception:
+                    pass
+        try:
+            style.theme_use("forest-light")
+            style.configure(".", background="#ffffff", foreground="#313131",
+                            troughcolor="#ffffff", focuscolor="#217346",
+                            selectbackground="#217346", selectforeground="#ffffff",
+                            insertwidth=1, insertcolor="#313131",
+                            fieldbackground="#217346", borderwidth=1, relief="flat")
+            style.configure(".", font=("Segoe UI", 8))
+            style.map(".", foreground=[("disabled", "#a0a0a0")])
+            root.tk.eval(
+                "tk_setPalette "
+                "background #ffffff "
+                "foreground #313131 "
+                "selectBackground #217346 "
+                "selectForeground #ffffff "
+                "highlightColor #217346 "
+                "activeBackground #217346 "
+                "activeForeground #ffffff"
+            )
+            root.tk.eval("option add *Menu.selectcolor #313131 startup")
+            root.tk.eval("option add *Menu.background #e7e7e7 startup")
+            style.configure("TButton", padding=(2, 0))
+            style.configure("TCheckbutton", padding=0)
+            style.configure("TRadiobutton", padding=0)
+            try:
+                root.tk.eval("ttk::style element create Notebook.border from default")
+            except Exception:
+                pass
+            style.configure("TNotebook", background="#ffffff")
+            style.configure("TNotebook.Tab", padding=(4, 2, 4, 1), height=20)
+            style.configure("Treeview", rowheight=20)
+            style.configure("TEntry", padding=(2, 1))
+            style_tk_text_widgets(root, "#ffffff", "#313131", "#313131", "#217346", "#ffffff", "#ffffff")
+            set_titlebar_dark(root, False)
         except Exception:
             pass
     elif theme_name == "Sun-Valley Light":

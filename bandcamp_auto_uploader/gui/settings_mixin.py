@@ -2447,7 +2447,7 @@ class SettingsMixin:
         """Create combined Interface settings section that includes all sub-sections"""
         # Combined settings from all interface sub-sections
         settings = [
-            (self.tr("Interface Theme (Experimental)"), "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark", "Azure Light", "Azure Dark"]),
+            (self.tr("Interface Theme (Experimental)"), "theme", "choice", ["Light", "Sun-Valley Light", "Sun-Valley Dark", "Forest Light", "Forest Dark", "Azure Light", "Azure Dark"]),
             (self.tr("Columns: Track No."), "show_track_no", "bool"),
             (self.tr("Columns: Artist"), "show_artist", "bool"),
             (self.tr("Columns: Track Name"), "show_track_name", "bool"),
