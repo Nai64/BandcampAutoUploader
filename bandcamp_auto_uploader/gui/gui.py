@@ -1644,19 +1644,13 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         # Double-click to edit cells
         self.track_table.bind('<Double-Button-1>', self.on_table_double_click)
 
-        # Drag and drop for reordering
-        self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                          "insert_item": None, "insert_pos": "after"}
+        # Drag and drop for reordering — live preview
+        self.drag_data = {"item": None, "y": 0, "x": 0, "started": False,
+                          "did_move": False, "last_target": None, "last_insert_pos": None}
+        self._drag_undo_snapshot = None
         self.track_table.bind('<Button-1>', self.on_drag_start, add='+')
         self.track_table.bind('<B1-Motion>', self.on_drag_motion, add='+')
         self.track_table.bind('<ButtonRelease-1>', self.on_drag_release, add='+')
-        # Drag insertion slot — a dashed-outline placeholder row
-        self.drag_insertion_slot = tk.Canvas(
-            self.track_table,
-            height=20,
-            highlightthickness=0,
-            borderwidth=0,
-        )
         self.track_table.bind('<<TreeviewSelect>>', self.on_track_select)
 
         # Enable drag & drop for adding audio files (if available)
@@ -5843,111 +5837,70 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         item = self.track_table.identify('item', event.x, event.y)
         if not item:
             self.track_table.selection_remove(self.track_table.selection())
-            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                              "insert_item": None, "insert_pos": "after"}
+            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False,
+                              "did_move": False, "last_target": None, "last_insert_pos": None}
+            self._drag_undo_snapshot = None
             return
-        if item:
-            if self.is_track_item_locked(item):
-                self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                                  "insert_item": None, "insert_pos": "after"}
-                return
-            self.drag_data = {"item": item, "y": event.y, "x": event.x, "started": False, "highlight": None,
-                              "insert_item": None, "insert_pos": "after"}
+        if self.is_track_item_locked(item):
+            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False,
+                              "did_move": False, "last_target": None, "last_insert_pos": None}
+            self._drag_undo_snapshot = None
+            return
+        self._drag_undo_snapshot = self.get_track_table_state_snapshot("Reorder Tracks")
+        self.drag_data = {"item": item, "y": event.y, "x": event.x, "started": False,
+                          "did_move": False, "last_target": None, "last_insert_pos": None}
 
     def on_drag_motion(self, event):
-        """Handle drag motion - show insertion slot indicator"""
+        """Handle drag motion — live preview reorder (row moves in real time)"""
         if self.drag_data["item"] and not self.drag_data["started"]:
             if abs(event.y - self.drag_data["y"]) > 5 or abs(event.x - self.drag_data["x"]) > 5:
                 self.drag_data["started"] = True
 
-        if self.drag_data["started"]:
-            if self.drag_data["highlight"]:
-                self.apply_track_item_tags(self.drag_data["highlight"])
-                self.drag_data["highlight"] = None
+        if not self.drag_data["started"]:
+            return
 
-            target_item = self.track_table.identify('item', event.x, event.y)
-
-            if not target_item or target_item == self.drag_data["item"]:
-                self.drag_insertion_slot.place_forget()
-                self.drag_data["insert_item"] = None
-                return
-
-            if self.is_track_item_locked(target_item):
-                self.drag_insertion_slot.place_forget()
-                self.drag_data["insert_item"] = None
-                return
-
+        target_item = self.track_table.identify('item', event.x, event.y)
+        insert_pos = "before"
+        if target_item:
             bbox = self.track_table.bbox(target_item)
-            if not bbox:
-                self.drag_insertion_slot.place_forget()
-                self.drag_data["insert_item"] = None
-                return
+            if bbox:
+                _, row_y, _, row_h = bbox
+                if event.y >= row_y + row_h // 2:
+                    insert_pos = "after"
 
-            _, row_y, _, row_h = bbox
-            tree_width = self.track_table.winfo_width()
-            slot_w = max(10, tree_width - 4)
+        # Debounce: skip if same target and position
+        if target_item == self.drag_data["last_target"] and insert_pos == self.drag_data["last_insert_pos"]:
+            return
+        self.drag_data["last_target"] = target_item
+        self.drag_data["last_insert_pos"] = insert_pos
 
-            if event.y < row_y + row_h // 2:
-                slot_y = row_y
-                insert_pos = "before"
-            else:
-                slot_y = row_y + row_h
-                insert_pos = "after"
-
-            self.drag_insertion_slot.place(x=2, y=slot_y, width=slot_w)
-            self.drag_insertion_slot.delete("all")
-            self.drag_insertion_slot.create_rectangle(
-                0, 0, slot_w, 20,
-                fill="#dbeafe",
-                outline="#3b82f6",
-                dash=(4, 2),
-                width=1,
-            )
-            self.drag_data["insert_item"] = target_item
-            self.drag_data["insert_pos"] = insert_pos
-
-    def on_drag_release(self, event):
-        """Handle drag release - reorder tracks"""
-        self.drag_insertion_slot.place_forget()
-
-        if self.drag_data.get("highlight"):
-            self.apply_track_item_tags(self.drag_data["highlight"])
-
-        if not self.drag_data.get("item") or not self.drag_data.get("started"):
-            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                              "insert_item": None, "insert_pos": "after"}
+        if not target_item:
             return
 
         source_item = self.drag_data["item"]
-        insert_item = self.drag_data.get("insert_item")
-        insert_pos = self.drag_data.get("insert_pos", "after")
-
-        if not insert_item:
-            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                              "insert_item": None, "insert_pos": "after"}
+        if target_item == source_item:
+            return
+        if self.is_track_item_locked(target_item):
             return
 
-        if source_item == insert_item:
-            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                              "insert_item": None, "insert_pos": "after"}
+        all_items = self.track_table.get_children()
+        if source_item not in all_items or target_item not in all_items:
             return
 
-        if self.is_track_item_locked(insert_item):
-            self.show_toast(self.tr("Cannot move onto a locked track"), 1600, "warning")
-            self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                              "insert_item": None, "insert_pos": "after"}
+        current_idx = all_items.index(source_item)
+        target_idx = all_items.index(target_item)
+        if insert_pos == "after":
+            target_idx += 1
+
+        if target_idx == current_idx or target_idx == current_idx + 1:
             return
 
-        self.push_undo_state("Reorder Tracks")
         source_values = self.track_table.item(source_item)['values']
-
-        # Remove source
         self.track_table.delete(source_item)
 
-        # Compute target index using insert_item and insert_pos
         all_items = self.track_table.get_children()
-        if insert_item in all_items:
-            target_idx = all_items.index(insert_item)
+        if target_item in all_items:
+            target_idx = all_items.index(target_item)
             if insert_pos == "after":
                 target_idx += 1
         else:
@@ -5956,16 +5909,28 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         target_idx = max(0, min(target_idx, len(all_items)))
 
         if target_idx >= len(all_items):
-            self.insert_track_row(source_values)
+            new_item = self.insert_track_row(source_values)
         else:
-            self.insert_track_row(source_values, target_idx)
+            new_item = self.insert_track_row(source_values, target_idx)
 
+        self.drag_data["item"] = new_item
+        self.drag_data["did_move"] = True
         self.renumber_tracks()
-        self.sync_track_table_to_current_album()
-        self._refresh_track_details_item()
 
-        self.drag_data = {"item": None, "y": 0, "x": 0, "started": False, "highlight": None,
-                          "insert_item": None, "insert_pos": "after"}
+    def on_drag_release(self, event):
+        """Handle drag release — finalize reorder and sync state"""
+        did_move = self.drag_data.get("did_move", False) and self.drag_data.get("started", False)
+
+        if did_move and self._drag_undo_snapshot is not None:
+            self.undo_buffer.append(self._drag_undo_snapshot)
+            self.undo_buffer = self.undo_buffer[-50:]
+            self.redo_buffer.clear()
+            self.sync_track_table_to_current_album()
+            self._refresh_track_details_item()
+
+        self.drag_data = {"item": None, "y": 0, "x": 0, "started": False,
+                          "did_move": False, "last_target": None, "last_insert_pos": None}
+        self._drag_undo_snapshot = None
 
     def _refresh_track_details_item(self):
         """Re-find the tree item for the currently selected track after reorder."""
