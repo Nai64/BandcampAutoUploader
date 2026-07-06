@@ -599,6 +599,9 @@ class SettingsMixin:
             (self.tr("Preview Description"), "preview_description", "action"),
             (self.tr("Create description on upload"), "description_auto_fill_on_upload", "bool"),
             (self.tr("Remove All Custom Templates"), "remove_all_custom_templates", "action"),
+            (self.tr("No Description Limit"), "no_description_limit", "bool"),
+            (self.tr("No Credits Limit"), "no_credits_limit", "bool"),
+            (self.tr("No Lyrics Limit"), "no_lyrics_limit", "bool"),
         ]
         tree, vars_dict, mapping = self._build_std_tree(parent, settings)
         self.description_tree = tree

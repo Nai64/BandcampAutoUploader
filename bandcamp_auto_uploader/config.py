@@ -59,6 +59,9 @@ class Config:
     cover_fit_mode: str = "Crop (fill)"  # How to fit cover art: Crop (fill), Fit (contain), Stretch
     description_auto_fill_mode: str = "Off"  # Auto-fill album description behavior
     description_auto_fill_on_upload: bool = True  # Create auto-description when upload starts
+    no_description_limit: bool = False  # Remove character limit on description fields
+    no_credits_limit: bool = False  # Remove character limit on credits fields
+    no_lyrics_limit: bool = False  # Remove character limit on lyrics field
     extract_track_cover_if_missing: bool = True  # Extract embedded cover art when no cover file is found
     clear_progress_on_album_change: bool = True  # Clear upload progress rows after selecting another album
     auto_tag_year: bool = False  # Auto add year to tags from metadata

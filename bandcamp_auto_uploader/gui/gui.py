@@ -1197,7 +1197,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         desc_frame.pack(fill=tk.X, pady=(0, 2))
         self.desc_text.insert("1.0", self.album_description_var.get())
         self.desc_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
-            self.desc_text, self.desc_char_label, 1200, self.album_description_var))
+            self.desc_text, self.desc_char_label, 1200, self.album_description_var, 'no_description_limit'))
 
         # Credits
         credits_header = ttk.Frame(self.details_frame)
@@ -1214,7 +1214,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         credits_frame.pack(fill=tk.X, pady=(0, 2))
         self.credits_text.insert("1.0", self.album_credits_var.get())
         self.credits_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
-            self.credits_text, self.credits_char_label, 1200, self.album_credits_var))
+            self.credits_text, self.credits_char_label, 1200, self.album_credits_var, 'no_credits_limit'))
 
         # License
         ttk.Label(self.details_frame, text=self.tr("License:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
@@ -1365,7 +1365,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         td_desc_frame.pack(fill=tk.X, pady=(0, 2))
         self.td_desc_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
-            self.td_desc_text, self.td_desc_char_label, 1200))
+            self.td_desc_text, self.td_desc_char_label, 1200, None, 'no_description_limit'))
 
         td_lyrics_header = ttk.Frame(self.track_details_frame)
         td_lyrics_header.pack(fill=tk.X, pady=(0, 1))
@@ -1380,7 +1380,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         td_lyrics_frame.pack(fill=tk.X, pady=(0, 2))
         self.td_lyrics_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
-            self.td_lyrics_text, self.td_lyrics_char_label, 10000))
+            self.td_lyrics_text, self.td_lyrics_char_label, 10000, None, 'no_lyrics_limit'))
 
         td_credits_header = ttk.Frame(self.track_details_frame)
         td_credits_header.pack(fill=tk.X, pady=(0, 1))
@@ -1395,7 +1395,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         )
         td_credits_frame.pack(fill=tk.X, pady=(0, 2))
         self.td_credits_text.bind('<KeyRelease>', lambda e: self._update_desc_counter(
-            self.td_credits_text, self.td_credits_char_label, 1200))
+            self.td_credits_text, self.td_credits_char_label, 1200, None, 'no_credits_limit'))
 
         ttk.Label(self.track_details_frame, text=self.tr("License:"), font=("Segoe UI", 8, "bold")).pack(anchor=tk.W, pady=(0, 1))
         self.td_license_var = tk.StringVar(value=self.tr("All Rights Reserved"))
@@ -3233,14 +3233,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             self.track_details_frame.pack_forget()
             self.details_frame.pack(fill=tk.BOTH, expand=True)
 
-    def _update_desc_counter(self, text_widget, label, max_chars, var=None):
+    def _update_desc_counter(self, text_widget, label, max_chars, var=None, no_limit_key=None):
         """Enforce char limit on a description text widget and update counter."""
         content = text_widget.get("1.0", "end-1c")
-        if len(content) > max_chars:
+        no_limit = no_limit_key and getattr(self.config, no_limit_key, False)
+        if not no_limit and len(content) > max_chars:
             text_widget.delete("1.0", tk.END)
             text_widget.insert("1.0", content[:max_chars])
             content = content[:max_chars]
-        label.config(text=f"{len(content)}/{max_chars}")
+        label.config(text=f"{len(content)}" if no_limit else f"{len(content)}/{max_chars}")
         if var is not None:
             var.set(content)
 
@@ -3262,7 +3263,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if original_state == tk.DISABLED:
                 self.desc_text.configure(state=tk.DISABLED)
         if hasattr(self, 'desc_char_label'):
-            self.desc_char_label.config(text=f"{len(text)}/1200")
+            no_limit = getattr(self.config, 'no_description_limit', False)
+            self.desc_char_label.config(text=f"{len(text)}" if no_limit else f"{len(text)}/1200")
 
     def set_album_credits_text(self, text):
         """Set album credits text and backing variable together."""
@@ -3276,7 +3278,8 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             if original_state == tk.DISABLED:
                 self.credits_text.configure(state=tk.DISABLED)
         if hasattr(self, 'credits_char_label'):
-            self.credits_char_label.config(text=f"{len(text)}/1200")
+            no_limit = getattr(self.config, 'no_credits_limit', False)
+            self.credits_char_label.config(text=f"{len(text)}" if no_limit else f"{len(text)}/1200")
 
     def setup_album_session_autosave(self):
         """Track album-detail changes for the per-folder session file."""
