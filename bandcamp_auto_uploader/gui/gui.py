@@ -5345,6 +5345,7 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.tag_configure("corrupted", background=getattr(self.config, 'corrupted_track_highlight_color', '#ffd6d6'))
         self.track_table.tag_configure("featured", background="#c8e6c9")
         self.track_table.tag_configure("search_match", background="#cfe2ff")
+        self.track_table.tag_configure("drag_ghost", foreground="#94a3b8", background="#dbeafe")
         self._featured_track_path = None
 
     def _on_column_lock_press(self, event):
@@ -5859,6 +5860,9 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         if not self.drag_data["started"]:
             return
 
+        # Ghost the source item
+        self._set_item_tag(self.drag_data["item"], "drag_ghost")
+
         target_item = self.track_table.identify('item', event.x, event.y)
         insert_pos = "before"
         if target_item:
@@ -5868,7 +5872,6 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                 if event.y >= row_y + row_h // 2:
                     insert_pos = "after"
 
-        # Debounce: skip if same target and position
         if target_item == self.drag_data["last_target"] and insert_pos == self.drag_data["last_insert_pos"]:
             return
         self.drag_data["last_target"] = target_item
@@ -5915,10 +5918,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
 
         self.drag_data["item"] = new_item
         self.drag_data["did_move"] = True
+        self._set_item_tag(new_item, "drag_ghost")
         self.renumber_tracks()
 
     def on_drag_release(self, event):
         """Handle drag release — finalize reorder and sync state"""
+        # Restore normal appearance on the source item
+        if self.drag_data.get("item") and self.track_table.exists(self.drag_data["item"]):
+            self.apply_track_item_tags(self.drag_data["item"])
+
         did_move = self.drag_data.get("did_move", False) and self.drag_data.get("started", False)
 
         if did_move and self._drag_undo_snapshot is not None:
@@ -5931,6 +5939,15 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.drag_data = {"item": None, "y": 0, "x": 0, "started": False,
                           "did_move": False, "last_target": None, "last_insert_pos": None}
         self._drag_undo_snapshot = None
+
+    def _set_item_tag(self, item_id, tag):
+        """Add a tag to a treeview item if it doesn't already have it."""
+        if not self.track_table.exists(item_id):
+            return
+        current_tags = list(self.track_table.item(item_id, "tags"))
+        if tag not in current_tags:
+            current_tags.append(tag)
+            self.track_table.item(item_id, tags=tuple(current_tags))
 
     def _refresh_track_details_item(self):
         """Re-find the tree item for the currently selected track after reorder."""
