@@ -10,8 +10,8 @@ from __future__ import annotations
 
 import re
 
-__version__ = "3.5.1"
-__version_label__ = "3.5.1"
+__version__ = "3.6.0"
+__version_label__ = "3.6.0"
 
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(-[a-zA-Z0-9]+(?:\.[a-zA-Z0-9]+)*)?$")
 

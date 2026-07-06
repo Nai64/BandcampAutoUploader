@@ -9,10 +9,10 @@ version_toml = [
     "config/pyproject.toml:tool.poetry.version",
 ]
 version_variables = [
-    "bandcamp_auto_uploader/__version__.py:__version__\\s*=\\s*\"{version}\"",
-    "bandcamp_auto_uploader/__version__.py:__version_label__\\s*=\\s*\"{version}\"",
-    "scripts/version.inc:#define MyAppVersion\\s+\"{version}\"",
-    "README.md:img\\.shields\\.io/badge/Version-{version}-blue",
+    'bandcamp_auto_uploader/__version__.py:__version__ = "{version}"',
+    'bandcamp_auto_uploader/__version__.py:__version_label__ = "{version}"',
+    'scripts/version.inc:#define MyAppVersion "{version}"',
+    'README.md:img.shields.io/badge/Version-{version}-blue',
 ]
 
 [tool.semantic_release.branches.main]
