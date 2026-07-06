@@ -1650,11 +1650,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
         self.track_table.bind('<Button-1>', self.on_drag_start, add='+')
         self.track_table.bind('<B1-Motion>', self.on_drag_motion, add='+')
         self.track_table.bind('<ButtonRelease-1>', self.on_drag_release, add='+')
-        # Drag insertion indicator line
-        self.drag_insertion_line = tk.Frame(
+        # Drag insertion slot — a dashed-outline placeholder row
+        self.drag_insertion_slot = tk.Canvas(
             self.track_table,
-            height=2,
-            background="#0078d7",
+            height=20,
+            highlightthickness=0,
+            borderwidth=0,
         )
         self.track_table.bind('<<TreeviewSelect>>', self.on_track_select)
 
@@ -5854,13 +5855,12 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
                               "insert_item": None, "insert_pos": "after"}
 
     def on_drag_motion(self, event):
-        """Handle drag motion - show insertion line indicator"""
+        """Handle drag motion - show insertion slot indicator"""
         if self.drag_data["item"] and not self.drag_data["started"]:
             if abs(event.y - self.drag_data["y"]) > 5 or abs(event.x - self.drag_data["x"]) > 5:
                 self.drag_data["started"] = True
 
         if self.drag_data["started"]:
-            # Clear previous highlight
             if self.drag_data["highlight"]:
                 self.apply_track_item_tags(self.drag_data["highlight"])
                 self.drag_data["highlight"] = None
@@ -5868,37 +5868,47 @@ class BandcampUploaderGUI(SettingsMixin, LogsMixin):
             target_item = self.track_table.identify('item', event.x, event.y)
 
             if not target_item or target_item == self.drag_data["item"]:
-                self.drag_insertion_line.place_forget()
+                self.drag_insertion_slot.place_forget()
                 self.drag_data["insert_item"] = None
                 return
 
             if self.is_track_item_locked(target_item):
-                self.drag_insertion_line.place_forget()
+                self.drag_insertion_slot.place_forget()
                 self.drag_data["insert_item"] = None
                 return
 
             bbox = self.track_table.bbox(target_item)
             if not bbox:
-                self.drag_insertion_line.place_forget()
+                self.drag_insertion_slot.place_forget()
                 self.drag_data["insert_item"] = None
                 return
 
             _, row_y, _, row_h = bbox
+            tree_width = self.track_table.winfo_width()
+            slot_w = max(10, tree_width - 4)
+
             if event.y < row_y + row_h // 2:
-                line_y = row_y
+                slot_y = row_y
                 insert_pos = "before"
             else:
-                line_y = row_y + row_h - 1
+                slot_y = row_y + row_h
                 insert_pos = "after"
 
-            tree_width = self.track_table.winfo_width()
-            self.drag_insertion_line.place(x=2, y=line_y, width=max(10, tree_width - 4))
+            self.drag_insertion_slot.place(x=2, y=slot_y, width=slot_w)
+            self.drag_insertion_slot.delete("all")
+            self.drag_insertion_slot.create_rectangle(
+                0, 0, slot_w, 20,
+                fill="#dbeafe",
+                outline="#3b82f6",
+                dash=(4, 2),
+                width=1,
+            )
             self.drag_data["insert_item"] = target_item
             self.drag_data["insert_pos"] = insert_pos
 
     def on_drag_release(self, event):
         """Handle drag release - reorder tracks"""
-        self.drag_insertion_line.place_forget()
+        self.drag_insertion_slot.place_forget()
 
         if self.drag_data.get("highlight"):
             self.apply_track_item_tags(self.drag_data["highlight"])
